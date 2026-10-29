@@ -1,57 +1,10 @@
-import { lstatSync, readdirSync, readFileSync, statSync } from "node:fs";
+import { readdirSync } from "node:fs";
 import { join } from "node:path";
 import { configProblems, dirProblem, labPaths } from "../server/lab-dir.ts";
 import { type GlobInput, loadRounds } from "../src/lib/rounds.ts";
+import { checkLibrary } from "./check-library.ts";
+import { errMsg, kindOf, readText } from "./fs-util.ts";
 import { scanVariants } from "./scan-variants.ts";
-
-type Kind = "dir" | "file" | "missing" | "dangling" | "error";
-
-/** What `p` is, following symlinks. Never throws. */
-function kindOf(p: string): Kind {
-  try {
-    const st = statSync(p);
-    return st.isDirectory() ? "dir" : st.isFile() ? "file" : "error";
-  } catch (e) {
-    if ((e as NodeJS.ErrnoException).code !== "ENOENT") return "error";
-    try {
-      lstatSync(p);
-      return "dangling";
-    } catch {
-      return "missing";
-    }
-  }
-}
-
-const errMsg = (e: unknown) => {
-  const code = (e as NodeJS.ErrnoException)?.code;
-  return code ?? (e instanceof Error ? e.message.split("\n")[0] : String(e));
-};
-
-/** Reads a text file. Returns a readable problem instead of throwing. */
-function readText(
-  file: string,
-  label: string,
-): { text: string } | { error: string } {
-  switch (kindOf(file)) {
-    case "file":
-      break;
-    case "dir":
-      return { error: `${label} is a directory, not a file` };
-    case "dangling":
-      return { error: `${label} is a dangling symlink` };
-    case "missing":
-      return { error: `${label} is missing` };
-    default:
-      return {
-        error: `${label} cannot be read (not a regular file or a symlink loop)`,
-      };
-  }
-  try {
-    return { text: readFileSync(file, "utf8") };
-  } catch (e) {
-    return { error: `${label} cannot be read (${errMsg(e)})` };
-  }
-}
 
 /**
  * Loads `fixtures/index.ts` with Vite and checks the two exports the app uses:
@@ -154,6 +107,7 @@ export async function checkDataDir(dir: string): Promise<string[]> {
         ? "rounds/ is missing"
         : "rounds/ is not a readable directory",
     );
+    problems.push(...checkLibrary(dir, []));
     return problems;
   }
   // Same input shape as the app's import.meta.glob, so the same validator runs.
@@ -207,5 +161,7 @@ export async function checkDataDir(dir: string): Promise<string[]> {
       if (!seen) problems.push(`${at}: ${v.message}`);
     } else problems.push(`${at}:${v.line}: ${v.message}`);
   }
+  const roundIds = names.filter((n) => kindOf(join(paths.rounds, n)) === "dir");
+  problems.push(...checkLibrary(dir, roundIds));
   return problems;
 }

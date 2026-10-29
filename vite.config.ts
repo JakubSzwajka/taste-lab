@@ -28,19 +28,24 @@ export default defineConfig({
     tailwindcss(),
   ],
   resolve: {
-    // First match wins. Variants import `@/fixtures` from the data dir and
-    // `@/components/ui/*`, `@/lib/utils` from the lab.
+    // First match wins. Variants import `@/fixtures` and `@/library/*` from the
+    // data dir and `@/components/ui/*`, `@/lib/utils` from the lab.
     alias: [
       {
         find: /^@\/fixtures$/,
         replacement: literal(labPaths(dataDir).fixtures),
+      },
+      {
+        // `@/library/<name>/<Name>` is a library component in the data dir.
+        find: /^@\/library\//,
+        replacement: literal(`${labPaths(dataDir).library}/`),
       },
       { find: /^@lab\//, replacement: literal(`${dataDir}/`) },
       { find: "@", replacement: literal(path.join(lab, "src")) },
     ],
     // Data dir files can live outside this repo. Resolve their bare imports
     // from the lab's node_modules, and keep one React.
-    dedupe: ["react", "react-dom", "lucide-react"],
+    dedupe: ["react", "react-dom", "lucide-react", "class-variance-authority"],
   },
   server: {
     host: "127.0.0.1",

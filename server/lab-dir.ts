@@ -10,6 +10,7 @@ export function labPaths(dataDir: string) {
     config: join(dataDir, "config.json"),
     fixtures: join(dataDir, "fixtures", "index.ts"),
     rounds: join(dataDir, "rounds"),
+    library: join(dataDir, "library"),
     log: join(dataDir, "taste.jsonl"),
     design: join(dataDir, "DESIGN.md"),
   };

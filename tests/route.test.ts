@@ -11,6 +11,21 @@ describe("parseHash", () => {
     });
   });
 
+  it("parses the library pages", () => {
+    expect(parseHash("#/library")).toEqual({ page: "library" });
+    expect(parseHash("#/library/task-card")).toEqual({
+      page: "library-entry",
+      name: "task-card",
+    });
+    expect(parseHash(hrefFor({ page: "library-entry", name: "a b" }))).toEqual({
+      page: "library-entry",
+      name: "a b",
+    });
+    expect(parseHash("#/library/%")).toEqual({ page: "library" });
+    expect(parseHash("#/library/")).toEqual({ page: "current" });
+    expect(hrefFor({ page: "library" })).toBe("#/library");
+  });
+
   it("decodes escaped ids and round-trips hrefFor", () => {
     const r = parseHash(hrefFor({ page: "round", id: "a b" }));
     expect(r).toEqual({ page: "round", id: "a b" });

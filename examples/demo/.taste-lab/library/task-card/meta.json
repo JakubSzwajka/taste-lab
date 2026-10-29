@@ -1,0 +1,45 @@
+{
+  "name": "task-card",
+  "title": "Task card",
+  "description": "One task in a list: id, status and priority pills, up to 2 quiet #tags with \"+n\", title, 2-line description, owner footer with due date and comments.",
+  "status": "agreed",
+  "examples": [
+    { "export": "Default", "title": "Typical tasks", "width": "column" },
+    {
+      "export": "ManyTags",
+      "title": "More than 2 tags shows +n",
+      "width": "column"
+    },
+    { "export": "Done", "title": "Done, low priority", "width": "column" },
+    {
+      "export": "BlockedUrgent",
+      "title": "Blocked and urgent",
+      "width": "column"
+    },
+    { "export": "NoTags", "title": "No tags", "width": "column" }
+  ],
+  "provenance": [
+    {
+      "round": "round-001",
+      "pick": "c",
+      "note": "\"nice in general. like proportions. i think tags are too much and layout might be fixed a bit\""
+    },
+    {
+      "round": "round-003",
+      "pick": "c",
+      "note": "\"exactly what i needed! Just would move optional at most 2 tags to the row next to status and priority and add like +2 if there is more.\""
+    },
+    {
+      "round": "round-005",
+      "pick": "b",
+      "note": "\"quiet tags yet all pills should have the same size i belive?\" Applied: status and priority pills share one 20px height, 8px side padding and a 12px leading mark."
+    }
+  ],
+  "rules": [
+    "Status row: id, status pill, priority pill, then at most 2 tags and \"+n\" for the rest (round-003, round-005).",
+    "Tags are quiet muted #text, never badges (round-001, round-005).",
+    "All pills in the status row share one height and one padding (round-005).",
+    "Keep the round-001 C proportions: title, 2-line description, owner footer (round-001, round-003).",
+    "Status color is a dot inside the pill; the label carries the meaning (round-005, round-006)."
+  ]
+}

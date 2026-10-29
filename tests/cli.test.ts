@@ -162,6 +162,7 @@ describe("init", () => {
       "fixtures/index.ts",
       "fixtures/items.ts",
       "rounds/.gitkeep",
+      "library/.gitkeep",
       "taste.jsonl",
       "DESIGN.md",
     ]);

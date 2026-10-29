@@ -70,7 +70,7 @@ Allowed imports, nothing else:
 | `lucide-react`             | icons                   |
 | `class-variance-authority` | `cva` variants          |
 
-Available primitives: `avatar`, `badge`, `button`, `card`, `checkbox`, `dropdown-menu`, `progress`, `separator`, `table`, `textarea`, `toggle`, `toggle-group`, `tooltip`.
+Available primitives: `avatar`, `badge`, `breadcrumb`, `button`, `card`, `checkbox`, `dropdown-menu`, `progress`, `separator`, `table`, `textarea`, `toggle`, `toggle-group`, `tooltip`.
 
 `@/fixtures` resolves to `<dataDir>/fixtures/index.ts`. `@/library/<name>/<Name>` resolves to `<dataDir>/library/<name>/<Name>.tsx`. Nothing deeper or looser is allowed. `@/components/ui/*` and `@/lib/utils` resolve to the lab's own stock primitives. `react`, `lucide-react` and `class-variance-authority` come from the lab's `node_modules`, so a data dir needs no install.
 
@@ -175,7 +175,7 @@ Order of the layers: the lab's stock tokens, then `<dataDir>/theme.css`, then th
 - Order: stock, then `theme.css`, then each variant's `round.json` `tokens`. A round override still wins.
 - The server loads `theme.css` as its own stylesheet, after `src/index.css`. Creating, editing or deleting it while the server runs updates the app without a restart.
 - No `light-dark()` in `theme.css`: the app root has no `color-scheme`. Write both values.
-- The Theme page (`#/theme`, header link beside Library) shows each token as a swatch in light and dark. A value from `theme.css` is marked "theme.css". Everything else is stock. `--radius` is a sample box.
+- The Theme page (`#/theme`, the palette icon in the header) shows each token as a swatch in light and dark. A value from `theme.css` is marked "theme.css". Everything else is stock. `--radius` is a sample box.
 
 ### Promoting a token round winner
 
@@ -267,7 +267,7 @@ The library holds the components the operator agreed on, with examples and where
 - Files follow the variant rules: 100% shadcn, no raw colors, no `style` prop. Allowed imports are the variant allowlist plus sibling files by relative path without extension (`./TaskCard`). A sibling must be a regular `.ts` or `.tsx` file in the same folder. `check` rejects one that is missing, a folder (including a folder named `Helper.ts`), or that also exists as `.js`, `.jsx`, `.mjs`, `.mts` or `.json`, because the scanner reads only `.ts` and `.tsx`. A round variant may import `@/library/<name>/<Name>` only, where `<name>` is a kebab-case folder and `<Name>` its PascalCase.
 - Components take data through props. Only `examples.tsx` may import values from `@/fixtures`. `import type { Task } from "@/fixtures"` is fine anywhere.
 
-Pages: `#/library` lists entries (title, status, description, example count). `#/library/<name>` shows each example at its width in the current light or dark theme, the provenance as links to `#/round/<id>`, and the rules. A broken entry (bad `meta.json`, missing file, missing export) shows its errors in place and does not break the page. Header has a Library link next to History.
+Pages: `#/library` lists entries (title, status, description, example count). `#/library/<name>` shows each example at its width in the current light or dark theme, the provenance as links to `#/round/<id>`, and the rules. A broken entry (bad `meta.json`, missing file, missing export) shows its errors in place and does not break the page. The header's book icon opens Library, next to Compare, Theme and History.
 
 `taste-lab check` validates `library/*`: folder name, `<Name>.tsx` and `examples.tsx` present, `meta.json` schema, `<Name>` exported by `<Name>.tsx` (a regular, readable file), every example `export` found in `examples.tsx` (a file with `export *` or a destructured export is a problem, since its names cannot be read: export each name directly), provenance rounds that exist, and the scanner with the library rules on every `.ts` and `.tsx`. `library/` missing or holding only `.gitkeep` is fine.
 
@@ -356,7 +356,8 @@ The repo root is a pi package (`pi` key in `package.json`): the `/taste` extensi
 
 - `pnpm dev` serves the demo: `taste-lab serve --dir examples/demo/.taste-lab`.
 - `node bin/taste-lab.mjs init|check|serve --dir <path>`, see "Commands for a data dir".
-- `pnpm check` runs `tsc --noEmit` and Biome.
+- `pnpm check` runs `tsc --noEmit` for the demo (`tsconfig.json`) and for the root lab (`tsconfig.lab.json`), then Biome.
+- `node bin/taste-lab.mjs serve --dir .taste-lab` serves the lab for taste-lab's own interface. Its rounds compare designs for `src/` chrome; a pick changes `src/` afterwards.
 - `pnpm test` runs Vitest.
 - `pnpm build` runs the type check and a Vite build of the demo. `TASTE_LAB_DIR=<path>` builds or previews another data dir.
 - `pnpm format` runs `biome check --write .`.

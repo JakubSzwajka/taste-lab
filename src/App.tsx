@@ -1,12 +1,11 @@
 import labConfig from "virtual:taste-lab/config";
-import { Moon, Sun } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Answer } from "@/components/AnswerPanel";
+import { AppHeader } from "@/components/AppHeader";
 import { CompareScreen } from "@/components/CompareScreen";
 import { HistoryView } from "@/components/HistoryView";
 import { LibraryEntryView, LibraryView } from "@/components/LibraryView";
 import { ThemeView } from "@/components/ThemeView";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -134,68 +133,15 @@ export default function App({
   return (
     <TooltipProvider>
       <div className="min-h-svh bg-background text-foreground">
-        <header className="border-b">
-          <div className="mx-auto flex max-w-[120rem] flex-wrap items-center gap-3 px-4 py-3">
-            <a href={hrefFor({ page: "current" })} className="font-semibold">
-              taste-lab
-              <span className="font-normal text-muted-foreground">
-                {" "}
-                / {labConfig.name}
-              </span>
-            </a>
-            <nav
-              aria-label="Rounds"
-              className="flex flex-1 flex-wrap items-center gap-1"
-            >
-              {rounds.map((r) => (
-                <Button
-                  key={r.id}
-                  asChild
-                  size="sm"
-                  variant={shown?.id === r.id ? "secondary" : "ghost"}
-                >
-                  <a href={hrefFor({ page: "round", id: r.id })}>
-                    {r.id}
-                    {!r.ok ? (
-                      <Badge variant="destructive">error</Badge>
-                    ) : answered.has(r.id) ? (
-                      <Badge variant="outline">done</Badge>
-                    ) : null}
-                  </a>
-                </Button>
-              ))}
-            </nav>
-            <Button
-              asChild
-              size="sm"
-              variant={onLibrary ? "secondary" : "ghost"}
-            >
-              <a href={hrefFor({ page: "library" })}>Library</a>
-            </Button>
-            <Button
-              asChild
-              size="sm"
-              variant={route.page === "theme" ? "secondary" : "ghost"}
-            >
-              <a href={hrefFor({ page: "theme" })}>Theme</a>
-            </Button>
-            <Button
-              asChild
-              size="sm"
-              variant={route.page === "history" ? "secondary" : "ghost"}
-            >
-              <a href={hrefFor({ page: "history" })}>History</a>
-            </Button>
-            <Button
-              size="icon"
-              variant="outline"
-              onClick={toggleTheme}
-              aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
-            >
-              {theme === "dark" ? <Sun /> : <Moon />}
-            </Button>
-          </div>
-        </header>
+        <AppHeader
+          labName={labConfig.name}
+          route={route}
+          rounds={rounds}
+          entries={entries}
+          shown={shown}
+          theme={theme}
+          onToggleTheme={toggleTheme}
+        />
 
         <main className="mx-auto flex max-w-[120rem] flex-col gap-6 px-4 py-6">
           {logError && (

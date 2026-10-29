@@ -1,0 +1,35 @@
+{
+  "id": "round-001",
+  "level": "layout",
+  "component": "header",
+  "question": "Which header should the lab have? Same 14 rounds (9 answered, 3 open, 2 broken) in each. A is today's header, every round a button. B, C and D test whether the round list can leave the bar: B one bar with a round menu, C a second bar just for the round, D a minimal breadcrumb. Try the menus and arrows, and check light and dark.",
+  "fixture": "lab",
+  "basedOn": null,
+  "preview": "flip",
+  "variants": [
+    {
+      "id": "a",
+      "file": "a.tsx",
+      "label": "Today (control)",
+      "changes": "Copy of the src/App.tsx header: brand, all 14 rounds as buttons with done and error badges, Library, Theme and History buttons, outline theme toggle. Tests whether listing every round still works at 14."
+    },
+    {
+      "id": "b",
+      "file": "b.tsx",
+      "label": "One bar, round chip",
+      "changes": "One 56px bar. Brand, then the 4 pages as buttons. On the right one round chip (status icon, id, component) with prev and next arrows. The chip opens a menu of all rounds with status and pick. Tests one bar with the round list behind a menu."
+    },
+    {
+      "id": "c",
+      "file": "c.tsx",
+      "label": "Two tiers",
+      "changes": "Top bar: brand, pages on the right, theme toggle. A muted sub-bar for the round: prev and next stepper, one dot per round (filled answered, hollow open, red error), the current question, '9 of 14 answered' with a progress bar. Tests a second bar that gives the round more room."
+    },
+    {
+      "id": "d",
+      "file": "d.tsx",
+      "label": "Minimal breadcrumb",
+      "changes": "Breadcrumb 'taste-lab / acme-tasks / round-010', the round segment is a menu of all rounds. Pages as an icon toggle group with tooltips. No page labels, no progress. Tests how little the header can show."
+    }
+  ]
+}

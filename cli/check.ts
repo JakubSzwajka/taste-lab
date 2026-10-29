@@ -1,10 +1,14 @@
 import { readdirSync } from "node:fs";
 import { join } from "node:path";
 import { configProblems, dirProblem, labPaths } from "../server/lab-dir.ts";
+import { loadTheme } from "../server/theme-file.ts";
 import { type GlobInput, loadRounds } from "../src/lib/rounds.ts";
 import { checkLibrary } from "./check-library.ts";
 import { errMsg, kindOf, readText } from "./fs-util.ts";
 import { scanVariants } from "./scan-variants.ts";
+
+/** The lab's stock tokens: theme.css may set exactly the variables defined here. */
+const STOCK_CSS = join(import.meta.dirname, "../src/index.css");
 
 /**
  * Loads `fixtures/index.ts` with Vite and checks the two exports the app uses:
@@ -84,6 +88,11 @@ export async function checkDataDir(dir: string): Promise<string[]> {
         problems.push(`config.json is not valid JSON: ${msg}`);
       }
     }
+  }
+
+  // theme.css: a missing file is fine. Each problem carries its line number.
+  for (const p of loadTheme(dir, STOCK_CSS).problems) {
+    problems.push(p.line > 0 ? `theme.css:${p.line}: ${p.message}` : p.message);
   }
 
   let fixtureKeys: string[] = [];

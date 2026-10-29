@@ -13,3 +13,5 @@ declare module "virtual:taste-lab/theme" {
   export const getThemeData: () => ThemeData;
   export const subscribeThemeData: (fn: () => void) => () => void;
 }
+
+declare module "virtual:taste-lab/theme.css" {}

@@ -204,27 +204,41 @@ describe("loader order", () => {
     expect(themeToCss(stock, { light: {}, dark: {} })).toBe("");
   });
 
-  it("appends the theme after the stock tokens in the lab stylesheet", () => {
+  // The plugin hooks, as Vite calls them.
+  const hooks = (dir: string) => {
+    const plugin = tasteLab({ dataDir: dir, css: join(repo, "src/index.css") });
+    const call = (h: unknown, ...args: unknown[]) =>
+      (h as (...a: unknown[]) => string | undefined)(...args);
+    return {
+      themeCss: () => {
+        const id = call(plugin.resolveId, "virtual:taste-lab/theme.css");
+        return call(plugin.load, id);
+      },
+      themeData: () => {
+        const id = call(plugin.resolveId, "virtual:taste-lab/theme");
+        return call(plugin.load, id);
+      },
+    };
+  };
+
+  it("serves theme.css as its own stylesheet, imported after index.css", () => {
+    const main = readFileSync(join(repo, "src/main.tsx"), "utf8");
+    const imports = [...main.matchAll(/^import "([^"]+\.css)";/gm)].map(
+      (m) => m[1],
+    );
+    expect(imports).toEqual(["./index.css", "virtual:taste-lab/theme.css"]);
+
     const dir = join(tmp, ".taste-lab");
     mkdirSync(dir);
     writeFileSync(join(dir, "theme.css"), ":root { --primary: hotpink; }\n");
-    const cssFile = join(repo, "src/index.css");
-    const plugin = tasteLab({ dataDir: dir, css: cssFile });
-    const t = plugin.transform as unknown as {
-      handler: (code: string, id: string) => string | undefined;
-    };
-    const out = t.handler(stockCss, cssFile) as string;
-    expect(out.startsWith(stockCss)).toBe(true);
-    const theme = out.indexOf("--primary: hotpink");
-    expect(theme).toBeGreaterThan(stockCss.length);
-    expect(theme).toBeGreaterThan(out.indexOf("@source"));
-    // other stylesheets are left alone
-    expect(t.handler("a{}", join(tmp, "other.css"))).toBeUndefined();
-    // edited and deleted files are picked up on the next transform
+    const h = hooks(dir);
+    expect(h.themeCss()).toContain("--primary: hotpink;");
+    // edited and deleted files are picked up on the next load
     writeFileSync(join(dir, "theme.css"), ":root { --primary: teal; }\n");
-    expect(t.handler(stockCss, cssFile)).toContain("--primary: teal");
+    expect(h.themeCss()).toContain("--primary: teal;");
+    expect(h.themeData()).toContain('"--primary":"teal"');
     rmSync(join(dir, "theme.css"));
-    expect(t.handler(stockCss, cssFile)).not.toContain("--primary: teal");
+    expect(h.themeCss()).toBe("");
   });
 
   it("drops rejected parts so a broken file cannot break the stylesheet", () => {
@@ -234,15 +248,12 @@ describe("loader order", () => {
       join(dir, "theme.css"),
       "@import url(x);\n.a { color: red }\n:root { --primary: teal; background: url(y); }\n",
     );
-    const cssFile = join(repo, "src/index.css");
-    const plugin = tasteLab({ dataDir: dir, css: cssFile });
-    const t = plugin.transform as unknown as {
-      handler: (code: string, id: string) => string;
-    };
-    const out = t.handler(stockCss, cssFile);
+    const h = hooks(dir);
+    const out = h.themeCss() as string;
     expect(out).toContain("--primary: teal");
     expect(out).not.toContain("url(");
     expect(out).not.toContain(".a {");
+    expect(h.themeData()).toContain("@import is not allowed");
   });
 
   it("applies round tokens as inline styles, below no stylesheet rule", () => {

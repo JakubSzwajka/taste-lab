@@ -9,6 +9,13 @@ export const CONFIG_MODULE = "virtual:taste-lab/config";
 const RESOLVED_CONFIG = `\0${CONFIG_MODULE}`;
 export const THEME_MODULE = "virtual:taste-lab/theme";
 const RESOLVED_THEME = `\0${THEME_MODULE}`;
+/**
+ * The theme as a stylesheet of its own, imported after `src/index.css`. It is not
+ * appended to index.css: Tailwind recompiles index.css only when a file it imports
+ * changes, so edits to appended text would not show.
+ */
+export const THEME_CSS = "virtual:taste-lab/theme.css";
+const RESOLVED_THEME_CSS = `\0${THEME_CSS}`;
 export const THEME_EVENT = "taste-lab:theme";
 
 const inside = (dir: string, file: string) => {
@@ -21,14 +28,15 @@ const inside = (dir: string, file: string) => {
  * - `/api/taste` reads and appends `<dataDir>/taste.jsonl` (dev and preview).
  * - `virtual:taste-lab/config` exposes config.json (the app name).
  * - Adds `@source "<dataDir>"` to the lab stylesheet so Tailwind scans the data dir.
- * - Appends `<dataDir>/theme.css` to the lab stylesheet, after the stock tokens.
- *   Only the accepted `:root` and `.dark` values are emitted, so a broken file
- *   cannot break the stylesheet. Round `tokens` are inline styles and still win.
+ * - `virtual:taste-lab/theme.css` is `<dataDir>/theme.css`. main.tsx imports it after
+ *   index.css, so it follows the stock tokens. Only the accepted `:root` and `.dark`
+ *   values are emitted, so a broken file cannot break the stylesheet. Round
+ *   `tokens` are inline styles and still win.
  * - `virtual:taste-lab/theme` exposes stock and theme tokens to the Theme page.
  * - Watches the data dir. A new file there regenerates the stylesheet: Tailwind
  *   only re-scans when the CSS module is transformed again, and nothing else
- *   invalidates it for a file it has never seen. The same path serves theme.css
- *   when it is added, edited or deleted, and pushes the new tokens to open tabs.
+ *   invalidates it for a file it has never seen. theme.css is handled on its own:
+ *   add, edit or delete reloads its stylesheet and pushes the new tokens to open tabs.
  * Must come before `tailwindcss()` in the plugin list.
  */
 export function tasteLab(opts: { dataDir: string; css: string }): Plugin {
@@ -40,9 +48,14 @@ export function tasteLab(opts: { dataDir: string; css: string }): Plugin {
     resolveId(id) {
       if (id === CONFIG_MODULE) return RESOLVED_CONFIG;
       if (id === THEME_MODULE) return RESOLVED_THEME;
+      if (id === THEME_CSS) return RESOLVED_THEME_CSS;
     },
     load(id) {
       if (id === RESOLVED_THEME) return themeModule(loadTheme(dataDir, css));
+      if (id === RESOLVED_THEME_CSS) {
+        const { stock, theme } = loadTheme(dataDir, css);
+        return themeToCss(stock, theme);
+      }
       if (id !== RESOLVED_CONFIG) return;
       return `export default ${JSON.stringify(readLabConfig(dataDir))};`;
     },
@@ -50,8 +63,7 @@ export function tasteLab(opts: { dataDir: string; css: string }): Plugin {
       filter: { id: /\.css(?:\?.*)?$/ },
       handler(code, id) {
         if (id.split("?")[0] !== css) return;
-        const { stock, theme } = loadTheme(dataDir, css);
-        return `${code}\n${tailwindSource(dataDir)}\n${themeToCss(stock, theme)}`;
+        return `${code}\n${tailwindSource(dataDir)}\n`;
       },
     },
     configureServer(server) {
@@ -105,7 +117,8 @@ async function reloadTheme(
 ) {
   const mod = server.moduleGraph.getModuleById(RESOLVED_THEME);
   if (mod) server.moduleGraph.invalidateModule(mod); // a reload gets fresh data
-  await reloadCss(server, css);
+  const sheet = server.moduleGraph.getModuleById(RESOLVED_THEME_CSS);
+  if (sheet) await server.reloadModule(sheet);
   server.ws.send({
     type: "custom",
     event: THEME_EVENT,

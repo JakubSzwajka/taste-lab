@@ -1,5 +1,5 @@
 import { Moon, Sun } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Answer } from "@/components/AnswerPanel";
 import { CompareScreen } from "@/components/CompareScreen";
 import { HistoryView } from "@/components/HistoryView";
@@ -10,6 +10,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { fetchLog, postEntry } from "@/lib/api";
 import type { LoadedRound } from "@/lib/rounds";
 import { hrefFor, useRoute } from "@/lib/route";
+import { submitEntry } from "@/lib/submit";
 import type { TasteEntry } from "@/lib/taste";
 import { useTheme } from "@/lib/theme";
 import { rounds as defaultRounds } from "@/lib/variants";
@@ -27,6 +28,8 @@ export default function App({
   const [logError, setLogError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [refreshError, setRefreshError] = useState<string | null>(null);
+  const inFlight = useRef(false);
 
   const refresh = useCallback(async () => {
     try {
@@ -59,25 +62,39 @@ export default function App({
         : undefined;
 
   async function submit(a: Answer) {
-    if (!shown?.ok) return;
+    if (!shown?.ok || inFlight.current) return; // state lags, the ref does not
+    inFlight.current = true;
     setSubmitting(true);
     setSubmitError(null);
     try {
-      await postEntry({
-        round: shown.id,
-        component: shown.spec.component,
-        level: shown.spec.level,
-        shown: shown.spec.variants.map((v) => v.id),
-        pick: a.pick,
-        tags: a.tags,
-        reason: a.reason.trim(),
-        theme,
-      });
-      await refresh();
+      const result = await submitEntry(
+        () =>
+          postEntry({
+            round: shown.id,
+            component: shown.spec.component,
+            level: shown.spec.level,
+            shown: shown.spec.variants.map((v) => v.id),
+            pick: a.pick,
+            tags: a.tags,
+            reason: a.reason.trim(),
+            theme,
+          }),
+        fetchLog,
+      );
+      // Saved. Mark the round answered now, even if the refresh failed.
+      if (result.log) {
+        setEntries(result.log.entries);
+        setSkipped(result.log.skipped);
+        setLogError(null);
+      } else {
+        setEntries((prev) => [...prev, result.entry]);
+      }
+      setRefreshError(result.refreshError);
       location.hash = hrefFor({ page: "current" });
     } catch (e) {
       setSubmitError(e instanceof Error ? e.message : String(e));
     } finally {
+      inFlight.current = false;
       setSubmitting(false);
     }
   }
@@ -135,6 +152,13 @@ export default function App({
             <p role="alert" className="text-sm text-destructive">
               Could not reach the taste log: {logError}. Run the app with pnpm
               dev or pnpm preview.
+            </p>
+          )}
+
+          {refreshError && (
+            <p role="status" className="text-sm text-muted-foreground">
+              Your answer was saved, but the log could not be reloaded:{" "}
+              {refreshError}. History may be out of date until you reload.
             </p>
           )}
 

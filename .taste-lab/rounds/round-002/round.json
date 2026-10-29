@@ -1,0 +1,29 @@
+{
+  "id": "round-002",
+  "level": "layout",
+  "component": "header",
+  "question": "Where should the page icons go? Round 1 answer: \"D is clean but also C has some nice two tiers approach and bar with x of y answered\", and D's icons \"look good but seems like here is a bad place for them cuz they are tooo small\". All three keep D's breadcrumb with the round menu and C's round bar (arrows, question, 9 of 14 answered). Only the page nav (Compare, Library, Theme, History) moves. Click the pages and check light and dark.",
+  "fixture": "lab",
+  "basedOn": { "round": "round-001", "pick": "d" },
+  "preview": "flip",
+  "variants": [
+    {
+      "id": "a",
+      "file": "a.tsx",
+      "label": "Icons with labels",
+      "changes": "Top bar keeps the pages on the right, as normal-size buttons with an icon and its name. The active page is filled. Tests whether words fix \"too small\" while the icons stay in the header."
+    },
+    {
+      "id": "b",
+      "file": "b.tsx",
+      "label": "Bigger icons",
+      "changes": "D's icon-only toggle group, but larger: 40px tall items with 20px icons in a 56px top bar, names in tooltips, bigger theme toggle. Tests whether size alone was the problem."
+    },
+    {
+      "id": "c",
+      "file": "c.tsx",
+      "label": "Side rail",
+      "changes": "Pages leave the header for a 72px rail on the left of the page: 20px icon with a small name under it, theme toggle at the bottom of the rail. The header holds only the breadcrumb and the round bar. Tests \"bad place for them\": the icons move out of the header."
+    }
+  ]
+}

@@ -15,7 +15,17 @@
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "types": ["vite/client", "node"],
-    "paths": { "@/*": ["./src/*"] }
+    "paths": {
+      "@/fixtures": ["./examples/demo/.taste-lab/fixtures/index.ts"],
+      "@/*": ["./src/*"]
+    }
   },
-  "include": ["src", "tests", "cli", "vite.config.ts", "server", "variants"]
+  "include": [
+    "src",
+    "tests",
+    "cli",
+    "vite.config.ts",
+    "server",
+    "examples/demo/.taste-lab"
+  ]
 }

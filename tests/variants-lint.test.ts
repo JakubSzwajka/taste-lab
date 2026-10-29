@@ -173,8 +173,8 @@ describe("variant scanner", () => {
 });
 
 describe("repo rules", () => {
-  it("variants/ follows the allowlist and has no raw colors", () => {
-    expect(scanVariants(repo("variants"))).toEqual([]);
+  it("demo rounds follow the allowlist and have no raw colors", () => {
+    expect(scanVariants(repo("examples/demo/.taste-lab/rounds"))).toEqual([]);
   });
 
   it("app chrome has no raw colors (generated ui/ excluded)", () => {

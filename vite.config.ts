@@ -45,7 +45,7 @@ export default defineConfig({
     ],
     // Data dir files can live outside this repo. Resolve their bare imports
     // from the lab's node_modules, and keep one React.
-    dedupe: ["react", "react-dom", "lucide-react"],
+    dedupe: ["react", "react-dom", "lucide-react", "class-variance-authority"],
   },
   server: {
     host: "127.0.0.1",

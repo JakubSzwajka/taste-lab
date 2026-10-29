@@ -56,18 +56,19 @@ A variant is a `.tsx` file in a round folder. It default-exports a React compone
 
 Allowed imports, nothing else:
 
-| Import                    | Use                     |
-| ------------------------- | ----------------------- |
-| `react`                   | hooks, types            |
-| `@/components/ui/*`       | shadcn primitives       |
-| `@/fixtures`              | the data dir's fixtures |
-| `@/lib/utils`             | `cn()`                  |
-| `@/library/<name>/<Name>` | a library component     |
-| `lucide-react`            | icons                   |
+| Import                     | Use                     |
+| -------------------------- | ----------------------- |
+| `react`                    | hooks, types            |
+| `@/components/ui/*`        | shadcn primitives       |
+| `@/fixtures`               | the data dir's fixtures |
+| `@/lib/utils`              | `cn()`                  |
+| `@/library/<name>/<Name>`  | a library component     |
+| `lucide-react`             | icons                   |
+| `class-variance-authority` | `cva` variants          |
 
 Available primitives: `avatar`, `badge`, `button`, `card`, `checkbox`, `dropdown-menu`, `progress`, `separator`, `table`, `textarea`, `toggle`, `toggle-group`, `tooltip`.
 
-`@/fixtures` resolves to `<dataDir>/fixtures/index.ts`. `@/library/<name>/<Name>` resolves to `<dataDir>/library/<name>/<Name>.tsx`. Nothing deeper or looser is allowed. `@/components/ui/*` and `@/lib/utils` resolve to the lab's own stock primitives. `react` and `lucide-react` come from the lab's `node_modules`, so a data dir needs no install.
+`@/fixtures` resolves to `<dataDir>/fixtures/index.ts`. `@/library/<name>/<Name>` resolves to `<dataDir>/library/<name>/<Name>.tsx`. Nothing deeper or looser is allowed. `@/components/ui/*` and `@/lib/utils` resolve to the lab's own stock primitives. `react`, `lucide-react` and `class-variance-authority` come from the lab's `node_modules`, so a data dir needs no install.
 
 Fixtures in the demo (`examples/demo/.taste-lab/fixtures/`). Other data dirs define their own:
 
@@ -229,7 +230,7 @@ The library holds the components the operator agreed on, with examples and where
 - `status` is `draft` or `agreed`.
 - `examples` has at least one entry. `export` is a named export of `examples.tsx`, unique in the list. `width` is `column` (about 420px) or `full`.
 - `provenance` and `rules` are arrays and may be empty. Each provenance `round` must exist in `rounds/`.
-- Files follow the variant rules: 100% shadcn, no raw colors, no `style` prop. Allowed imports are the variant allowlist plus `class-variance-authority`, plus sibling files by relative path without extension (`./TaskCard`).
+- Files follow the variant rules: 100% shadcn, no raw colors, no `style` prop. Allowed imports are the variant allowlist plus sibling files by relative path without extension (`./TaskCard`).
 - Components take data through props. Only `examples.tsx` may import values from `@/fixtures`. `import type { Task } from "@/fixtures"` is fine anywhere.
 
 Pages: `#/library` lists entries (title, status, description, example count). `#/library/<name>` shows each example at its width in the current light or dark theme, the provenance as links to `#/round/<id>`, and the rules. A broken entry (bad `meta.json`, missing file, missing export) shows its errors in place and does not break the page. Header has a Library link next to History.
@@ -266,13 +267,13 @@ export default function Dense() {
 }
 ```
 
-Or copy the component into the round and change one thing. A copy cannot import `class-variance-authority` or sibling files, so inline the variants it needs. Say in `question` and `changes` that the round iterates a library component. `basedOn` stays a round. When the operator picks a variant, update `library/<name>/` and add the round to `provenance`.
+Or copy the component into the round and change one thing. A copy can import `class-variance-authority` but not sibling files, so inline anything it takes from a sibling. Say in `question` and `changes` that the round iterates a library component. `basedOn` stays a round. When the operator picks a variant, update `library/<name>/` and add the round to `provenance`.
 
 ## Known limits
 
 - Overlay content (dropdown menus, tooltips) portals to `<body>`, outside the variant frame. It does not get the variant's `tokens` and uses the global theme. Generated `ui/*` is not hand-edited, so this stays. In token rounds, judge the in-frame surfaces, not the overlays.
 - `taste-lab check` and `pnpm test` parse each variant with the Vite parser. A file that does not parse is a violation. The scan is static: it cannot see colors built at runtime from strings.
-- Variant files in a data dir outside this repo get no type check. `check` validates rounds and scans files, and the browser shows import or render errors. Only `react`, `react-dom` and `lucide-react` resolve as bare imports, from the lab.
+- Variant files in a data dir outside this repo get no type check. `check` validates rounds and scans files, and the browser shows import or render errors. Only `react`, `react-dom`, `lucide-react` and `class-variance-authority` resolve as bare imports, from the lab.
 - The taste log API accepts `POST` only with `Content-Type: application/json` and an `Origin` (if sent) equal to the serving origin. `ts` is set by the server. Tags outside the list are rejected with 400.
 
 ## Commands

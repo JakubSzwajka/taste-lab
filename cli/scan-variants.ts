@@ -10,6 +10,7 @@ const IMPORT_ALLOW_EXACT = [
   "lucide-react",
   "@/fixtures",
   "@/lib/utils",
+  "class-variance-authority",
 ];
 const IMPORT_ALLOW_PREFIX = ["@/components/ui/"];
 
@@ -121,16 +122,15 @@ const SIBLING_IMPORT = /^\.\/[A-Za-z0-9_-]+$/;
 
 /**
  * `library: true` is the rule set for files in `library/<name>/`: it also allows
- * `class-variance-authority` and sibling imports like `./TaskCard`.
+ * sibling imports like `./TaskCard`. `class-variance-authority` is allowed everywhere,
+ * so a round can copy a library component that uses cva.
  */
 export function importAllowed(
   spec: string,
   opts: { library?: boolean } = {},
 ): boolean {
   if (opts.library) {
-    if (spec === "class-variance-authority" || SIBLING_IMPORT.test(spec)) {
-      return true;
-    }
+    if (SIBLING_IMPORT.test(spec)) return true;
   }
   // Normalizing must not change the specifier. This rejects "..", "." and "//".
   if (spec.includes("\\") || posix.normalize(spec) !== spec) return false;

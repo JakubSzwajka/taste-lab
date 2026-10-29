@@ -221,16 +221,24 @@ describe("scanner with the library rules", () => {
     expect(scanVariants(sample, { library: true })).toEqual([]);
   });
 
-  it("allows cva and sibling imports only in library files", () => {
+  it("allows sibling imports only in library files, and cva in both", () => {
     const src = `import { cva } from "class-variance-authority";
 import { X } from "./X";
 export const a = cva(""); export { X };
 `;
     expect(scanText("X.tsx", src, true)).toEqual([]);
     expect(scanText("X.tsx", src, false)).toEqual([
-      'import "class-variance-authority" is not allowed',
       'import "./X" is not allowed',
     ]);
+  });
+
+  it("allows class-variance-authority in round variants", () => {
+    const src = `import { cva } from "class-variance-authority";
+export default function V() { return <div className={cva("p-2")()} />; }
+`;
+    expect(scanText("v.tsx", src, false)).toEqual([]);
+    expect(importAllowed("class-variance-authority")).toBe(true);
+    expect(importAllowed("class-variance-authority/x")).toBe(false);
   });
 
   it("still rejects parent, nested and extension imports in the library", () => {

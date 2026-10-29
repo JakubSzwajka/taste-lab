@@ -1,5 +1,5 @@
 import type { ComponentType } from "react";
-import { PREVIEW_MODES, type PreviewMode } from "./flip";
+import { PREVIEW_MODES, type PreviewMode } from "./flip.ts";
 
 export type Level = "token" | "component" | "layout";
 

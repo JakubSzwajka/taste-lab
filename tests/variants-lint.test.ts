@@ -2,7 +2,7 @@ import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { describe, expect, it } from "vitest";
-import { importAllowed, scanVariants } from "./scan-variants";
+import { importAllowed, scanVariants } from "../cli/scan-variants";
 
 const fx = (p: string) =>
   resolve(import.meta.dirname, "fixtures/variant-scan", p);
@@ -173,8 +173,8 @@ describe("variant scanner", () => {
 });
 
 describe("repo rules", () => {
-  it("variants/ follows the allowlist and has no raw colors", () => {
-    expect(scanVariants(repo("variants"))).toEqual([]);
+  it("demo rounds follow the allowlist and have no raw colors", () => {
+    expect(scanVariants(repo("examples/demo/.taste-lab/rounds"))).toEqual([]);
   });
 
   it("app chrome has no raw colors (generated ui/ excluded)", () => {

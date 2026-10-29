@@ -1,3 +1,4 @@
+import labConfig from "virtual:taste-lab/config";
 import { Moon, Sun } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Answer } from "@/components/AnswerPanel";
@@ -123,6 +124,10 @@ export default function App({
           <div className="mx-auto flex max-w-[120rem] flex-wrap items-center gap-3 px-4 py-3">
             <a href={hrefFor({ page: "current" })} className="font-semibold">
               taste-lab
+              <span className="font-normal text-muted-foreground">
+                {" "}
+                / {labConfig.name}
+              </span>
             </a>
             <nav
               aria-label="Rounds"
@@ -244,8 +249,8 @@ function EmptyState({ hasRounds }: { hasRounds: boolean }) {
       </h1>
       <p className="max-w-prose text-muted-foreground">
         {hasRounds
-          ? "Ask your agent to read taste/taste.jsonl and write the next round under variants/. It shows up here on reload."
-          : "Ask your agent to write variants/round-001/ (a round.json plus 2 to 4 variant files). See AGENTS.md for the contract."}
+          ? "Ask your agent to read .taste-lab/taste.jsonl and write the next round under .taste-lab/rounds/. It shows up here on reload."
+          : "Ask your agent to write .taste-lab/rounds/round-001/ (a round.json plus 2 to 4 variant files). See the taste-lab AGENTS.md for the contract."}
       </p>
       <Button asChild variant="outline">
         <a href={hrefFor({ page: "history" })}>Open history</a>

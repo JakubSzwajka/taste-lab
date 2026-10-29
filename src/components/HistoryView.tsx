@@ -68,7 +68,7 @@ export function HistoryView({
       <h1 className="text-2xl font-semibold tracking-tight">History</h1>
       {skipped > 0 && (
         <p role="alert" className="text-sm text-destructive">
-          {skipped} line(s) in taste/taste.jsonl could not be read and are
+          {skipped} line(s) in .taste-lab/taste.jsonl could not be read and are
           hidden.
         </p>
       )}

@@ -1,4 +1,4 @@
-import { readdirSync, readFileSync, statSync } from "node:fs";
+import { readdirSync, readFileSync, realpathSync, statSync } from "node:fs";
 import { join, posix, relative } from "node:path";
 import { parseAst } from "vite";
 
@@ -49,19 +49,67 @@ const COLOR_RULES: { re: RegExp; message: string }[] = [
   },
 ];
 
-function walk(dir: string, exts: string[], ignore: string[]): string[] {
+type WalkProblem = { file: string; message: string };
+
+const errMsg = (e: unknown) => {
+  const code = (e as NodeJS.ErrnoException)?.code;
+  return code ?? (e instanceof Error ? e.message.split("\n")[0] : String(e));
+};
+
+/**
+ * Lists matching files under `dir`, following symlinks. Filesystem trouble
+ * (dangling or cyclic links, unreadable dirs) goes to `problems` and the walk
+ * goes on. `ancestors` holds the real paths of the dirs above, to stop cycles.
+ */
+function walk(
+  dir: string,
+  exts: string[],
+  ignore: string[],
+  problems: WalkProblem[],
+  root = dir,
+  ancestors: string[] = [],
+): string[] {
+  let real: string;
   let names: string[];
   try {
+    real = realpathSync(dir);
     names = readdirSync(dir);
-  } catch {
+  } catch (e) {
+    // A missing root just means "nothing to scan". Anything deeper is a problem.
+    if (dir !== root || (e as NodeJS.ErrnoException).code !== "ENOENT") {
+      problems.push({
+        file: relative(root, dir) || ".",
+        message: `cannot read directory (${errMsg(e)})`,
+      });
+    }
+    return [];
+  }
+  if (ancestors.includes(real)) {
+    problems.push({
+      file: relative(root, dir),
+      message: "symlink cycle: directory links back to one of its parents",
+    });
     return [];
   }
   const out: string[] = [];
   for (const name of names.sort()) {
     const full = join(dir, name);
     if (ignore.some((i) => full.split("/").includes(i))) continue;
-    if (statSync(full).isDirectory()) out.push(...walk(full, exts, ignore));
-    else if (exts.some((e) => name.endsWith(e))) out.push(full);
+    let isDir: boolean;
+    try {
+      isDir = statSync(full).isDirectory();
+    } catch (e) {
+      problems.push({
+        file: relative(root, full),
+        message: `cannot read entry, dangling or looping symlink? (${errMsg(e)})`,
+      });
+      continue;
+    }
+    if (isDir) {
+      out.push(
+        ...walk(full, exts, ignore, problems, root, [...ancestors, real]),
+      );
+    } else if (exts.some((e) => name.endsWith(e))) out.push(full);
   }
   return out;
 }
@@ -336,9 +384,23 @@ export function scanVariants(
 ): Violation[] {
   const { imports = true, banStyle = imports, ignore = [] } = opts;
   const violations: Violation[] = [];
-  for (const file of walk(root, [".tsx", ".ts"], ignore)) {
+  const problems: WalkProblem[] = [];
+  const files = walk(root, [".tsx", ".ts"], ignore, problems);
+  // Filesystem problems are reported as line 0 violations.
+  for (const p of problems) violations.push({ ...p, line: 0 });
+  for (const file of files) {
     const rel = relative(root, file);
-    const source = readFileSync(file, "utf8");
+    let source: string;
+    try {
+      source = readFileSync(file, "utf8");
+    } catch (e) {
+      violations.push({
+        file: rel,
+        line: 0,
+        message: `cannot read file (${errMsg(e)})`,
+      });
+      continue;
+    }
     const lineStarts = [0];
     for (let i = 0; i < source.length; i++) {
       if (source[i] === "\n") lineStarts.push(i + 1);

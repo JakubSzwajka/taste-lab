@@ -3,9 +3,12 @@
   "private": true,
   "version": "0.1.0",
   "type": "module",
+  "bin": {
+    "taste-lab": "bin/taste-lab.mjs"
+  },
   "packageManager": "pnpm@12.5.1",
   "scripts": {
-    "dev": "vite --host 127.0.0.1",
+    "dev": "node bin/taste-lab.mjs serve --dir examples/demo/.taste-lab",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview --host 127.0.0.1",
     "check": "tsc --noEmit && biome check .",

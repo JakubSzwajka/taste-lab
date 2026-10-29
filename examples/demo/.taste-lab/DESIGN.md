@@ -1,6 +1,6 @@
 # Design rules
 
-Distilled from `taste/taste.jsonl`. The agent rewrites this file every ~5 rounds.
+Distilled from `taste.jsonl`. The agent rewrites this file every ~5 rounds.
 Each rule cites the rounds that support it. Nothing here yet.
 
 ## Do

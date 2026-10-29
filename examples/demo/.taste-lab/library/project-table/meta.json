@@ -1,0 +1,39 @@
+{
+  "name": "project-table",
+  "title": "Project table",
+  "description": "Projects at full width, one line per cell: name, owner with avatar, status pill with a dot, progress bar, budget, last update. Compact 10px rows.",
+  "status": "agreed",
+  "examples": [
+    { "export": "Default", "title": "All projects", "width": "full" },
+    { "export": "FewRows", "title": "Few rows", "width": "full" },
+    {
+      "export": "AtRiskMixed",
+      "title": "At risk among other statuses",
+      "width": "full"
+    },
+    { "export": "Empty", "title": "No projects", "width": "full" }
+  ],
+  "provenance": [
+    {
+      "round": "round-002",
+      "pick": "b",
+      "note": "\"should be much wider i belive but good start\""
+    },
+    {
+      "round": "round-004",
+      "pick": "a",
+      "note": "One line per cell at full width. Tags: airy, clean. No reason given."
+    },
+    {
+      "round": "round-006",
+      "pick": "c",
+      "note": "\"compact rows yet with status dot in the pill ?\" Applied: each status pill holds a 6px dot."
+    }
+  ],
+  "rules": [
+    "Use the full width; one line per cell, one column per field (round-002, round-004).",
+    "Compact rows: 10px top and bottom (round-006).",
+    "Status is a pill with a colored dot inside (round-006).",
+    "Headers are small, normal weight and muted (round-004, round-006; weight not tested on its own)."
+  ]
+}

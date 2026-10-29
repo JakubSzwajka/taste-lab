@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { VariantFrame } from "@/components/VariantFrame";
-import { flipIndex, type PreviewMode } from "@/lib/flip";
+import { flipIndex, flipState, type PreviewMode } from "@/lib/flip";
 import { arrowAction } from "@/lib/keys";
 import type { LoadedRound } from "@/lib/rounds";
 import type { TasteEntry } from "@/lib/taste";
@@ -39,9 +39,25 @@ export function CompareScreen({
   const [pick, setPick] = useState("");
   const [view, setView] = useState<PreviewMode>(spec.preview);
   const ids = spec.variants.map((v) => v.id);
-  const [active, setActive] = useState(ids[0] ?? "");
+  const [activeId, setActive] = useState(ids[0] ?? "");
+  // One source for the highlighted tab and the visible panel.
+  const { active, hidden } = flipState(ids, activeId);
   const boxRef = useRef<HTMLDivElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
   const flip = view === "flip";
+
+  // Radix roving focus keeps focus on the tab you last used. After a number
+  // key or arrow flip, move focus to the shown tab so the next arrow starts
+  // from it, not from a stale tab.
+  useEffect(() => {
+    const list = listRef.current;
+    const focused = document.activeElement;
+    if (!flip || !list || !focused || !list.contains(focused)) return;
+    const tab = list.querySelector<HTMLElement>(
+      `[role=tab][data-variant="${active}"]`,
+    );
+    if (tab && tab !== focused) tab.focus({ preventScroll: true });
+  }, [active, flip]);
 
   // Keep the page from shrinking when a shorter variant is shown, so the scroll
   // position holds. The pinned height is dropped on view switch and on resize.
@@ -132,11 +148,19 @@ export function CompareScreen({
         {flip ? (
           <Tabs value={active} onValueChange={show}>
             <TabsList
+              ref={listRef}
               aria-label="Variants"
               className="group-data-horizontal/tabs:h-10"
             >
               {spec.variants.map((v, i) => (
-                <TabsTrigger key={v.id} value={v.id} className="flex-none px-3">
+                <TabsTrigger
+                  key={v.id}
+                  value={v.id}
+                  data-variant={v.id}
+                  // No fade: a screenshot or fast key press must not catch the
+                  // old tab still lit while the new variant is shown.
+                  className="flex-none px-3 transition-none"
+                >
                   <span className="uppercase">{v.id}</span>
                   <span className="hidden max-w-48 truncate font-normal text-muted-foreground sm:inline">
                     {v.label}
@@ -186,7 +210,7 @@ export function CompareScreen({
           <div
             key={v.id}
             role={flip ? "tabpanel" : undefined}
-            hidden={flip && active !== v.id}
+            hidden={flip && hidden[i]}
             className="min-w-0"
           >
             <VariantFrame

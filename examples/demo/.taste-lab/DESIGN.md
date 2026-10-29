@@ -27,21 +27,30 @@ Agreed components live in `library/`: `task-card` and `project-table`.
 
 Baseline = stock shadcn neutral + AA fixes: light --muted-foreground oklch(0.52 0 0), light --destructive oklch(0.5 0.2 27.325). Reason: stock values measured 4.35:1 and 3.97:1. Dark values stay stock.
 
-The winning variants carried these overrides in `round.json`. No round tested them on their own, so they are not settled. The library uses the neutral theme without them.
+### Settled in theme.css
 
-| Token                           | Value                                                    | Evidence                              |
-| ------------------------------- | -------------------------------------------------------- | ------------------------------------- |
-| `--primary` (cards)             | `light-dark(oklch(0.5 0.19 262), oklch(0.72 0.14 262))`  | round-001 c, round-003 c, round-005 b |
-| `--chart-1` (card: in progress) | `light-dark(oklch(0.58 0.19 255), oklch(0.72 0.15 255))` | round-001 c, round-003 c, round-005 b |
-| `--chart-2` (card: in review)   | `light-dark(oklch(0.58 0.2 300), oklch(0.74 0.15 300))`  | round-001 c, round-003 c, round-005 b |
-| `--chart-3` (card: done)        | `light-dark(oklch(0.62 0.16 152), oklch(0.74 0.16 152))` | round-001 c, round-003 c, round-005 b |
-| `--primary` (tables)            | `light-dark(oklch(0.48 0.09 265), oklch(0.76 0.07 265))` | round-002 b, round-004 a, round-006 c |
+| Token                  | Light                  | Dark                   | Evidence      |
+| ---------------------- | ---------------------- | ---------------------- | ------------- |
+| `--primary`            | `oklch(0.5 0.19 262)`  | `oklch(0.72 0.14 262)` | `round-007 a` |
+| `--primary-foreground` | `oklch(0.985 0 0)`     | `oklch(0.2 0.04 262)`  | `round-007 a` |
+| `--ring`               | `oklch(0.55 0.17 262)` | `oklch(0.65 0.14 262)` | `round-007 a` |
+
+### Not settled
+
+The winning variants carried these overrides in `round.json`. No round tested them on their own, so they are not settled. The library inherits the round-007 a blue `--primary` from theme.css, and uses the neutral theme for the rest.
+
+| Token                           | Value                                                    | Evidence                                                                         |
+| ------------------------------- | -------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| `--chart-1` (card: in progress) | `light-dark(oklch(0.58 0.19 255), oklch(0.72 0.15 255))` | round-001 c, round-003 c, round-005 b                                            |
+| `--chart-2` (card: in review)   | `light-dark(oklch(0.58 0.2 300), oklch(0.74 0.15 300))`  | round-001 c, round-003 c, round-005 b                                            |
+| `--chart-3` (card: done)        | `light-dark(oklch(0.62 0.16 152), oklch(0.74 0.16 152))` | round-001 c, round-003 c, round-005 b                                            |
+| `--primary` (tables)            | `light-dark(oklch(0.48 0.09 265), oklch(0.76 0.07 265))` | round-002 b, round-004 a, round-006 c. Not picked: lost to blue in round-007 (b) |
 
 ## Open questions
 
 - Status hues. The dots got their color from the `--chart-*` overrides above. Stock neutral charts are gray, and `--chart-1` is near white, so the library dots use `--primary`, `--destructive`, `--muted-foreground` and hollow rings instead. Adopt status hue tokens per app, or keep neutral? (round-005 b, round-006 a)
-- One accent or two. Cards ran with blue `--primary`, tables with muted indigo. They were never compared. (round-001 c, round-002 b)
+- One accent or two. Resolved by round-007 a: blue beat muted indigo (b) and neutral (c). (round-001 c, round-002 b, round-007 a)
 - "Same size" pills. In round-005 b both pills already measured 20px high; only the side padding (6px vs 8px) and the leading mark (12px icon vs 6px dot) differed. The library now matches those. The note may also mean equal width. Test fixed-width pills in a round. (round-005 note)
 - Avatars in tables. round-004 b dropped avatars but also stacked the owner under the project, so its loss does not isolate avatars. round-004 a and round-006 c keep them. Keep or drop?
 - Header weight in tables. Not tested yet.
-- Light mode. Every answer so far was given in dark mode.
+- Light mode. Every answer so far was given in dark mode. The round-007 accent has not been judged in light by the operator.

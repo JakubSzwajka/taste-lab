@@ -7,9 +7,15 @@
  * cite the round in a comment. Run `taste-lab check` after editing. */
 
 :root {
-  /* light tokens */
+  /* round-007 a: blue accent, operator pick 2026-10-29, judged in dark mode */
+  --primary: oklch(0.5 0.19 262);
+  --primary-foreground: oklch(0.985 0 0);
+  --ring: oklch(0.55 0.17 262);
 }
 
 .dark {
-  /* dark tokens */
+  /* round-007 a: blue accent, operator pick 2026-10-29, judged in dark mode */
+  --primary: oklch(0.72 0.14 262);
+  --primary-foreground: oklch(0.2 0.04 262);
+  --ring: oklch(0.65 0.14 262);
 }

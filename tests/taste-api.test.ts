@@ -82,6 +82,16 @@ const post = (
 ) => call({ method: "POST", headers, body: JSON.stringify(body) });
 
 describe("POST /api/taste", () => {
+  it("stores the view and rejects an unknown one", async () => {
+    const ok = await post({ ...valid, view: "flip" });
+    expect(ok.status).toBe(201);
+    const line = readFileSync(file, "utf8").trim().split("\n")[0] as string;
+    expect(JSON.parse(line).view).toBe("flip");
+    const bad = await post({ ...valid, view: "grid" });
+    expect(bad.status).toBe(400);
+    expect(readFileSync(file, "utf8").trim().split("\n")).toHaveLength(1);
+  });
+
   it("appends one line and uses a server timestamp", async () => {
     const r = await post({ ...valid, ts: "2001-01-01T00:00:00Z" });
     expect(r.status).toBe(201);

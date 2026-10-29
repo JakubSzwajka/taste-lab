@@ -1,0 +1,56 @@
+{
+  "id": "round-005",
+  "level": "component",
+  "component": "card",
+  "question": "Card C with up to 2 tags beside status and priority, and the footer tags gone. Only the tag look differs. A: outline badges. B: quiet #tag text. C: filled badges. Which fits? (\"+n\" shows past 2 tags.)",
+  "fixture": "tasks",
+  "basedOn": {
+    "round": "round-003",
+    "pick": "c"
+  },
+  "preview": "columns",
+  "variants": [
+    {
+      "id": "a",
+      "file": "a.tsx",
+      "label": "Outline tags",
+      "changes": "Up to 2 tags join the status and priority row, with \"+n\" for the rest. Footer tags removed. Tags are outline badges, the same as the status badge.",
+      "tokens": {
+        "--primary": "light-dark(oklch(0.5 0.19 262), oklch(0.72 0.14 262))",
+        "--primary-foreground": "light-dark(oklch(0.985 0 0), oklch(0.2 0.04 262))",
+        "--ring": "light-dark(oklch(0.55 0.17 262), oklch(0.65 0.14 262))",
+        "--chart-1": "light-dark(oklch(0.58 0.19 255), oklch(0.72 0.15 255))",
+        "--chart-2": "light-dark(oklch(0.58 0.2 300), oklch(0.74 0.15 300))",
+        "--chart-3": "light-dark(oklch(0.62 0.16 152), oklch(0.74 0.16 152))"
+      }
+    },
+    {
+      "id": "b",
+      "file": "b.tsx",
+      "label": "Quiet #tags",
+      "changes": "Up to 2 tags join the status and priority row, with \"+n\" for the rest. Footer tags removed. Tags are muted \"#tag\" text with no badge.",
+      "tokens": {
+        "--primary": "light-dark(oklch(0.5 0.19 262), oklch(0.72 0.14 262))",
+        "--primary-foreground": "light-dark(oklch(0.985 0 0), oklch(0.2 0.04 262))",
+        "--ring": "light-dark(oklch(0.55 0.17 262), oklch(0.65 0.14 262))",
+        "--chart-1": "light-dark(oklch(0.58 0.19 255), oklch(0.72 0.15 255))",
+        "--chart-2": "light-dark(oklch(0.58 0.2 300), oklch(0.74 0.15 300))",
+        "--chart-3": "light-dark(oklch(0.62 0.16 152), oklch(0.74 0.16 152))"
+      }
+    },
+    {
+      "id": "c",
+      "file": "c.tsx",
+      "label": "Filled tags",
+      "changes": "Up to 2 tags join the status and priority row, with \"+n\" for the rest. Footer tags removed. Tags are secondary (filled) badges with no border.",
+      "tokens": {
+        "--primary": "light-dark(oklch(0.5 0.19 262), oklch(0.72 0.14 262))",
+        "--primary-foreground": "light-dark(oklch(0.985 0 0), oklch(0.2 0.04 262))",
+        "--ring": "light-dark(oklch(0.55 0.17 262), oklch(0.65 0.14 262))",
+        "--chart-1": "light-dark(oklch(0.58 0.19 255), oklch(0.72 0.15 255))",
+        "--chart-2": "light-dark(oklch(0.58 0.2 300), oklch(0.74 0.15 300))",
+        "--chart-3": "light-dark(oklch(0.62 0.16 152), oklch(0.74 0.16 152))"
+      }
+    }
+  ]
+}

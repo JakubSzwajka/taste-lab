@@ -1,0 +1,45 @@
+{
+  "id": "round-006",
+  "level": "component",
+  "component": "table",
+  "question": "The one-line table A, with one thing changed each. A: status as a dot plus text, no badge. B: progress as a number, no bar. C: compact rows. Which feels right?",
+  "fixture": "rows",
+  "basedOn": {
+    "round": "round-004",
+    "pick": "a"
+  },
+  "preview": "flip",
+  "variants": [
+    {
+      "id": "a",
+      "file": "a.tsx",
+      "label": "Status dot",
+      "changes": "Status badge becomes a colored dot plus plain text (\"At risk\" in red). Everything else is round-004 A.",
+      "tokens": {
+        "--primary": "light-dark(oklch(0.48 0.09 265), oklch(0.76 0.07 265))",
+        "--primary-foreground": "light-dark(oklch(0.985 0 0), oklch(0.2 0.03 265))",
+        "--chart-3": "light-dark(oklch(0.62 0.16 152), oklch(0.74 0.16 152))"
+      }
+    },
+    {
+      "id": "b",
+      "file": "b.tsx",
+      "label": "Progress number",
+      "changes": "Progress bar removed. Progress is a right-aligned number. Everything else is round-004 A.",
+      "tokens": {
+        "--primary": "light-dark(oklch(0.48 0.09 265), oklch(0.76 0.07 265))",
+        "--primary-foreground": "light-dark(oklch(0.985 0 0), oklch(0.2 0.03 265))"
+      }
+    },
+    {
+      "id": "c",
+      "file": "c.tsx",
+      "label": "Compact rows",
+      "changes": "Row padding drops from 16px to 10px top and bottom. Everything else is round-004 A.",
+      "tokens": {
+        "--primary": "light-dark(oklch(0.48 0.09 265), oklch(0.76 0.07 265))",
+        "--primary-foreground": "light-dark(oklch(0.985 0 0), oklch(0.2 0.03 265))"
+      }
+    }
+  ]
+}

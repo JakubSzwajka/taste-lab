@@ -5,6 +5,7 @@
   "question": "Which project table feels right?",
   "fixture": "rows",
   "basedOn": null,
+  "preview": "flip",
   "variants": [
     {
       "id": "a",

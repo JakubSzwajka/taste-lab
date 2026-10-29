@@ -1,0 +1,44 @@
+{
+  "id": "round-004",
+  "level": "component",
+  "component": "table",
+  "question": "Table B at full width with less per row. A: one column per field. B: no avatars. C: three columns, the rest in a detail row. Which feels right?",
+  "fixture": "rows",
+  "basedOn": {
+    "round": "round-002",
+    "pick": "b"
+  },
+  "preview": "flip",
+  "variants": [
+    {
+      "id": "a",
+      "file": "a.tsx",
+      "label": "One line per cell",
+      "changes": "Stacked cells split into six columns (project, owner, status, progress, budget, updated), one line each. Everything else is B.",
+      "tokens": {
+        "--primary": "light-dark(oklch(0.48 0.09 265), oklch(0.76 0.07 265))",
+        "--primary-foreground": "light-dark(oklch(0.985 0 0), oklch(0.2 0.03 265))"
+      }
+    },
+    {
+      "id": "b",
+      "file": "b.tsx",
+      "label": "No avatars",
+      "changes": "Owner avatars removed. The owner stays as a quiet line under the project. Everything else is B.",
+      "tokens": {
+        "--primary": "light-dark(oklch(0.48 0.09 265), oklch(0.76 0.07 265))",
+        "--primary-foreground": "light-dark(oklch(0.985 0 0), oklch(0.2 0.03 265))"
+      }
+    },
+    {
+      "id": "c",
+      "file": "c.tsx",
+      "label": "Fewer columns",
+      "changes": "Only project, status and budget show. Owner, progress and updated open in a detail row from the chevron.",
+      "tokens": {
+        "--primary": "light-dark(oklch(0.48 0.09 265), oklch(0.76 0.07 265))",
+        "--primary-foreground": "light-dark(oklch(0.985 0 0), oklch(0.2 0.03 265))"
+      }
+    }
+  ]
+}

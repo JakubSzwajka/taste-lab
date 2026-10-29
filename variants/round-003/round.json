@@ -1,0 +1,56 @@
+{
+  "id": "round-003",
+  "level": "component",
+  "component": "card",
+  "question": "Card C with less tag noise. A: no tags. B: one tag plus a count. C: status and priority beside the id, tags as quiet footer text. Which feels right?",
+  "fixture": "tasks",
+  "basedOn": {
+    "round": "round-001",
+    "pick": "c"
+  },
+  "preview": "columns",
+  "variants": [
+    {
+      "id": "a",
+      "file": "a.tsx",
+      "label": "No tags",
+      "changes": "Tag badges removed. Status and priority badges stay. Everything else is C.",
+      "tokens": {
+        "--primary": "light-dark(oklch(0.5 0.19 262), oklch(0.72 0.14 262))",
+        "--primary-foreground": "light-dark(oklch(0.985 0 0), oklch(0.2 0.04 262))",
+        "--ring": "light-dark(oklch(0.55 0.17 262), oklch(0.65 0.14 262))",
+        "--chart-1": "light-dark(oklch(0.58 0.19 255), oklch(0.72 0.15 255))",
+        "--chart-2": "light-dark(oklch(0.58 0.2 300), oklch(0.74 0.15 300))",
+        "--chart-3": "light-dark(oklch(0.62 0.16 152), oklch(0.74 0.16 152))"
+      }
+    },
+    {
+      "id": "b",
+      "file": "b.tsx",
+      "label": "One tag + count",
+      "changes": "Tags collapse to the first tag plus a quiet \"+n\". Everything else is C.",
+      "tokens": {
+        "--primary": "light-dark(oklch(0.5 0.19 262), oklch(0.72 0.14 262))",
+        "--primary-foreground": "light-dark(oklch(0.985 0 0), oklch(0.2 0.04 262))",
+        "--ring": "light-dark(oklch(0.55 0.17 262), oklch(0.65 0.14 262))",
+        "--chart-1": "light-dark(oklch(0.58 0.19 255), oklch(0.72 0.15 255))",
+        "--chart-2": "light-dark(oklch(0.58 0.2 300), oklch(0.74 0.15 300))",
+        "--chart-3": "light-dark(oklch(0.62 0.16 152), oklch(0.74 0.16 152))"
+      }
+    },
+    {
+      "id": "c",
+      "file": "c.tsx",
+      "label": "Tighter layout",
+      "changes": "Layout: status and priority move up beside the id, title and description sit together, tags become quiet footer text.",
+      "tokens": {
+        "--primary": "light-dark(oklch(0.5 0.19 262), oklch(0.72 0.14 262))",
+        "--primary-foreground": "light-dark(oklch(0.985 0 0), oklch(0.2 0.04 262))",
+        "--ring": "light-dark(oklch(0.55 0.17 262), oklch(0.65 0.14 262))",
+        "--chart-1": "light-dark(oklch(0.58 0.19 255), oklch(0.72 0.15 255))",
+        "--chart-2": "light-dark(oklch(0.58 0.2 300), oklch(0.74 0.15 300))",
+        "--chart-3": "light-dark(oklch(0.62 0.16 152), oklch(0.74 0.16 152))"
+      }
+    }
+  ]
+}

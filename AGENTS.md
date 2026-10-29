@@ -342,8 +342,8 @@ The repo root is a pi package (`pi` key in `package.json`): the `/taste` extensi
 - `/taste [local] [--dir <path>]` spawns `node bin/taste-lab.mjs serve --dir <d> --events`, plus `--lan` unless `local`. The data dir defaults to `<cwd>/.taste-lab`. A missing one is created with `init` after a confirm.
 - On `ready`, the links go to pi's UI only: a notification, a widget below the editor and a status item. The agent gets a custom message with the data dir and port, never a link.
 - Each `answer` becomes `pi.sendMessage(..., { triggerTurn: true, deliverAs: "followUp" })`: one line with round, pick, tags, reason, theme and view. A busy agent gets it after its current run.
-- Child stderr goes to `<os tmpdir>/taste-lab-pi/serve-<pid>-<time>.log`, with any `k=` value scrubbed. The child gets SIGTERM, then SIGKILL after 3 s, on `/taste stop` and on `session_shutdown`.
-- Model text is built in `pi/lib/messages.ts` from named fields only. Keep `ready.lan` out of it. `tests/pi-*.test.ts` assert no message holds the token or `k=`.
+- Child stderr goes to `<os tmpdir>/taste-lab-pi-XXXXXX/serve-<pid>-<time>.log`, with any `k=` value scrubbed. The dir is private (mode 0700) and the file is mode 0600. The child runs in its own process group. The group gets SIGTERM, then SIGKILL after 3 s, on `/taste stop` and on `session_shutdown`.
+- Model text is built in `pi/lib/messages.ts` from named fields only. Keep `ready.lan` out of it. Any `k=` link in model text becomes `[link redacted]`. `tests/pi-*.test.ts` assert no message holds the token or `k=`.
 
 ## Known limits
 

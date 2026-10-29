@@ -8,7 +8,8 @@
       "!src/components/ui",
       "!src/index.css",
       "!components.json",
-      "!tests/fixtures/variant-scan/bad"
+      "!tests/fixtures/variant-scan/bad",
+      "!pi/skills/**/SKILL.md"
     ]
   },
   "formatter": { "enabled": true, "indentStyle": "space", "indentWidth": 2 },

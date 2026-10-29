@@ -11,14 +11,14 @@ const stub = async () => ({ default: () => null });
 function globFor(...names: string[]): GlobInput {
   const input: GlobInput = { json: {}, modules: {} };
   for (const n of names) {
-    input.json[`/variants/${n}/round.json`] = readFileSync(
+    input.json[`/rounds/${n}/round.json`] = readFileSync(
       `${dir}/${n}/round.json`,
       "utf8",
     );
     for (const f of readdirSync(`${dir}/${n}`).filter((f) =>
       f.endsWith(".tsx"),
     )) {
-      input.modules[`/variants/${n}/${f}`] = stub;
+      input.modules[`/rounds/${n}/${f}`] = stub;
     }
   }
   return input;
@@ -52,7 +52,7 @@ describe("loadRounds", () => {
 
   it("turns corrupt JSON into an error entry and keeps other rounds", () => {
     const g = globFor("valid-round");
-    g.json["/variants/round-002/round.json"] = "{ not json";
+    g.json["/rounds/round-002/round.json"] = "{ not json";
     const rounds = loadRounds(g, fixtureKeys);
     expect(rounds.map((r) => [r.id, r.ok])).toEqual([
       ["round-002", false],
@@ -70,8 +70,8 @@ describe("loadRounds", () => {
 
   it("rejects an id that does not match its folder", () => {
     const g = globFor("valid-round");
-    g.json["/variants/other/round.json"] = g.json[
-      "/variants/valid-round/round.json"
+    g.json["/rounds/other/round.json"] = g.json[
+      "/rounds/valid-round/round.json"
     ] as string;
     const other = loadRounds(g, fixtureKeys).find((r) => r.id === "other");
     expect(other?.ok).toBe(false);

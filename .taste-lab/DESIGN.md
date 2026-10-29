@@ -4,7 +4,7 @@ This lab tunes taste-lab's own interface with taste-lab. Rounds compare designs 
 
 Serve it from the repo root with `node bin/taste-lab.mjs serve --dir .taste-lab`. A pick here becomes a change in `src/`, made after the round is answered.
 
-Distilled from `taste.jsonl`. The agent rewrites this file every ~5 rounds. Each rule cites the rounds that support it. Nothing is distilled yet.
+Distilled from `taste.jsonl`. The agent rewrites this file every ~5 rounds. Each rule cites the rounds that support it. Distilled through round-002. The header rules are built in `src/components/AppHeader.tsx`.
 
 ## Starting point
 
@@ -12,11 +12,15 @@ The operator's taste from `examples/demo` (its DESIGN.md) is the prior, not a ru
 
 ## Do
 
-- (none yet)
+- Header in two tiers. Top bar: breadcrumb `taste-lab / <name> / <round ▾>`, where the round segment opens a menu of every round with its status. Second tier, on Compare pages only: prev and next round, the question, the pick or error badge, "n of N answered" with a bar. round-001 mix (d + c: "D is clean but also C has some nice two tiers approach and bar with x of y answered"), round-002 b.
+- Page nav as icon-only outline toggles with names in tooltips, in the top bar, at 40px tall with 20px icons. round-002 b ("perfect"), after round-001 d's icons were "tooo small".
+- Round arrows at 20px icons in 36px buttons. round-002 b ("< and > icons should be slightly bigger").
+- Off the Compare page, the breadcrumb names the page and the round tier is hidden. Follows from round-002 b, where the tier belongs to a round.
 
 ## Don't
 
-- (none yet)
+- Don't list every round as a button in the header. It wrapped to 3 rows at 14 rounds (round-001 a). The round menu replaces it. round-001, round-002.
+- Don't shrink page icons to fit. Small icons in the header read as misplaced. round-001 d.
 
 ## Tokens
 
@@ -32,4 +36,5 @@ Copied from `examples/demo` round-007 a (one taste across repos). Judged in dark
 
 ## Open questions
 
-- Does listing every round in the header scale? Today's header (round-001 a) wraps to 3 rows at 14 rounds on a 1440px screen. round-001 tests three ways out.
+- Closed: does listing every round in the header scale? No. round-001 and round-002 settled on the round menu plus the round tier.
+- Does the compare page still need its own question heading now that the round tier shows the question? Not tested.

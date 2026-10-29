@@ -49,6 +49,7 @@ Node version is pinned in `.node-version`. pnpm version is in `package.json`.
 ## Use
 
 1. Open the URL. The current round is the first one with no answer.
+   The header has two rows. The top row shows `taste-lab / <name> / <round>`. Click the round to open a menu of every round with its status (pick, open or error). On the right are icon buttons for Compare, Library, Theme and History, then the light or dark switch. On Compare pages, a second row shows `<` and `>` to step through rounds, the round's question, its pick and "n of N answered".
 2. Toggle light or dark. All variants switch.
 3. Pick with keys `1` to `4`, `n` for none, `m` for mix. Add tags and a reason. Press Enter to submit. In the reason box, use Ctrl/Cmd+Enter. Enter on a focused button or link keeps its normal action (toggle, follow) and does not submit.
    A view switch ("Side by side" or "Full width") sits above the variants. Full width shows one variant at full page width with A/B/C tabs. `←` and `→` flip between variants and wrap around. Number keys pick and also show that variant. Arrow keys do nothing while the reason box or a toggle, tab or menu has focus. Use full width for tables and layouts that need room.

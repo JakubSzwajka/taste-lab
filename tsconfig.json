@@ -25,6 +25,7 @@
     "src",
     "tests",
     "cli",
+    "pi",
     "vite.config.ts",
     "server",
     "examples/demo/.taste-lab/**/*.ts",

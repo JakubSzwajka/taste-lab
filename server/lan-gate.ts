@@ -6,9 +6,17 @@ import {
   cookieName,
   hasTokenCookie,
   type LanConfig,
+  localPath,
+  splitToken,
   tokenMatches,
   UNAUTHORIZED,
 } from "./lan.ts";
+import {
+  createLoopbackListener,
+  type RequestListener,
+  type UpgradeListener,
+  type ViteListeners,
+} from "./lan-loopback.ts";
 
 /** Name of the Vite plugin that `serve --lan` adds. vite.config.ts finds the settings by it. */
 export const LAN_PLUGIN = "taste-lab:lan";
@@ -25,52 +33,6 @@ export type GateDecision =
   | { action: "pass" }
   | { action: "redirect"; location: string; setCookie: string }
   | { action: "deny"; status: 401 | 403; error: string };
-
-/** Splits `?a&k=x&b` and drops every `k` parameter. Keeps the rest byte for byte. */
-function splitToken(url: string): { tokens: string[]; clean: string } {
-  const q = url.indexOf("?");
-  if (q < 0) return { tokens: [], clean: url };
-  const tokens: string[] = [];
-  const kept: string[] = [];
-  for (const part of url.slice(q + 1).split("&")) {
-    const eq = part.indexOf("=");
-    const rawName = eq < 0 ? part : part.slice(0, eq);
-    let name = rawName;
-    let value = eq < 0 ? "" : part.slice(eq + 1);
-    try {
-      name = decodeURIComponent(rawName.replace(/\+/g, " "));
-      value = decodeURIComponent(value.replace(/\+/g, " "));
-    } catch {
-      // Malformed escapes: compare the raw text.
-    }
-    if (name === "k") tokens.push(value);
-    else kept.push(part);
-  }
-  const path = url.slice(0, q);
-  return {
-    tokens,
-    clean: kept.length > 0 ? `${path}?${kept.join("&")}` : path,
-  };
-}
-
-/**
- * The redirect target, or `/`. Only a same-origin path passes: one leading `/`,
- * then no second `/` or `\`, and no backslash or control character anywhere.
- * Browsers read `\` as `/`, so `/\evil.example/` would leave the server.
- * The result must also resolve to the dummy origin it is parsed against.
- */
-function localPath(clean: string): string {
-  // biome-ignore lint/suspicious/noControlCharactersInRegex: control chars are the point
-  if (/[\\\u0000-\u001f\u007f]/.test(clean)) return "/";
-  if (!/^\/(?![/\\])/.test(clean)) return "/";
-  try {
-    const base = "http://taste-lab.invalid";
-    const u = new URL(clean, base);
-    return u.origin === base ? clean : "/";
-  } catch {
-    return "/";
-  }
-}
 
 /**
  * What the LAN gate does with one request:
@@ -153,17 +115,11 @@ const REASON = { 401: "Unauthorized", 403: "Forbidden" } as const;
  * does a URL with `?k=`. Listeners attached later are NOT covered and run on
  * their own, even after the gate denied the request. Vite adds its proxy
  * `upgrade` listener that way. This repo configures no proxy.
+ * Returns the listeners it took, so the loopback listener can serve them too.
  */
-export function installLanGate(server: Server, lan: LanConfig): void {
-  const onRequest = server.listeners("request") as ((
-    req: IncomingMessage,
-    res: ServerResponse,
-  ) => void)[];
-  const onUpgrade = server.listeners("upgrade") as ((
-    req: IncomingMessage,
-    socket: Duplex,
-    head: Buffer,
-  ) => void)[];
+export function installLanGate(server: Server, lan: LanConfig): ViteListeners {
+  const onRequest = server.listeners("request") as RequestListener[];
+  const onUpgrade = server.listeners("upgrade") as UpgradeListener[];
   server.removeAllListeners("request");
   server.removeAllListeners("upgrade");
   server.on("request", (req: IncomingMessage, res: ServerResponse) => {
@@ -184,39 +140,105 @@ export function installLanGate(server: Server, lan: LanConfig): void {
       `HTTP/1.1 ${status} ${REASON[status]}\r\nConnection: close\r\nContent-Length: 0\r\n\r\n`,
     );
   });
+  return { onRequest, onUpgrade };
 }
+
+/** What the `taste-lab:lan` plugin exposes. Functions only, see `lanGate`. */
+type LanApi = {
+  settings: () => LanConfig;
+  /** True when the request arrived on the loopback listener. */
+  fromLoopback: (req: IncomingMessage) => boolean;
+  /** Settles once the loopback listener of the current server listens or fails. */
+  loopbackReady: () => Promise<void>;
+};
 
 /**
  * The Vite plugin `serve --lan` adds inline. Its settings belong to this one
  * server and are frozen. `configureServer` with `order: "pre"` runs before the
  * other plugins' hooks, and Vite has already attached its request handler and
  * HMR upgrade listener to `httpServer` by then.
+ *
+ * Two listeners, one app. Vite's own HTTP server binds the LAN address and gets
+ * the gate. A second server on 127.0.0.1, same port, gets the same Vite
+ * listeners without the gate (see lan-loopback.ts). It starts when Vite's server
+ * starts listening and stops when Vite closes its server, restarts included.
+ *
  * The settings sit behind a function: `DEBUG=vite:config` prints every plugin
  * object, and a plain `token` property would land in that log.
  */
 export function lanGate(settings: LanConfig): Plugin {
   const lan = Object.freeze({ ...settings });
+  // Sockets the loopback listener accepted. Per plugin, so per server.
+  const loopSockets = new WeakSet<object>();
+  let ready: Promise<void> | undefined;
+  const api: LanApi = {
+    settings: () => lan,
+    fromLoopback: (req) => loopSockets.has(req.socket),
+    loopbackReady: () =>
+      ready ?? Promise.reject(new Error("the LAN server has not started")),
+  };
   return {
     name: LAN_PLUGIN,
-    api: Object.freeze({ settings: () => lan }),
+    api: Object.freeze(api),
     configureServer: {
       order: "pre",
       handler(server) {
         if (!server.httpServer) {
           throw new Error("taste-lab --lan needs Vite's own HTTP server");
         }
-        installLanGate(server.httpServer as Server, lan);
+        const http = server.httpServer as Server;
+        const loop = createLoopbackListener(
+          installLanGate(http, lan),
+          lan.port,
+          loopSockets,
+        );
+        ready = new Promise<void>((resolve, reject) => {
+          http.once("listening", () => loop.listen().then(resolve, reject));
+        });
+        // `serve` awaits this on start. After a restart nobody does: log it.
+        ready.catch((e: Error) =>
+          server.config.logger.error(
+            `taste-lab: the 127.0.0.1 listener failed: ${e.message}`,
+          ),
+        );
+        // Vite closes its HTTP server through `close` on close and on restart.
+        // The loopback listener closes first, so a restart can bind the port again.
+        const closeVite = http.close.bind(http);
+        http.close = ((cb?: (err?: Error) => void) => {
+          void loop.close().then(() => closeVite(cb));
+          return http;
+        }) as Server["close"];
       },
     },
   };
+}
+
+function lanApiOf(
+  plugins: readonly { name: string; api?: unknown }[],
+): Partial<LanApi> | undefined {
+  return plugins.find((p) => p.name === LAN_PLUGIN)?.api as
+    | Partial<LanApi>
+    | undefined;
 }
 
 /** The LAN settings of the server these plugins belong to, if `--lan` is on. */
 export function lanSettingsOf(
   plugins: readonly { name: string; api?: unknown }[],
 ): LanConfig | undefined {
-  const api = plugins.find((p) => p.name === LAN_PLUGIN)?.api as
-    | { settings?: () => LanConfig }
-    | undefined;
-  return api?.settings?.();
+  return lanApiOf(plugins)?.settings?.();
+}
+
+/** Classifies a request by listener: true when it came in on 127.0.0.1 in LAN mode. */
+export function fromLoopbackOf(
+  plugins: readonly { name: string; api?: unknown }[],
+): ((req: IncomingMessage) => boolean) | undefined {
+  return lanApiOf(plugins)?.fromLoopback;
+}
+
+/** Waits for the loopback listener of a `--lan` server. Resolves at once without `--lan`. */
+export async function loopbackReady(
+  plugins: readonly { name: string; api?: unknown }[],
+): Promise<void> {
+  const api = lanApiOf(plugins);
+  if (api?.loopbackReady) await api.loopbackReady();
 }

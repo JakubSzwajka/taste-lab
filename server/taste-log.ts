@@ -103,13 +103,31 @@ export function isSameOrigin(
   }
 }
 
+export type TasteApiOptions = {
+  /** This server's LAN settings when `serve --lan` is on. Without it: loopback only, no token. */
+  lan?: LanConfig;
+  /**
+   * LAN mode only: true when the request arrived on the 127.0.0.1 listener. Those
+   * requests get the loopback rules. Anything else gets the LAN rules.
+   */
+  fromLoopback?: (req: IncomingMessage) => boolean;
+  /** Called once per appended entry, with the entry exactly as written. */
+  onAppend?: (entry: TasteEntry) => void;
+};
+
 /**
- * Connect-style middleware for GET and POST /api/taste. `lan` is this server's
- * LAN settings when `serve --lan` is on, else undefined: loopback-only, no
- * token. It is fixed when the middleware is made, so servers never share it.
+ * Connect-style middleware for GET and POST /api/taste. The options belong to
+ * one server and are fixed when the middleware is made, so servers never share
+ * them.
  */
-export function createTasteMiddleware(file: string, lan?: LanConfig) {
-  const settings = lan ? Object.freeze({ ...lan }) : undefined;
+export function createTasteMiddleware(
+  file: string,
+  opts: TasteApiOptions = {},
+) {
+  const settings = Object.freeze({
+    ...opts,
+    lan: opts.lan ? Object.freeze({ ...opts.lan }) : undefined,
+  });
   return async (
     req: IncomingMessage,
     res: ServerResponse,
@@ -131,9 +149,10 @@ async function handle(
   req: IncomingMessage,
   res: ServerResponse,
   file: string,
-  lan: LanConfig | undefined,
+  { lan, fromLoopback, onAppend }: TasteApiOptions,
 ) {
-  if (lan) {
+  // Classified by the listener the request came in on, never by its headers.
+  if (lan && !fromLoopback?.(req)) {
     // The LAN gate has checked this already. Checked again so the API never
     // depends on the gate running first.
     const denied = checkLanRequest(
@@ -198,6 +217,11 @@ async function handle(
       appendEntry(file, result.entry);
     } catch {
       return send(res, 500, { error: "could not write the taste log" });
+    }
+    try {
+      onAppend?.(result.entry);
+    } catch {
+      // The line is written. A failing listener must not turn that into an error.
     }
     return send(res, 201, { entry: result.entry });
   }

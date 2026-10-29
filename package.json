@@ -6,6 +6,14 @@
   "bin": {
     "taste-lab": "bin/taste-lab.mjs"
   },
+  "pi": {
+    "extensions": [
+      "./pi/extensions"
+    ],
+    "skills": [
+      "./pi/skills"
+    ]
+  },
   "packageManager": "pnpm@12.5.1",
   "scripts": {
     "dev": "node bin/taste-lab.mjs serve --dir examples/demo/.taste-lab",

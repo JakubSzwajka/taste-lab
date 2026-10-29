@@ -10,6 +10,7 @@ export type Cli =
       port?: number;
       lan?: boolean;
       host?: string;
+      events?: boolean;
     }
   | { command: "init"; dir: string; name?: string }
   | { command: "check"; dir: string };
@@ -19,12 +20,15 @@ export class UsageError extends Error {}
 export const USAGE = `Usage: taste-lab <command> --dir <path> [options]
 
 Commands:
-  serve --dir <path> [--port N] [--lan [--host <ip>]]
+  serve --dir <path> [--port N] [--lan [--host <ip>]] [--events]
                                   Start the lab for a .taste-lab dir on 127.0.0.1.
                                   Without --port, the first free port from 5300.
-                                  --lan binds one private LAN address instead and
-                                  prints a link with a one-run token. --host picks
-                                  the address (private or loopback IPv4, needs --lan).
+                                  --lan also binds one private LAN address on the
+                                  same port and prints a link with a one-run token.
+                                  --host picks the address (private or loopback
+                                  IPv4 other than 127.0.0.1, needs --lan).
+                                  --events writes JSON lines on stdout (ready,
+                                  answer, error) and human text on stderr.
   init  --dir <path> [--name X]   Create a new .taste-lab dir. Refuses to overwrite.
   check --dir <path>              Validate rounds and scan variant files.
                                   Exit 0 when clean, 1 with violations.
@@ -33,7 +37,7 @@ Options:
   -h, --help                      Show this help.`;
 
 const OPTIONS = {
-  serve: ["dir", "port", "lan", "host"],
+  serve: ["dir", "port", "lan", "host", "events"],
   init: ["dir", "name"],
   check: ["dir"],
 } as const;
@@ -65,6 +69,7 @@ export function parseCli(argv: string[], cwd = process.cwd()): Cli {
         name: { type: "string" },
         host: { type: "string" },
         lan: { type: "boolean" },
+        events: { type: "boolean" },
         help: { type: "boolean", short: "h" },
       },
     }));
@@ -72,7 +77,7 @@ export function parseCli(argv: string[], cwd = process.cwd()): Cli {
     throw new UsageError(e instanceof Error ? e.message : String(e));
   }
   if (values.help) return { command: "help" };
-  for (const key of ["port", "name", "host", "lan"] as const) {
+  for (const key of ["port", "name", "host", "lan", "events"] as const) {
     if (
       values[key] !== undefined &&
       !(OPTIONS[cmd] as readonly string[]).includes(key)
@@ -107,10 +112,16 @@ export function parseCli(argv: string[], cwd = process.cwd()): Cli {
       "--host must be a private or loopback IPv4 address (10/8, 172.16/12, 192.168/16, 127/8)",
     );
   }
+  if (host === "127.0.0.1") {
+    throw new UsageError(
+      "--host 127.0.0.1 is taken by the loopback listener. Use another address, e.g. 127.0.0.2",
+    );
+  }
   const serveCli: Cli = { command: "serve", dir };
   if (values.port !== undefined) serveCli.port = parsePort(String(values.port));
   if (values.lan) serveCli.lan = true;
   if (host !== undefined) serveCli.host = host;
+  if (values.events) serveCli.events = true;
   return serveCli;
 }
 

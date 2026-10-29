@@ -31,7 +31,7 @@ Run them from anywhere. Relative `--dir` paths resolve against the current folde
 ```sh
 node <taste-lab>/bin/taste-lab.mjs init  --dir <repo>/.taste-lab [--name X]
 node <taste-lab>/bin/taste-lab.mjs check --dir <repo>/.taste-lab
-node <taste-lab>/bin/taste-lab.mjs serve --dir <repo>/.taste-lab [--port N] [--lan [--host <ip>]]
+node <taste-lab>/bin/taste-lab.mjs serve --dir <repo>/.taste-lab [--port N] [--lan [--host <ip>]] [--events]
 ```
 
 - `init` writes the skeleton above with one sample fixture (`items`), an empty `library/`, an empty `taste.jsonl`, a `theme.css` with a header comment and empty `:root` and `.dark` blocks, and a `DESIGN.md` stub. It refuses to touch a path that exists.
@@ -39,6 +39,7 @@ node <taste-lab>/bin/taste-lab.mjs serve --dir <repo>/.taste-lab [--port N] [--l
 - A data dir path must not contain a line break or control character, a backslash, `*`, `{`, `}` or both quote kinds. Tailwind reads `@source` raw and as a glob, so `serve`, `init` and `check` reject such paths up front. Spaces, `$`, one kind of quote and `[`, `]`, `(`, `)`, `!` work.
 - `serve` starts the lab on 127.0.0.1 and prints the URL. Without `--port` it takes the first free port from 5300 and never picks 3000, 3326, 5173 or 5310. Stop it with Ctrl+C.
 - `serve --lan` is opt-in LAN access, see "LAN mode". `--host` without `--lan` is a usage error (exit 2).
+- `serve --events` writes JSON lines on stdout for a parent process, see "Event protocol".
 
 ## Core principle: 100% shadcn
 
@@ -307,7 +308,8 @@ Or copy the component into the round and change one thing. A copy can import `cl
 `serve --lan [--host <ip>]` lets the operator open the lab from another device on the home LAN. Without `--lan`, nothing here applies: loopback only, no token.
 
 - It binds one private IPv4 address, never 0.0.0.0. Auto-pick: the interface with the default route (Linux `/proc/net/route`), else the first private IPv4 not on a `docker*`, `br-*`, `veth*`, `virbr*`, `tailscale*` or similar interface. It prints the choice and other candidates. `--host <ip>` must be a private or loopback IPv4 (10/8, 172.16/12, 192.168/16, 127/8).
-- It prints `http://<ip>:<port>/?k=<token>`. The token is `crypto.randomBytes(16)` base64url, new each run, in server memory only. It appears in that URL line and in the browser cookie, nowhere else: not in logs (`DEBUG=vite:*` included), files or the data dir. Do not copy it into notes, commits or chat.
+- It also listens on 127.0.0.1 on the same port with the loopback rules (no token, loopback `Host`). A request is classed by the listener it arrived on, never by its headers.
+- It prints `http://<ip>:<port>/?k=<token>`. The token is `crypto.randomBytes(16)` base64url, new each run, in server memory only. It appears in that URL line (or, with `--events`, in `ready.lan` only) and in the browser cookie, nowhere else: not in logs (`DEBUG=vite:*` included), files or the data dir. Do not copy it into notes, commits or chat.
 - A gate in front of all of Vite's request handling covers every HTTP request and the HMR WebSocket upgrade (`server/lan-gate.ts`). It wraps the HTTP server's `request` and `upgrade` listeners, so Vite's own middleware, including its debug request log, only sees requests that passed. The gate covers listeners attached before it, which today is all of Vite's HTTP and HMR handlers. Listeners attached later, such as a configured `server.proxy` upgrade handler, are not covered. This repo configures no proxy.
   1. Remote address not private (10/8, 172.16/12, 192.168/16, 127/8, `::1`, `fc00::/7`, IPv4-mapped forms), `Host` not `<ip>:<port>`, or `Origin` (if sent) not `http://<ip>:<port>`: 403.
   2. `?k=<valid token>`: sets the cookie `taste_lab_<port>=<token>; HttpOnly; SameSite=Strict; Path=/` and redirects (302) to the same URL without `k`, as a same-origin path only (a backslash, a control character or anything but a single leading `/` falls back to `/`). Vite never sees the token. A wrong `k` is 401.
@@ -317,6 +319,31 @@ Or copy the component into the round and change one thing. A copy can import `cl
 - `server.fs.deny` lists `taste.jsonl` in every mode, so `/@fs/.../taste.jsonl` and `?raw` imports get 403 even with the cookie.
 - Vite public serving is off (`publicDir: false` in `vite.config.ts` and in the inline config of `serve`), so no file is served from a `public/` folder. Vite would serve it without its `fs.deny` check, and a data dir there or behind a symlink would expose `taste.jsonl`. `serve`, `init` and `check` also reject a data dir inside the lab's own `public/` folder (symlinks followed) as defense in depth.
 - Anyone on the LAN with the link reads everything the lab serves, including round and library source. No HTTPS.
+
+## Event protocol
+
+`serve --events` is for a parent process, such as the pi extension in `pi/extensions/taste.ts`. stdout then carries only JSON lines. Human text goes to stderr. Without `--events`, output is unchanged.
+
+```json
+{"event":"ready","port":5301,"dataDir":"/abs/.taste-lab","local":"http://127.0.0.1:5301/","lan":"http://192.168.1.23:5301/?k=<token>"}
+{"event":"answer","entry":{ "...": "the exact taste.jsonl entry as appended" }}
+{"event":"error","message":"..."}
+```
+
+- `ready` comes once, when every listener is up. `lan` is `null` without `--lan`.
+- `answer` comes once per successful append to `taste.jsonl`, from either listener.
+- `error` is a fatal startup problem. The process then exits non-zero.
+- The token appears only in `ready.lan`. A reader shows that link to the operator and never puts it in a log, a file or text a model reads.
+
+## Pi package
+
+The repo root is a pi package (`pi` key in `package.json`): the `/taste` extension in `pi/extensions/taste.ts` and the `taste` skill in `pi/skills/taste/SKILL.md`. Helpers live in `pi/lib/`, outside the extensions folder, because pi loads every `.ts` file directly in `pi/extensions/` as an extension.
+
+- `/taste [local] [--dir <path>]` spawns `node bin/taste-lab.mjs serve --dir <d> --events`, plus `--lan` unless `local`. The data dir defaults to `<cwd>/.taste-lab`. A missing one is created with `init` after a confirm.
+- On `ready`, the links go to pi's UI only: a notification, a widget below the editor and a status item. The agent gets a custom message with the data dir and port, never a link.
+- Each `answer` becomes `pi.sendMessage(..., { triggerTurn: true, deliverAs: "followUp" })`: one line with round, pick, tags, reason, theme and view. A busy agent gets it after its current run.
+- Child stderr goes to `<os tmpdir>/taste-lab-pi-XXXXXX/serve-<pid>-<time>.log`, with any `k=` value scrubbed. The dir is private (mode 0700) and the file is mode 0600. The child runs in its own process group. The group gets SIGTERM, then SIGKILL after 3 s, on `/taste stop` and on `session_shutdown`.
+- Model text is built in `pi/lib/messages.ts` from named fields only. Keep `ready.lan` out of it. Any `k=` link in model text becomes `[link redacted]`. `tests/pi-*.test.ts` assert no message holds the token or `k=`.
 
 ## Known limits
 

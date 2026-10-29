@@ -10,8 +10,8 @@ import {
   type LanPick,
   newToken,
   pickLanAddress,
-  setLan,
 } from "../server/lan.ts";
+import { lanGate } from "../server/lan-gate.ts";
 import { isPortFree, pickPort } from "./port.ts";
 
 export const LAB_ROOT = resolve(import.meta.dirname, "..");
@@ -62,8 +62,9 @@ export function resolveLan(
 
 /**
  * Starts the lab dev server for `dir`. Loopback only on 127.0.0.1 by default.
- * With `lan`, binds one private address and guards /api/taste with a per-run
- * token: the returned `url` then carries it as `?k=`. Resolves once it listens.
+ * With `lan`, binds one private address and gates every request with a per-run
+ * token: the returned `url` carries it as `?k=`, the gate swaps it for a cookie.
+ * The settings live in this server's own plugin. Resolves once it listens.
  */
 export async function serve(
   dir: string,
@@ -90,25 +91,21 @@ export async function serve(
     port ?? (await pickPort({ isFree: (p) => isPortFree(p, host) }));
   // vite.config.ts reads this to point aliases, globs, Tailwind and the log at `dir`.
   process.env.TASTE_LAB_DIR = dir;
+  // Memory only: in this server's plugin and the returned URL, nowhere else.
   const token = info ? newToken() : undefined;
-  // Set before Vite starts: the middleware reads it per request. Memory only.
-  setLan(
-    info && token ? { address: info.address, port: chosen, token } : undefined,
-  );
   const { createServer } = await import("vite");
-  try {
-    const server = await createServer({
-      configFile: join(LAB_ROOT, "vite.config.ts"),
-      root: LAB_ROOT,
-      server: { host, port: chosen, strictPort: true },
-    });
-    await server.listen();
-    const url = token
-      ? `http://${host}:${chosen}/?k=${token}`
-      : `http://${host}:${chosen}/`;
-    return info ? { server, url, lan: info } : { server, url };
-  } catch (e) {
-    setLan(undefined);
-    throw e;
-  }
+  const server = await createServer({
+    configFile: join(LAB_ROOT, "vite.config.ts"),
+    root: LAB_ROOT,
+    server: { host, port: chosen, strictPort: true },
+    plugins:
+      info && token
+        ? [lanGate({ address: info.address, port: chosen, token })]
+        : [],
+  });
+  await server.listen();
+  const url = token
+    ? `http://${host}:${chosen}/?k=${token}`
+    : `http://${host}:${chosen}/`;
+  return info ? { server, url, lan: info } : { server, url };
 }

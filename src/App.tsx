@@ -10,7 +10,12 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { fetchLog, type LogResponse, postEntry } from "@/lib/api";
+import {
+  fetchLog,
+  type LogResponse,
+  postEntry,
+  UNAUTHORIZED_MESSAGE,
+} from "@/lib/api";
 import type { PreviewMode } from "@/lib/flip";
 import type { LibraryEntry } from "@/lib/library";
 import { library as defaultLibrary } from "@/lib/library-entries";
@@ -20,7 +25,6 @@ import { submitEntry } from "@/lib/submit";
 import type { TasteEntry } from "@/lib/taste";
 import { useTheme } from "@/lib/theme";
 import { useThemeData } from "@/lib/theme-data";
-import { UNAUTHORIZED_MESSAGE } from "@/lib/token";
 import { rounds as defaultRounds } from "@/lib/variants";
 
 export default function App({

@@ -49,7 +49,20 @@ export default defineConfig({
   },
   server: {
     host: "127.0.0.1",
-    fs: { allow: [lab, dataDir] },
+    fs: {
+      allow: [lab, dataDir],
+      // Setting `deny` replaces Vite's list, so its 8.x defaults are repeated here.
+      // The app reads the log only through /api/taste, never as a file.
+      deny: [
+        ".env",
+        ".env.*",
+        "*.{crt,pem,key,p12,pfx,cer,der}",
+        ".npmrc",
+        ".yarnrc.yml",
+        "**/.git/**",
+        "taste.jsonl",
+      ],
+    },
   },
   preview: { host: "127.0.0.1" },
   test: { include: ["tests/**/*.test.ts", "tests/**/*.test.tsx"] },

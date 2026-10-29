@@ -3,9 +3,6 @@ import { readFileSync } from "node:fs";
 import { isIPv4, isIPv6 } from "node:net";
 import type { NetworkInterfaceInfo } from "node:os";
 
-/** The header the app sends in LAN mode. */
-export const TOKEN_HEADER = "x-taste-token";
-
 export type LanConfig = {
   /** The one address the server binds and the only Host name it accepts. */
   address: string;
@@ -90,19 +87,42 @@ export function isAllowedBindHost(host: string): boolean {
 export const lanOrigin = (lan: Pick<LanConfig, "address" | "port">) =>
   `http://${lan.address}:${lan.port}`;
 
+/** The cookie that carries the token. Cookies ignore the port, so the name holds it. */
+export const cookieName = (port: number) => `taste_lab_${port}`;
+
+/** Every value of cookie `name` in a Cookie header. */
+export function cookieValues(
+  header: string | undefined,
+  name: string,
+): string[] {
+  if (!header) return [];
+  const out: string[] = [];
+  for (const part of header.split(";")) {
+    const eq = part.indexOf("=");
+    if (eq < 0 || part.slice(0, eq).trim() !== name) continue;
+    out.push(part.slice(eq + 1).trim());
+  }
+  return out;
+}
+
+export type LanRequest = {
+  remoteAddress: string | undefined;
+  host: string | undefined;
+  origin: string | undefined;
+  cookie: string | undefined;
+};
+
 export type LanDecision = { status: 401 | 403; error: string } | null;
 
+export const UNAUTHORIZED =
+  "missing or wrong link token. Open the link printed by taste-lab serve --lan";
+
 /**
- * The LAN guard for /api/taste. Null means allowed. Address, Host and Origin
- * failures are 403. A missing or wrong token is 401.
+ * Address, Host and Origin. Null means allowed. Every failure is 403. This runs
+ * before any token check, so a bad Host gets 403 even without a cookie.
  */
-export function checkLanRequest(
-  req: {
-    remoteAddress: string | undefined;
-    host: string | undefined;
-    origin: string | undefined;
-    token: string | string[] | undefined;
-  },
+export function checkLanOrigin(
+  req: Omit<LanRequest, "cookie">,
   lan: LanConfig,
 ): LanDecision {
   if (!isPrivateAddress(req.remoteAddress)) {
@@ -114,24 +134,34 @@ export function checkLanRequest(
   if (req.origin !== undefined && req.origin !== lanOrigin(lan)) {
     return { status: 403, error: "cross-origin request refused" };
   }
-  if (!tokenMatches(req.token, lan.token)) {
-    return {
-      status: 401,
-      error:
-        "missing or wrong token. Open the link printed by taste-lab serve --lan",
-    };
-  }
   return null;
 }
 
-// Vite loads vite.config.ts as its own bundle, so a module variable here would not
-// be shared with cli/serve.ts. A well-known global symbol is shared. Memory only.
-const SLOT = Symbol.for("taste-lab.lan");
-type Slot = { [SLOT]?: LanConfig };
-export const getLan = (): LanConfig | undefined => (globalThis as Slot)[SLOT];
-export const setLan = (lan: LanConfig | undefined): void => {
-  (globalThis as Slot)[SLOT] = lan;
-};
+/** True when the Cookie header holds this server's token. Constant time per value. */
+export function hasTokenCookie(
+  header: string | undefined,
+  lan: LanConfig,
+): boolean {
+  let ok = false;
+  for (const v of cookieValues(header, cookieName(lan.port))) {
+    // No early exit: compare every value.
+    if (tokenMatches(v, lan.token)) ok = true;
+  }
+  return ok;
+}
+
+/**
+ * The full LAN check for a request that carries no `?k=`: address, Host and
+ * Origin (403), then the token cookie (401). Null means allowed.
+ */
+export function checkLanRequest(req: LanRequest, lan: LanConfig): LanDecision {
+  const bad = checkLanOrigin(req, lan);
+  if (bad) return bad;
+  if (!hasTokenCookie(req.cookie, lan)) {
+    return { status: 401, error: UNAUTHORIZED };
+  }
+  return null;
+}
 
 // ---- Address picking ----
 
@@ -193,8 +223,9 @@ export function pickLanAddress(
 export function parseDefaultRoute(text: string): string | undefined {
   let best: { iface: string; metric: number } | undefined;
   for (const line of text.split("\n").slice(1)) {
-    const [iface, dest, , flags, , , metric] = line.trim().split(/\s+/);
-    if (!iface || dest !== "00000000") continue;
+    const [iface, dest, , flags, , , metric, mask] = line.trim().split(/\s+/);
+    // A default route has destination and mask 0. A 0.0.0.0/8 route has dest 0 too.
+    if (!iface || dest !== "00000000" || mask !== "00000000") continue;
     if ((Number.parseInt(flags ?? "0", 16) & 1) === 0) continue; // RTF_UP
     const m = Number(metric ?? 0);
     if (!best || m < best.metric) best = { iface, metric: m };

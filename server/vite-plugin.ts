@@ -2,6 +2,7 @@ import { relative } from "node:path";
 import type { Plugin, ViteDevServer } from "vite";
 import { themeToCss } from "../src/lib/taste-theme.ts";
 import { labPaths, readLabConfig, tailwindSource } from "./lab-dir.ts";
+import { lanSettingsOf } from "./lan-gate.ts";
 import { createTasteMiddleware } from "./taste-log.ts";
 import { loadTheme } from "./theme-file.ts";
 
@@ -41,7 +42,7 @@ const inside = (dir: string, file: string) => {
  */
 export function tasteLab(opts: { dataDir: string; css: string }): Plugin {
   const { dataDir, css } = opts;
-  const middleware = createTasteMiddleware(labPaths(dataDir).log);
+  const log = labPaths(dataDir).log;
   return {
     name: "taste-lab",
     enforce: "pre",
@@ -67,7 +68,10 @@ export function tasteLab(opts: { dataDir: string; css: string }): Plugin {
       },
     },
     configureServer(server) {
-      server.middlewares.use(middleware);
+      // Per server: the LAN settings come from this server's own plugin list.
+      server.middlewares.use(
+        createTasteMiddleware(log, lanSettingsOf(server.config.plugins)),
+      );
       server.watcher.add(dataDir);
       const themeFile = labPaths(dataDir).theme;
       server.watcher.on("add", (file) => {
@@ -81,7 +85,7 @@ export function tasteLab(opts: { dataDir: string; css: string }): Plugin {
       }
     },
     configurePreviewServer(server) {
-      server.middlewares.use(middleware);
+      server.middlewares.use(createTasteMiddleware(log));
     },
   };
 }

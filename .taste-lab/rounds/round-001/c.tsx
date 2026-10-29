@@ -48,6 +48,7 @@ export default function TwoTiers() {
                 key={p}
                 size="sm"
                 variant={page === p ? "secondary" : "ghost"}
+                aria-current={page === p ? "page" : undefined}
                 onClick={() => setPage(p)}
               >
                 {p}
@@ -133,6 +134,7 @@ export default function TwoTiers() {
               {answered} of {lab.rounds.length} answered
             </span>
             <Progress
+              aria-hidden="true"
               value={(answered / lab.rounds.length) * 100}
               className="w-24"
             />

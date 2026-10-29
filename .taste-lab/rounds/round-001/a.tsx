@@ -28,7 +28,9 @@ export default function Control() {
               <Button
                 key={r.id}
                 size="sm"
-                variant={round === r.id ? "secondary" : "ghost"}
+                variant={
+                  page === "Compare" && round === r.id ? "secondary" : "ghost"
+                }
                 onClick={() => {
                   setRound(r.id);
                   setPage("Compare");

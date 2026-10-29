@@ -57,6 +57,7 @@ export default function OneBar() {
               key={p}
               size="sm"
               variant={page === p ? "secondary" : "ghost"}
+              aria-current={page === p ? "page" : undefined}
               onClick={() => setPage(p)}
             >
               {p}

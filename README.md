@@ -41,7 +41,7 @@ node <taste-lab>/bin/taste-lab.mjs serve --dir ../my-app/.taste-lab --lan
 - The gate covers listeners attached before it, which today is all of Vite's HTTP and HMR handlers. A listener added later, such as a configured `server.proxy`, is not covered. The lab configures no proxy.
 - Anyone on the LAN who has the link can read everything the lab serves, including the round and library source. Use it on a network you trust. There is no HTTPS, so the token and cookie travel in clear text.
 - In every mode, Vite refuses to serve `taste.jsonl` as a file (`server.fs.deny`). The app reads the log only through `/api/taste`.
-- A data dir inside the lab's `public/` folder is rejected (symlinks followed), because Vite serves that folder without its file deny list.
+- Vite public serving is off (`publicDir: false`), so nothing is served from a `public/` folder. A data dir inside the lab's `public/` folder is also rejected (symlinks followed), as defense in depth.
 - Without `--lan`, nothing changes: 127.0.0.1 only, no token.
 
 Node version is pinned in `.node-version`. pnpm version is in `package.json`.

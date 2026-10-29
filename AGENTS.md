@@ -315,7 +315,7 @@ Or copy the component into the round and change one thing. A copy can import `cl
 - `/api/taste` checks the same cookie again (`server/taste-log.ts`). Content type, size limit and validation rules are unchanged. The app sends no token itself. On 401 it shows the same message (`src/lib/api.ts`).
 - Settings are per server and frozen. `serve` adds the `taste-lab:lan` plugin inline for that one server. The taste API reads its settings from that server's plugin list. A loopback server in the same process stays tokenless.
 - `server.fs.deny` lists `taste.jsonl` in every mode, so `/@fs/.../taste.jsonl` and `?raw` imports get 403 even with the cookie.
-- `serve`, `init` and `check` reject a data dir inside the lab's own `public/` folder (symlinks followed). Vite serves `public/` as static files without its `fs.deny` check, so `taste.jsonl` would be readable there.
+- Vite public serving is off (`publicDir: false` in `vite.config.ts` and in the inline config of `serve`), so no file is served from a `public/` folder. Vite would serve it without its `fs.deny` check, and a data dir there or behind a symlink would expose `taste.jsonl`. `serve`, `init` and `check` also reject a data dir inside the lab's own `public/` folder (symlinks followed) as defense in depth.
 - Anyone on the LAN with the link reads everything the lab serves, including round and library source. No HTTPS.
 
 ## Known limits

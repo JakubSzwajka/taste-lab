@@ -19,6 +19,10 @@ const dirKey = createHash("sha1").update(dataDir).digest("hex").slice(0, 10);
 
 export default defineConfig({
   root: lab,
+  // No file is ever served from a `public/` folder. Vite serves it without the
+  // `server.fs.deny` check, so a data dir placed there (or a symlink into one) would
+  // expose taste.jsonl. The lab has no public assets.
+  publicDir: false,
   // One optimizer cache per data dir, so two labs running at once do not
   // overwrite each other's prebundled deps.
   cacheDir: path.join(lab, "node_modules/.vite", `lab-${dirKey}`),

@@ -218,6 +218,50 @@ describe("data dir inside the lab's public/ folder", () => {
   });
 });
 
+describe("public serving is off", () => {
+  const pub = join(import.meta.dirname, "..", "public");
+  let made: string | undefined;
+  beforeEach(() => {
+    made = mkdirSync(pub, { recursive: true });
+  });
+  afterEach(() => {
+    if (made) rmSync(pub, { recursive: true, force: true });
+  });
+
+  it("never serves taste.jsonl from a data dir under public/ or behind a symlink there", async () => {
+    const { serve } = await import("../cli/serve");
+    const secret = "PUBLIC-DIR-SECRET-LOG-LINE";
+    // `..data` starts with two dots but is a child of public/. The link points elsewhere.
+    const dotted = join(pub, "..data", ".taste-lab");
+    initDataDir(dotted);
+    writeFileSync(join(dotted, "taste.jsonl"), `${secret}\n`);
+    const target = join(tmp, "target", ".taste-lab");
+    initDataDir(target);
+    writeFileSync(join(target, "taste.jsonl"), `${secret}\n`);
+    symlinkSync(target, join(pub, "link"));
+
+    const cases = [
+      { dir: dotted, paths: ["/..data/.taste-lab/taste.jsonl"] },
+      { dir: join(pub, "link"), paths: ["/link/taste.jsonl"] },
+    ];
+    for (const { dir, paths } of cases) {
+      const port = await pickPort({ start: 5380 });
+      const { server, url } = await serve(dir, port);
+      try {
+        for (const p of paths) {
+          for (const q of ["", "?raw&import", "?raw", "?import"]) {
+            const res = await fetch(new URL(p + q, url));
+            const body = await res.text();
+            expect(body, `${p}${q}`).not.toContain(secret);
+          }
+        }
+      } finally {
+        await server.close();
+      }
+    }
+  });
+});
+
 describe("serve with $ in the path", () => {
   it("resolves @/fixtures and the rounds glob for a dir named with $& and a space", async () => {
     const { serve } = await import("../cli/serve");

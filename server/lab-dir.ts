@@ -105,8 +105,9 @@ function realpathLoose(p: string): string {
 }
 
 /**
- * Vite serves `<lab>/public/` as static files and skips its `fs.deny` list there,
- * so `taste.jsonl` would be readable. Null when `dir` is outside it. Symlinks are followed.
+ * Defense in depth: the lab sets `publicDir: false`, so nothing is served from
+ * `<lab>/public/`. Were it served, Vite would skip its `fs.deny` list there and
+ * `taste.jsonl` would be readable. Null when `dir` is outside it. Symlinks are followed.
  */
 export function publicDirReason(dir: string): string | null {
   const pub = realpathLoose(join(LAB_ROOT, "public"));

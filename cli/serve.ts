@@ -97,6 +97,8 @@ export async function serve(
   const server = await createServer({
     configFile: join(LAB_ROOT, "vite.config.ts"),
     root: LAB_ROOT,
+    // Same as vite.config.ts, repeated so no config merge can turn public/ back on.
+    publicDir: false,
     server: { host, port: chosen, strictPort: true },
     plugins:
       info && token

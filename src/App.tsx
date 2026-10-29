@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { fetchLog, postEntry } from "@/lib/api";
+import { fetchLog, type LogResponse, postEntry } from "@/lib/api";
 import type { LoadedRound } from "@/lib/rounds";
 import { hrefFor, useRoute } from "@/lib/route";
 import { submitEntry } from "@/lib/submit";
@@ -31,18 +31,27 @@ export default function App({
   const [refreshError, setRefreshError] = useState<string | null>(null);
   const inFlight = useRef(false);
 
+  // Newest request wins. A slow older GET must not drop a just-saved entry.
+  const logSeq = useRef(0);
+  const applyLog = useCallback((seq: number, log: LogResponse) => {
+    if (seq !== logSeq.current) return;
+    setEntries(log.entries);
+    setSkipped(log.skipped);
+    setLogError(null);
+  }, []);
+
   const refresh = useCallback(async () => {
+    const seq = ++logSeq.current;
     try {
-      const log = await fetchLog();
-      setEntries(log.entries);
-      setSkipped(log.skipped);
-      setLogError(null);
+      applyLog(seq, await fetchLog());
     } catch (e) {
-      setLogError(e instanceof Error ? e.message : String(e));
+      if (seq === logSeq.current) {
+        setLogError(e instanceof Error ? e.message : String(e));
+      }
     } finally {
       setLoaded(true);
     }
-  }, []);
+  }, [applyLog]);
   useEffect(() => {
     void refresh();
   }, [refresh]);
@@ -66,8 +75,9 @@ export default function App({
     inFlight.current = true;
     setSubmitting(true);
     setSubmitError(null);
+    let seqForSubmit = 0;
     try {
-      const result = await submitEntry(
+      await submitEntry(
         () =>
           postEntry({
             round: shown.id,
@@ -80,17 +90,22 @@ export default function App({
             theme,
           }),
         fetchLog,
+        {
+          // Saved. Mark the round answered and move on before the GET returns.
+          onSaved: (entry) => {
+            const seq = ++logSeq.current; // drops any older in-flight GET
+            seqForSubmit = seq;
+            setEntries((prev) => [...prev, entry]);
+            setRefreshError(null);
+            setLoaded(true);
+            location.hash = hrefFor({ page: "current" });
+          },
+          onLog: (log) => applyLog(seqForSubmit, log),
+          onRefreshError: (m) => {
+            if (seqForSubmit === logSeq.current) setRefreshError(m);
+          },
+        },
       );
-      // Saved. Mark the round answered now, even if the refresh failed.
-      if (result.log) {
-        setEntries(result.log.entries);
-        setSkipped(result.log.skipped);
-        setLogError(null);
-      } else {
-        setEntries((prev) => [...prev, result.entry]);
-      }
-      setRefreshError(result.refreshError);
-      location.hash = hrefFor({ page: "current" });
     } catch (e) {
       setSubmitError(e instanceof Error ? e.message : String(e));
     } finally {

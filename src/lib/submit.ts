@@ -1,31 +1,40 @@
 import type { LogResponse } from "./api";
 import type { TasteEntry } from "./taste";
 
+export type SubmitHooks = {
+  /** Called once, right after the POST succeeds and before any refresh. */
+  onSaved: (entry: TasteEntry) => void;
+  /** Called with the fresh log when the follow-up GET works. */
+  onLog: (log: LogResponse) => void;
+  /** Called with a message when the follow-up GET fails. Non-blocking. */
+  onRefreshError: (message: string) => void;
+};
+
 export type SubmitResult = {
-  /** The entry the server stored. Use it right away, do not wait for a refetch. */
+  /** The entry the server stored. */
   entry: TasteEntry;
-  /** The fresh log, or null when the refresh failed. */
-  log: LogResponse | null;
-  /** Set when the POST worked but the follow-up GET failed. Non-blocking. */
-  refreshError: string | null;
+  /** Settles when the refresh is done. It never rejects. Callers need not await it. */
+  refreshed: Promise<void>;
 };
 
 /**
- * POSTs an entry, then refreshes the log.
- * A POST failure rejects. A refresh failure does not: the entry is already saved.
+ * POSTs an entry. On success it calls `onSaved` at once, then starts the log
+ * refresh in the background. The returned promise resolves after the POST, so a
+ * stalled or failed GET can never hold up the UI. A POST failure rejects.
  */
 export async function submitEntry(
   post: () => Promise<TasteEntry>,
   refresh: () => Promise<LogResponse>,
+  hooks: SubmitHooks,
 ): Promise<SubmitResult> {
   const entry = await post();
-  try {
-    return { entry, log: await refresh(), refreshError: null };
-  } catch (e) {
-    return {
-      entry,
-      log: null,
-      refreshError: e instanceof Error ? e.message : String(e),
-    };
-  }
+  hooks.onSaved(entry);
+  const refreshed = (async () => {
+    try {
+      hooks.onLog(await refresh());
+    } catch (e) {
+      hooks.onRefreshError(e instanceof Error ? e.message : String(e));
+    }
+  })();
+  return { entry, refreshed };
 }

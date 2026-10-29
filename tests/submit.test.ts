@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+import type { LogResponse } from "../src/lib/api";
 import { submitEntry } from "../src/lib/submit";
 import type { TasteEntry } from "../src/lib/taste";
 
@@ -14,35 +15,88 @@ const entry: TasteEntry = {
   theme: "light",
 };
 
+function hooks() {
+  const calls: string[] = [];
+  return {
+    calls,
+    onSaved: vi.fn(() => calls.push("saved")),
+    onLog: vi.fn(() => calls.push("log")),
+    onRefreshError: vi.fn(() => calls.push("refreshError")),
+  };
+}
+
 describe("submitEntry", () => {
-  it("returns the stored entry and the fresh log", async () => {
+  it("saves first, then applies the fresh log", async () => {
+    const h = hooks();
     const log = { entries: [entry], skipped: 0 };
     const r = await submitEntry(
       async () => entry,
       async () => log,
+      h,
     );
-    expect(r).toEqual({ entry, log, refreshError: null });
+    await r.refreshed;
+    expect(r.entry).toBe(entry);
+    expect(h.onSaved).toHaveBeenCalledWith(entry);
+    expect(h.onLog).toHaveBeenCalledWith(log);
+    expect(h.calls).toEqual(["saved", "log"]);
   });
 
-  it("keeps the saved entry when the refresh fails", async () => {
+  it("resolves and has saved the entry while the refresh never resolves", async () => {
+    const h = hooks();
+    const never = new Promise<LogResponse>(() => {});
+    const r = await submitEntry(
+      async () => entry,
+      () => never,
+      h,
+    );
+    // Reaching this line proves the GET did not block the submit.
+    expect(r.entry).toBe(entry);
+    expect(h.onSaved).toHaveBeenCalledTimes(1);
+    expect(h.onLog).not.toHaveBeenCalled();
+    expect(h.onRefreshError).not.toHaveBeenCalled();
+  });
+
+  it("saves before the refresh is even called", async () => {
+    const h = hooks();
+    const refresh = vi.fn(async () => {
+      h.calls.push("refresh-start");
+      return { entries: [entry], skipped: 0 };
+    });
+    const r = await submitEntry(async () => entry, refresh, h);
+    await r.refreshed;
+    expect(h.calls).toEqual(["saved", "refresh-start", "log"]);
+  });
+
+  it("keeps the saved entry and reports a failed refresh", async () => {
+    const h = hooks();
     const r = await submitEntry(
       async () => entry,
       async () => {
         throw new Error("GET /api/taste failed (500)");
       },
+      h,
     );
-    expect(r.entry).toBe(entry);
-    expect(r.log).toBeNull();
-    expect(r.refreshError).toBe("GET /api/taste failed (500)");
+    await r.refreshed;
+    expect(h.onSaved).toHaveBeenCalledWith(entry);
+    expect(h.onLog).not.toHaveBeenCalled();
+    expect(h.onRefreshError).toHaveBeenCalledWith(
+      "GET /api/taste failed (500)",
+    );
   });
 
-  it("rejects, and skips the refresh, when the POST fails", async () => {
+  it("rejects, and skips saving and refreshing, when the POST fails", async () => {
+    const h = hooks();
     const refresh = vi.fn();
     await expect(
-      submitEntry(async () => {
-        throw new Error("POST failed (400)");
-      }, refresh),
+      submitEntry(
+        async () => {
+          throw new Error("POST failed (400)");
+        },
+        refresh,
+        h,
+      ),
     ).rejects.toThrow("POST failed (400)");
     expect(refresh).not.toHaveBeenCalled();
+    expect(h.onSaved).not.toHaveBeenCalled();
   });
 });

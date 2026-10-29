@@ -54,6 +54,25 @@ function splitToken(url: string): { tokens: string[]; clean: string } {
 }
 
 /**
+ * The redirect target, or `/`. Only a same-origin path passes: one leading `/`,
+ * then no second `/` or `\`, and no backslash or control character anywhere.
+ * Browsers read `\` as `/`, so `/\evil.example/` would leave the server.
+ * The result must also resolve to the dummy origin it is parsed against.
+ */
+function localPath(clean: string): string {
+  // biome-ignore lint/suspicious/noControlCharactersInRegex: control chars are the point
+  if (/[\\\u0000-\u001f\u007f]/.test(clean)) return "/";
+  if (!/^\/(?![/\\])/.test(clean)) return "/";
+  try {
+    const base = "http://taste-lab.invalid";
+    const u = new URL(clean, base);
+    return u.origin === base ? clean : "/";
+  } catch {
+    return "/";
+  }
+}
+
+/**
  * What the LAN gate does with one request:
  * 1. Bad address, Host or Origin: 403.
  * 2. `?k=<token>`: set the cookie and redirect to the same URL without `k`, so Vite
@@ -69,9 +88,7 @@ export function gateDecision(req: GateRequest, lan: LanConfig): GateDecision {
     if (tokens.length !== 1 || !tokenMatches(tokens[0], lan.token)) {
       return { action: "deny", status: 401, error: UNAUTHORIZED };
     }
-    // Only a local path: never `//other.host`.
-    const location =
-      clean.startsWith("/") && !clean.startsWith("//") ? clean : "/";
+    const location = localPath(clean);
     return {
       action: "redirect",
       location,
@@ -129,10 +146,13 @@ function respond(
 const REASON = { 401: "Unauthorized", 403: "Forbidden" } as const;
 
 /**
- * Puts the gate in front of every `request` and `upgrade` listener already on
- * `server`. Vite's own middleware (including its debug request logger) and its
- * HMR WebSocket sit behind these listeners, so a denied request never reaches
- * them, and neither does a URL with `?k=`.
+ * Puts the gate in front of every `request` and `upgrade` listener attached to
+ * `server` before this call. Today that is all of Vite's HTTP and HMR handlers:
+ * its middleware (including its debug request logger) and its HMR WebSocket sit
+ * behind these listeners, so a denied request never reaches them, and neither
+ * does a URL with `?k=`. Listeners attached later are NOT covered and run on
+ * their own, even after the gate denied the request. Vite adds its proxy
+ * `upgrade` listener that way. This repo configures no proxy.
  */
 export function installLanGate(server: Server, lan: LanConfig): void {
   const onRequest = server.listeners("request") as ((

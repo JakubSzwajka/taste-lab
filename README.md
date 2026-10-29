@@ -38,8 +38,10 @@ node <taste-lab>/bin/taste-lab.mjs serve --dir ../my-app/.taste-lab --lan
 - Open the printed link once. The server swaps `?k=` for a cookie (`taste_lab_<port>`, `HttpOnly`, `SameSite=Strict`) and redirects to the same page without `k`. The app never sees the token, and nothing is kept in `localStorage`.
 - The token is 128 random bits, made at start. It lives in server memory, the printed URL and that browser cookie only. It is never written to disk or into the data dir, and Vite never sees a URL that carries it, so it stays out of `DEBUG=vite:*` logs. It changes on every run, so an old link or cookie stops working after a restart.
 - Protected: every HTTP request, including the page, modules, `/@fs` files, assets, `/api/taste` and the HMR WebSocket. A request needs a private remote address, `Host` equal to `<ip>:<port>`, an `Origin` (if sent) equal to `http://<ip>:<port>` and the cookie. A bad address, Host or Origin gets 403. A missing or wrong cookie gets 401 and a page that says "Open the link printed by `taste-lab serve --lan`". The JSON content type, size limit and validation rules of the API still apply.
+- The gate covers listeners attached before it, which today is all of Vite's HTTP and HMR handlers. A listener added later, such as a configured `server.proxy`, is not covered. The lab configures no proxy.
 - Anyone on the LAN who has the link can read everything the lab serves, including the round and library source. Use it on a network you trust. There is no HTTPS, so the token and cookie travel in clear text.
 - In every mode, Vite refuses to serve `taste.jsonl` as a file (`server.fs.deny`). The app reads the log only through `/api/taste`.
+- A data dir inside the lab's `public/` folder is rejected (symlinks followed), because Vite serves that folder without its file deny list.
 - Without `--lan`, nothing changes: 127.0.0.1 only, no token.
 
 Node version is pinned in `.node-version`. pnpm version is in `package.json`.

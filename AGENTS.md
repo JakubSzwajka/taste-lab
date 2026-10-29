@@ -308,13 +308,14 @@ Or copy the component into the round and change one thing. A copy can import `cl
 
 - It binds one private IPv4 address, never 0.0.0.0. Auto-pick: the interface with the default route (Linux `/proc/net/route`), else the first private IPv4 not on a `docker*`, `br-*`, `veth*`, `virbr*`, `tailscale*` or similar interface. It prints the choice and other candidates. `--host <ip>` must be a private or loopback IPv4 (10/8, 172.16/12, 192.168/16, 127/8).
 - It prints `http://<ip>:<port>/?k=<token>`. The token is `crypto.randomBytes(16)` base64url, new each run, in server memory only. It appears in that URL line and in the browser cookie, nowhere else: not in logs (`DEBUG=vite:*` included), files or the data dir. Do not copy it into notes, commits or chat.
-- A gate in front of all of Vite's request handling covers every HTTP request and the HMR WebSocket upgrade (`server/lan-gate.ts`). It wraps the HTTP server's `request` and `upgrade` listeners, so Vite's own middleware, including its debug request log, only sees requests that passed.
+- A gate in front of all of Vite's request handling covers every HTTP request and the HMR WebSocket upgrade (`server/lan-gate.ts`). It wraps the HTTP server's `request` and `upgrade` listeners, so Vite's own middleware, including its debug request log, only sees requests that passed. The gate covers listeners attached before it, which today is all of Vite's HTTP and HMR handlers. Listeners attached later, such as a configured `server.proxy` upgrade handler, are not covered. This repo configures no proxy.
   1. Remote address not private (10/8, 172.16/12, 192.168/16, 127/8, `::1`, `fc00::/7`, IPv4-mapped forms), `Host` not `<ip>:<port>`, or `Origin` (if sent) not `http://<ip>:<port>`: 403.
-  2. `?k=<valid token>`: sets the cookie `taste_lab_<port>=<token>; HttpOnly; SameSite=Strict; Path=/` and redirects (302) to the same URL without `k`. Vite never sees the token. A wrong `k` is 401.
+  2. `?k=<valid token>`: sets the cookie `taste_lab_<port>=<token>; HttpOnly; SameSite=Strict; Path=/` and redirects (302) to the same URL without `k`, as a same-origin path only (a backslash, a control character or anything but a single leading `/` falls back to `/`). Vite never sees the token. A wrong `k` is 401.
   3. Otherwise the cookie must match in constant time, else 401 with a page that says "Open the link printed by `taste-lab serve --lan`" (JSON under `/api/`).
 - `/api/taste` checks the same cookie again (`server/taste-log.ts`). Content type, size limit and validation rules are unchanged. The app sends no token itself. On 401 it shows the same message (`src/lib/api.ts`).
 - Settings are per server and frozen. `serve` adds the `taste-lab:lan` plugin inline for that one server. The taste API reads its settings from that server's plugin list. A loopback server in the same process stays tokenless.
 - `server.fs.deny` lists `taste.jsonl` in every mode, so `/@fs/.../taste.jsonl` and `?raw` imports get 403 even with the cookie.
+- `serve`, `init` and `check` reject a data dir inside the lab's own `public/` folder (symlinks followed). Vite serves `public/` as static files without its `fs.deny` check, so `taste.jsonl` would be readable there.
 - Anyone on the LAN with the link reads everything the lab serves, including round and library source. No HTTPS.
 
 ## Known limits

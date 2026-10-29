@@ -481,6 +481,37 @@ describe("gateDecision", () => {
     });
   });
 
+  it("falls back to / for a redirect target that could leave the origin", () => {
+    for (const url of [
+      "/\\evil.example/?k=tok-ok",
+      "/\\/evil.example/?k=tok-ok",
+      "//evil.example/?k=tok-ok",
+      "/a\\b?k=tok-ok",
+      "/a\tb?k=tok-ok",
+      "/a\nb?k=tok-ok",
+      "/a\u007fb?k=tok-ok",
+      "/?x=\\&k=tok-ok",
+      "http://evil.example/?k=tok-ok",
+      "evil.example/?k=tok-ok",
+      "?k=tok-ok",
+    ]) {
+      expect(gateDecision(req(url), lan), JSON.stringify(url)).toMatchObject({
+        action: "redirect",
+        location: "/",
+      });
+    }
+    // Every redirect target stays on the server's own origin.
+    for (const url of [
+      "/a/b?k=tok-ok",
+      "/%5Cx?k=tok-ok",
+      "/a?q=//x&k=tok-ok",
+    ]) {
+      const d = gateDecision(req(url), lan);
+      if (d.action !== "redirect") throw new Error("expected redirect");
+      expect(new URL(d.location, "http://h.test").origin).toBe("http://h.test");
+    }
+  });
+
   it("401 for a wrong or doubled k, even with a good cookie", () => {
     for (const url of ["/?k=nope", "/?k=", "/?k=tok-ok&k=tok-ok", "/?k"])
       expect(gateDecision(req(url, { cookie }), lan)).toMatchObject({

@@ -320,3 +320,49 @@ describe("bin/taste-lab.mjs", () => {
     expect(r.stderr).toContain("variants must have 2 to 4 entries");
   }, 30_000);
 });
+
+describe("serve", () => {
+  it("serves a data dir outside the repo and appends to its taste.jsonl", async () => {
+    const { serve } = await import("../cli/serve");
+    const dir = join(tmp, "outside", ".taste-lab");
+    initDataDir(dir);
+    addRound(dir, "round-001", roundJson("round-001"), ["a.tsx", "b.tsx"]);
+    const port = await pickPort({ start: 5350 });
+    const before = process.env.TASTE_LAB_DIR;
+    const { server, url } = await serve(dir, port);
+    try {
+      expect(url).toBe(`http://127.0.0.1:${port}/`);
+      expect((await fetch(url)).status).toBe(200);
+      const variants = await (await fetch(`${url}src/lib/variants.ts`)).text();
+      expect(variants).toContain("round-001/a.tsx");
+      const res = await fetch(`${url}api/taste`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          round: "round-001",
+          component: "card",
+          level: "component",
+          shown: ["a", "b"],
+          pick: "a",
+          tags: [],
+          reason: "serve test",
+          theme: "dark",
+        }),
+      });
+      expect(res.status).toBe(201);
+      const log = readFileSync(join(dir, "taste.jsonl"), "utf8");
+      expect(JSON.parse(log).reason).toBe("serve test");
+    } finally {
+      await server.close();
+      if (before === undefined) delete process.env.TASTE_LAB_DIR;
+      else process.env.TASTE_LAB_DIR = before;
+    }
+  }, 30_000);
+
+  it("refuses a dir without fixtures/index.ts", async () => {
+    const { serve } = await import("../cli/serve");
+    await expect(serve(join(tmp, "empty"), 5399)).rejects.toThrow(
+      "taste-lab init",
+    );
+  });
+});

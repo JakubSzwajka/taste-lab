@@ -1,0 +1,44 @@
+{
+  "id": "round-002",
+  "level": "component",
+  "component": "table",
+  "question": "Which project table feels right?",
+  "fixture": "rows",
+  "basedOn": null,
+  "variants": [
+    {
+      "id": "a",
+      "file": "a.tsx",
+      "label": "Compact grid",
+      "changes": "One line per row, 12px type, status as icons, zebra rows, totals footer, 4px corners, stronger lines",
+      "tokens": {
+        "--radius": "0.25rem",
+        "--border": "light-dark(oklch(0.88 0 0), oklch(1 0 0 / 15%))"
+      }
+    },
+    {
+      "id": "b",
+      "file": "b.tsx",
+      "label": "Spacious table",
+      "changes": "Owner avatars, status badges, progress bars, two lines per cell, 16px row padding, muted indigo accent",
+      "tokens": {
+        "--primary": "light-dark(oklch(0.48 0.09 265), oklch(0.76 0.07 265))",
+        "--primary-foreground": "light-dark(oklch(0.985 0 0), oklch(0.2 0.03 265))"
+      }
+    },
+    {
+      "id": "c",
+      "file": "c.tsx",
+      "label": "Row cards",
+      "changes": "Each row is a card with labeled fields and a progress bar, no header row, tinted page, teal accent, 14px corners",
+      "tokens": {
+        "--radius": "0.875rem",
+        "--background": "light-dark(oklch(0.965 0.005 240), oklch(0.16 0.005 240))",
+        "--card": "light-dark(oklch(1 0 0), oklch(0.21 0.007 240))",
+        "--primary": "light-dark(oklch(0.55 0.11 175), oklch(0.74 0.12 175))",
+        "--primary-foreground": "light-dark(oklch(0.985 0 0), oklch(0.2 0.03 175))",
+        "--chart-4": "light-dark(oklch(0.7 0.15 75), oklch(0.78 0.14 75))"
+      }
+    }
+  ]
+}

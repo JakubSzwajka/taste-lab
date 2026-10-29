@@ -1,0 +1,11 @@
+{
+  "id": "invalid-round",
+  "level": "page",
+  "component": "card",
+  "question": "",
+  "fixture": "nope",
+  "basedOn": null,
+  "variants": [
+    { "id": "a", "file": "missing.tsx", "label": "Only one", "changes": "x" }
+  ]
+}

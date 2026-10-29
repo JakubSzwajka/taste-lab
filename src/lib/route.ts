@@ -4,12 +4,14 @@ export type Route =
   | { page: "current" }
   | { page: "round"; id: string }
   | { page: "history" }
+  | { page: "theme" }
   | { page: "library" }
   | { page: "library-entry"; name: string };
 
 export function parseHash(hash: string): Route {
   const path = hash.replace(/^#\/?/, "");
   if (path === "history") return { page: "history" };
+  if (path === "theme") return { page: "theme" };
   if (path === "library") return { page: "library" };
   if (path.startsWith("library/") && path.length > 8) {
     try {
@@ -31,13 +33,15 @@ export function parseHash(hash: string): Route {
 export const hrefFor = (r: Route) =>
   r.page === "history"
     ? "#/history"
-    : r.page === "library"
-      ? "#/library"
-      : r.page === "library-entry"
-        ? `#/library/${encodeURIComponent(r.name)}`
-        : r.page === "round"
-          ? `#/round/${encodeURIComponent(r.id)}`
-          : "#/";
+    : r.page === "theme"
+      ? "#/theme"
+      : r.page === "library"
+        ? "#/library"
+        : r.page === "library-entry"
+          ? `#/library/${encodeURIComponent(r.name)}`
+          : r.page === "round"
+            ? `#/round/${encodeURIComponent(r.id)}`
+            : "#/";
 
 export function useRoute(): Route {
   const [route, setRoute] = useState(() => parseHash(location.hash));

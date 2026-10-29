@@ -8,7 +8,7 @@ export const tasks: Task[] = [
     priority: "high",
     assignee: { name: "Maya Okafor", initials: "MO" },
     due: "2026-11-04",
-    tags: ["backend", "billing"],
+    tags: ["backend", "billing", "webhooks", "stripe", "queue"],
     comments: 7,
     description:
       "Move Stripe webhook handlers onto the job queue and add retries with backoff.",
@@ -44,7 +44,7 @@ export const tasks: Task[] = [
     priority: "urgent",
     assignee: { name: "Tomás Herrera", initials: "TH" },
     due: "2026-10-30",
-    tags: ["infra", "incident"],
+    tags: ["infra", "incident", "ci", "cache"],
     comments: 14,
     description:
       "Build step times out when the dependency cache is empty. Waiting on registry access.",
@@ -79,7 +79,7 @@ export const tasks: Task[] = [
     priority: "medium",
     assignee: { name: "Priya Raman", initials: "PR" },
     due: "2026-11-06",
-    tags: ["design", "ui"],
+    tags: ["design", "ui", "ux"],
     comments: 9,
     description:
       "Cover first-run, filtered-to-zero and all-caught-up. One illustration style.",

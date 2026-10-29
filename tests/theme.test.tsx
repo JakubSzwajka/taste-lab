@@ -419,13 +419,24 @@ describe("init and check", () => {
     ]);
   });
 
-  it("the demo theme.css is empty and clean", async () => {
+  it("the demo theme.css holds the round-007 a tokens and is clean", async () => {
     const demo = join(repo, "examples/demo/.taste-lab");
     const r = parseTheme(
       readFileSync(join(demo, "theme.css"), "utf8"),
       allowed,
     );
-    expect(r.theme).toEqual({ light: {}, dark: {} });
+    expect(r.theme).toEqual({
+      light: {
+        "--primary": "oklch(0.5 0.19 262)",
+        "--primary-foreground": "oklch(0.985 0 0)",
+        "--ring": "oklch(0.55 0.17 262)",
+      },
+      dark: {
+        "--primary": "oklch(0.72 0.14 262)",
+        "--primary-foreground": "oklch(0.2 0.04 262)",
+        "--ring": "oklch(0.65 0.14 262)",
+      },
+    });
     expect(await checkDataDir(demo)).toEqual([]);
   });
 });

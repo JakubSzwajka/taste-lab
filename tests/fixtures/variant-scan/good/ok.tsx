@@ -11,7 +11,7 @@ export default function Ok() {
     <Card
       className={cn("border bg-card text-muted-foreground", open && "bg-muted")}
     >
-      <Mail />
+      <Mail className="size-[18px] w-[calc(100%-2rem)] grid-cols-[1fr_auto] bg-[var(--card)] text-[length:var(--text-sm)] data-[state=open]:bg-card [&>svg]:text-muted-foreground bg-[transparent]" />
       <Badge>Issue #123</Badge>
       {tasks.length}
     </Card>

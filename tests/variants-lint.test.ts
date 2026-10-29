@@ -1,4 +1,6 @@
-import { resolve } from "node:path";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join, resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import { importAllowed, scanVariants } from "./scan-variants";
 
@@ -37,6 +39,90 @@ describe("variant scanner", () => {
     expect(kinds).toContain("inline style color (use var(--token))");
   });
 
+  it("blocks import bypasses (multiline, template, traversal, dynamic)", () => {
+    const hits = scanVariants(fx("bad")).filter(
+      (v) => v.file === "import-bypass.tsx",
+    );
+    const at = (line: number) =>
+      hits.filter((v) => v.line === line).map((v) => v.message);
+    // multiline `from` clause, reported at the statement start
+    expect(at(2)).toEqual(['import "../../src/lib/api" is not allowed']);
+    // path traversal and dot segments behind an allowed prefix
+    expect(at(6)).toEqual([
+      'import "@/components/ui/../../lib/api" is not allowed',
+    ]);
+    expect(at(7)).toEqual(['import "@/components/ui/./card" is not allowed']);
+    expect(at(8)).toEqual(['import "@/lib/rounds" is not allowed']);
+    // re-exports
+    expect(at(9)).toEqual(['import "node:fs" is not allowed']);
+    expect(at(10)).toEqual(['import "zod" is not allowed']);
+    // import(`...`), import(name), import("a" + b), require(name)
+    for (const line of [14, 15, 16, 17]) {
+      expect(at(line)).toEqual([
+        "dynamic import needs a plain string literal specifier",
+      ]);
+    }
+    expect(at(18)).toEqual(['import "node:fs" is not allowed']);
+    expect(at(19)).toEqual([
+      'import "@/components/ui/../../lib/api" is not allowed',
+    ]);
+    expect(at(20)).toEqual([]); // allowed literal dynamic import
+    expect(at(21)).toEqual(['import "node:fs" is not allowed']); // import type
+    expect(at(22)).toEqual(["import.meta is not allowed"]);
+    // the allowed static import on line 11 is not flagged
+    expect(at(11)).toEqual([]);
+  });
+
+  it("flags arbitrary color values, style props and style objects", () => {
+    const hits = scanVariants(fx("bad")).filter(
+      (v) => v.file === "style-and-arbitrary.tsx",
+    );
+    const at = (line: number) => hits.filter((v) => v.line === line);
+    const msgs = (line: number) => at(line).map((v) => v.message);
+    expect(msgs(3)).toContain("arbitrary color value"); // bg-[red] in template
+    expect(msgs(5)).toEqual(["arbitrary color value"]); // named colors
+    expect(msgs(6)).toEqual(["arbitrary color value"]); // template literal
+    expect(msgs(7)).toContain("arbitrary color value"); // [color:red]
+    expect(msgs(8)).toEqual(["arbitrary color value"]); // color: hint, Red, white
+    for (const line of [9, 10, 11, 12]) {
+      expect(msgs(line)).toContain(
+        "style prop is not allowed (put tokens in round.json)",
+      );
+    }
+    expect(msgs(10)).toEqual([
+      "style prop is not allowed (put tokens in round.json)",
+    ]); // even var(--token) is banned in variants
+    expect(msgs(13)).toEqual([
+      "style access is not allowed (put tokens in round.json)",
+    ]);
+    expect(msgs(17)).toContain("inline style color (use var(--token))");
+  });
+
+  it("does not flag layout arbitrary values, var() or transparent", () => {
+    expect(scanVariants(fx("good"))).toEqual([]);
+  });
+
+  it("reports unparsable files instead of skipping them", () => {
+    // Written at runtime: a broken fixture file would fail tsc.
+    const dir = mkdtempSync(join(tmpdir(), "scan-"));
+    writeFileSync(join(dir, "broken.tsx"), "export default function X( {\n");
+    const v = scanVariants(dir);
+    rmSync(dir, { recursive: true });
+    expect(v).toHaveLength(1);
+    expect(v[0]?.message).toMatch(/^could not parse file/);
+  });
+
+  it("allows style in chrome mode, but still checks style colors", () => {
+    // Chrome defaults to banStyle: false. VariantFrame applies tokens via style.
+    const strict = scanVariants(fx("bad"), { imports: false, banStyle: true });
+    expect(strict.some((v) => v.message.startsWith("style "))).toBe(true);
+    const chrome = scanVariants(fx("bad"), { imports: false, banStyle: false });
+    expect(chrome.some((v) => v.message.startsWith("style "))).toBe(false);
+    expect(
+      chrome.some((v) => v.message === "inline style color (use var(--token))"),
+    ).toBe(true);
+  });
+
   it("treats a missing or empty root as zero violations", () => {
     expect(scanVariants(fx("does-not-exist"))).toEqual([]);
   });
@@ -57,6 +143,11 @@ describe("variant scanner", () => {
       "@/lib/rounds",
       "clsx",
       "../x",
+      "@/components/ui/../../lib/api",
+      "@/components/ui/./card",
+      "@/components/ui/card/extra",
+      "@/components/ui/card/",
+      "@/components/ui//card",
     ]) {
       expect(importAllowed(no)).toBe(false);
     }

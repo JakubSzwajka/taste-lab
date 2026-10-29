@@ -20,6 +20,7 @@ import { submitEntry } from "@/lib/submit";
 import type { TasteEntry } from "@/lib/taste";
 import { useTheme } from "@/lib/theme";
 import { useThemeData } from "@/lib/theme-data";
+import { UNAUTHORIZED_MESSAGE } from "@/lib/token";
 import { rounds as defaultRounds } from "@/lib/variants";
 
 export default function App({
@@ -195,8 +196,9 @@ export default function App({
         <main className="mx-auto flex max-w-[120rem] flex-col gap-6 px-4 py-6">
           {logError && (
             <p role="alert" className="text-sm text-destructive">
-              Could not reach the taste log: {logError}. Run the app with pnpm
-              dev or pnpm preview.
+              {logError === UNAUTHORIZED_MESSAGE
+                ? `The taste log needs a link token. ${logError}.`
+                : `Could not reach the taste log: ${logError}. Run the app with pnpm dev or pnpm preview.`}
             </p>
           )}
 

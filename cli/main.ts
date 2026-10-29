@@ -57,8 +57,30 @@ export async function run(argv: string[], io: Io = consoleIo): Promise<number> {
     case "serve": {
       const { serve } = await import("./serve.ts");
       try {
-        const { server, url } = await serve(cli.dir, cli.port);
-        io.out(`taste-lab: serving ${cli.dir}\n  ${url}`);
+        const { server, url, lan } = await serve(
+          cli.dir,
+          cli.port,
+          cli.lan ? { host: cli.host } : undefined,
+        );
+        const notes: string[] = [];
+        if (lan) {
+          notes.push(
+            `  LAN address ${lan.address}${lan.iface ? ` (${lan.iface})` : ""}. The link token changes on every run.`,
+          );
+          if (lan.others.length > 0) {
+            notes.push(
+              `  Other candidates: ${lan.others.map((c) => `${c.address} (${c.iface})`).join(", ")}. Choose one with --host <ip>.`,
+            );
+          }
+          if (lan.skippedVirtual > 0) {
+            notes.push(
+              `  Skipped ${lan.skippedVirtual} virtual (docker, bridge, tunnel) address(es).`,
+            );
+          }
+        }
+        io.out(
+          `taste-lab: serving ${cli.dir}${notes.length > 0 ? `\n${notes.join("\n")}` : ""}\n  ${url}`,
+        );
         const stop = () => void server.close().then(() => process.exit(0));
         process.once("SIGINT", stop);
         process.once("SIGTERM", stop);

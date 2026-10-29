@@ -2,6 +2,12 @@ import { appendFileSync, existsSync, mkdirSync, readFileSync } from "node:fs";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { dirname } from "node:path";
 import { parseLog, type TasteEntry, validateEntry } from "../src/lib/taste.ts";
+import {
+  checkLanRequest,
+  getLan,
+  type LanConfig,
+  TOKEN_HEADER,
+} from "./lan.ts";
 
 export type { TasteEntry };
 export { parseLog, validateEntry };
@@ -102,8 +108,14 @@ export function isSameOrigin(
   }
 }
 
-/** Connect-style middleware for GET and POST /api/taste. */
-export function createTasteMiddleware(file: string) {
+/**
+ * Connect-style middleware for GET and POST /api/taste. `lanConfig` returns the
+ * LAN settings when `serve --lan` is on, else undefined: loopback-only, no token.
+ */
+export function createTasteMiddleware(
+  file: string,
+  lanConfig: () => LanConfig | undefined = getLan,
+) {
   return async (
     req: IncomingMessage,
     res: ServerResponse,
@@ -112,7 +124,7 @@ export function createTasteMiddleware(file: string) {
     const path = (req.url ?? "").split("?")[0];
     if (path !== "/api/taste") return next();
     try {
-      await handle(req, res, file);
+      await handle(req, res, file, lanConfig());
     } catch {
       // Async middleware: a throw here would be an unhandled rejection.
       if (!res.headersSent) send(res, 500, { error: "internal error" });
@@ -121,8 +133,24 @@ export function createTasteMiddleware(file: string) {
   };
 }
 
-async function handle(req: IncomingMessage, res: ServerResponse, file: string) {
-  if (
+async function handle(
+  req: IncomingMessage,
+  res: ServerResponse,
+  file: string,
+  lan: LanConfig | undefined,
+) {
+  if (lan) {
+    const denied = checkLanRequest(
+      {
+        remoteAddress: req.socket.remoteAddress,
+        host: req.headers.host,
+        origin: req.headers.origin,
+        token: req.headers[TOKEN_HEADER],
+      },
+      lan,
+    );
+    if (denied) return send(res, denied.status, { error: denied.error });
+  } else if (
     !isLoopbackAddress(req.socket.remoteAddress) ||
     !isLoopbackHost(req.headers.host)
   ) {

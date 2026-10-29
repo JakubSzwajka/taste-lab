@@ -53,4 +53,4 @@ The winning variants carried these overrides in `round.json`. No round tested th
 - "Same size" pills. In round-005 b both pills already measured 20px high; only the side padding (6px vs 8px) and the leading mark (12px icon vs 6px dot) differed. The library now matches those. The note may also mean equal width. Test fixed-width pills in a round. (round-005 note)
 - Avatars in tables. round-004 b dropped avatars but also stacked the owner under the project, so its loss does not isolate avatars. round-004 a and round-006 c keep them. Keep or drop?
 - Header weight in tables. Not tested yet.
-- Light mode. Every answer so far was given in dark mode. The round-007 accent has not been judged in light by the operator.
+- Light mode. Resolved for the round-007 accent: the operator checked light mode on 2026-10-29 and said it "looks right in light too". Rounds 1 to 7 were still answered in dark mode. (round-007 a)

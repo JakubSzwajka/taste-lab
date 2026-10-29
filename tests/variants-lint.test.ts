@@ -177,6 +177,10 @@ describe("repo rules", () => {
     expect(scanVariants(repo("examples/demo/.taste-lab/rounds"))).toEqual([]);
   });
 
+  it("the repo's own lab rounds follow the allowlist and have no raw colors", () => {
+    expect(scanVariants(repo(".taste-lab/rounds"))).toEqual([]);
+  });
+
   it("app chrome has no raw colors (generated ui/ excluded)", () => {
     const v = scanVariants(repo("src"), { imports: false, ignore: ["ui"] });
     expect(v).toEqual([]);

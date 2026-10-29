@@ -49,6 +49,7 @@ Node version is pinned in `.node-version`. pnpm version is in `package.json`.
 ## Use
 
 1. Open the URL. The current round is the first one with no answer.
+   The header has two rows. The top row shows `taste-lab / <name> / <round>`. Click the round to open a menu of every round with its status (pick, open or error). On the right are icon buttons for Compare, Library, Theme and History, then the light or dark switch. On Compare pages, a second row shows `<` and `>` to step through rounds, the round's question, its pick and "n of N answered".
 2. Toggle light or dark. All variants switch.
 3. Pick with keys `1` to `4`, `n` for none, `m` for mix. Add tags and a reason. Press Enter to submit. In the reason box, use Ctrl/Cmd+Enter. Enter on a focused button or link keeps its normal action (toggle, follow) and does not submit.
    A view switch ("Side by side" or "Full width") sits above the variants. Full width shows one variant at full page width with A/B/C tabs. `←` and `→` flip between variants and wrap around. Number keys pick and also show that variant. Arrow keys do nothing while the reason box or a toggle, tab or menu has focus. Use full width for tables and layouts that need room.
@@ -60,12 +61,22 @@ Node version is pinned in `.node-version`. pnpm version is in `package.json`.
 
 With no rounds in `.taste-lab/rounds/`, the app shows a "no rounds yet" screen.
 
+## The lab for taste-lab itself
+
+The repo root has its own data dir, `.taste-lab/`, so taste-lab's interface is tuned with taste-lab. Its rounds compare designs for the app chrome, starting with the header (round-001). Its `theme.css` starts from the demo's round-007 a blue accent. A pick there becomes a change in `src/` afterwards.
+
+```sh
+node bin/taste-lab.mjs serve --dir .taste-lab
+```
+
+`pnpm dev` still serves the demo. `pnpm check` type-checks both labs (`tsconfig.lab.json` points `@/fixtures` at the root lab) and `pnpm test` runs the variant rules and `check` on both.
+
 ## Scripts
 
 | Script         | Does                                                      |
 | -------------- | --------------------------------------------------------- |
 | `pnpm dev`     | `taste-lab serve` for the demo, on 127.0.0.1              |
-| `pnpm check`   | `tsc --noEmit` and Biome                                  |
+| `pnpm check`   | `tsc` for the demo and the root lab, then Biome           |
 | `pnpm test`    | Vitest                                                    |
 | `pnpm build`   | type check and Vite build                                 |
 | `pnpm preview` | serve the build on 127.0.0.1 (the log API works here too) |
@@ -90,7 +101,8 @@ This repo:
 ```
 bin/taste-lab.mjs        CLI entry (Node runs the TypeScript in cli/ directly)
 cli/                     serve, init, check, port picking, variant scanner
-examples/demo/.taste-lab the demo data dir (rounds 1 to 7, empty theme.css)
+examples/demo/.taste-lab the demo data dir (rounds 1 to 7, round-007 a accent in theme.css)
+.taste-lab/              the lab for taste-lab's own interface
 server/                  Vite plugin and /api/taste middleware
 src/                     lab UI
 src/components/ui/       stock shadcn primitives, generated, not hand-edited

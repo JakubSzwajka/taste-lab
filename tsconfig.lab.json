@@ -1,0 +1,15 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "paths": {
+      "@/fixtures": ["./.taste-lab/fixtures/index.ts"],
+      "@/library/*": ["./.taste-lab/library/*"],
+      "@/*": ["./src/*"]
+    }
+  },
+  "include": [
+    "src/taste-lab.d.ts",
+    "./.taste-lab/**/*.ts",
+    "./.taste-lab/**/*.tsx"
+  ]
+}

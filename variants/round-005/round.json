@@ -2,7 +2,7 @@
   "id": "round-005",
   "level": "component",
   "component": "card",
-  "question": "Card C with up to 2 tags beside status and priority, and the footer tags gone. Only the tag look differs. A: outline badges. B: quiet #tag text. C: filled badges. Which fits? (\"+n\" shows past 2 tags. No sample task has more than 2.)",
+  "question": "Card C with up to 2 tags beside status and priority, and the footer tags gone. Only the tag look differs. A: outline badges. B: quiet #tag text. C: filled badges. Which fits? (\"+n\" shows past 2 tags.)",
   "fixture": "tasks",
   "basedOn": {
     "round": "round-003",

@@ -3,7 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { enterAction } from "@/lib/keys";
+import { enterAction, MENU_SELECTOR, pickShortcutAllowed } from "@/lib/keys";
 import { TAGS } from "@/lib/taste";
 
 export type Answer = { pick: string; tags: string[]; reason: string };
@@ -58,8 +58,7 @@ export function AnswerPanel({
     function onKey(e: KeyboardEvent) {
       const s = latest.current;
       const target = e.target as HTMLElement | null;
-      const typing =
-        target?.tagName === "TEXTAREA" || target?.tagName === "INPUT";
+      const inMenu = target?.closest?.(MENU_SELECTOR) != null;
       if (e.key === "Enter") {
         // Focused buttons, links and toggles keep their own Enter.
         const action = enterAction(e, target);
@@ -69,7 +68,17 @@ export function AnswerPanel({
           s.onSubmit({ pick: s.pick, tags: s.tags, reason: s.reason });
         return;
       }
-      if (typing || e.ctrlKey || e.metaKey || e.altKey) return;
+      if (
+        !pickShortcutAllowed(
+          e,
+          target && {
+            tagName: target.tagName,
+            isContentEditable: target.isContentEditable,
+          },
+          inMenu,
+        )
+      )
+        return;
       const n = Number(e.key);
       if (n >= 1 && n <= 4 && s.variantIds[n - 1]) {
         s.onPick(s.variantIds[n - 1] as string);

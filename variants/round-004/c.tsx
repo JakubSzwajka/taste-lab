@@ -1,5 +1,5 @@
 import { ChevronRight, CircleCheck } from "lucide-react";
-import { useState } from "react";
+import { useId, useState } from "react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -28,6 +28,8 @@ const STATUS: Record<
 /** Round-002 B with three columns. Owner, progress and updated move into a
  * detail row that opens from the chevron. */
 export default function Expandable() {
+  // Detail ids repeat if the variant renders twice on one page (History).
+  const uid = useId();
   const [open, setOpen] = useState<ReadonlySet<string>>(new Set());
   const toggle = (id: string) =>
     setOpen((prev) => {
@@ -59,7 +61,7 @@ export default function Expandable() {
         {rows.map((r) => {
           const status = STATUS[r.status];
           const isOpen = open.has(r.id);
-          const detailId = `${r.id}-details`;
+          const detailId = `${uid}-${r.id}-details`;
           return [
             <TableRow key={r.id} className={cn(isOpen && "border-b-0")}>
               <TableCell className="w-px py-4 pl-0">

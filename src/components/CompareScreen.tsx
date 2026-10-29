@@ -2,7 +2,7 @@ import { Check } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { type Answer, AnswerPanel } from "@/components/AnswerPanel";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { VariantFrame } from "@/components/VariantFrame";
 import { flipIndex, flipState, type PreviewMode } from "@/lib/flip";
@@ -18,6 +18,13 @@ const GRID: Record<number, string> = {
   2: "grid-cols-1 md:grid-cols-2",
   3: "grid-cols-1 lg:grid-cols-3",
   4: "grid-cols-1 md:grid-cols-2 xl:grid-cols-4",
+};
+
+// Props that turn a TabsContent into a plain block (undefined removes them).
+const COLUMN_PANEL = {
+  role: undefined,
+  "aria-labelledby": undefined,
+  tabIndex: undefined,
 };
 
 export function CompareScreen({
@@ -53,8 +60,9 @@ export function CompareScreen({
     const list = listRef.current;
     const focused = document.activeElement;
     if (!flip || !list || !focused || !list.contains(focused)) return;
-    const tab = list.querySelector<HTMLElement>(
-      `[role=tab][data-variant="${active}"]`,
+    // Compare datasets, not a selector: ids are free-form strings.
+    const tab = [...list.querySelectorAll<HTMLElement>("[role=tab]")].find(
+      (t) => t.dataset.variant === active,
     );
     if (tab && tab !== focused) tab.focus({ preventScroll: true });
   }, [active, flip]);
@@ -144,9 +152,9 @@ export function CompareScreen({
         )}
       </div>
 
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        {flip ? (
-          <Tabs value={active} onValueChange={show}>
+      <Tabs value={active} onValueChange={show} className="gap-6">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          {flip ? (
             <TabsList
               ref={listRef}
               aria-label="Variants"
@@ -177,52 +185,58 @@ export function CompareScreen({
                 </TabsTrigger>
               ))}
             </TabsList>
-          </Tabs>
-        ) : (
-          <span className="text-sm text-muted-foreground">
-            {ids.length} variants side by side
-          </span>
-        )}
-        <ToggleGroup
-          type="single"
-          variant="outline"
-          size="sm"
-          value={view}
-          onValueChange={(v) => {
-            if (v !== "columns" && v !== "flip") return;
-            unpinHeight();
-            setView(v);
-          }}
-          aria-label="Preview mode"
-        >
-          <ToggleGroupItem value="columns">Side by side</ToggleGroupItem>
-          <ToggleGroupItem value="flip">Full width</ToggleGroupItem>
-        </ToggleGroup>
-      </div>
-
-      <div
-        ref={boxRef}
-        className={
-          flip ? "flex flex-col" : `grid gap-4 ${GRID[ids.length] ?? GRID[2]}`
-        }
-      >
-        {spec.variants.map((v, i) => (
-          <div
-            key={v.id}
-            role={flip ? "tabpanel" : undefined}
-            hidden={flip && hidden[i]}
-            className="min-w-0"
+          ) : (
+            <span className="text-sm text-muted-foreground">
+              {ids.length} variants side by side
+            </span>
+          )}
+          <ToggleGroup
+            type="single"
+            variant="outline"
+            size="sm"
+            value={view}
+            onValueChange={(v) => {
+              if (v !== "columns" && v !== "flip") return;
+              unpinHeight();
+              setView(v);
+            }}
+            aria-label="Preview mode"
           >
-            <VariantFrame
-              spec={v}
-              load={round.loaders[v.id]}
-              theme={theme}
-              hotkey={i + 1}
-              selected={pick === v.id}
-            />
-          </div>
-        ))}
-      </div>
+            <ToggleGroupItem value="columns">Side by side</ToggleGroupItem>
+            <ToggleGroupItem value="flip">Full width</ToggleGroupItem>
+          </ToggleGroup>
+        </div>
+
+        <div
+          ref={boxRef}
+          className={
+            flip ? "flex flex-col" : `grid gap-4 ${GRID[ids.length] ?? GRID[2]}`
+          }
+        >
+          {spec.variants.map((v, i) => (
+            // Always mounted, so flipping is instant and keeps variant state.
+            // Stock TabsContent gives each panel its id and aria-labelledby. In
+            // columns every variant shows and is not a tab panel, so those
+            // attributes are dropped. text-base undoes the primitive's text-sm.
+            <TabsContent
+              key={v.id}
+              value={v.id}
+              forceMount
+              hidden={flip && hidden[i]}
+              {...(flip ? {} : COLUMN_PANEL)}
+              className="min-w-0 text-base"
+            >
+              <VariantFrame
+                spec={v}
+                load={round.loaders[v.id]}
+                theme={theme}
+                hotkey={i + 1}
+                selected={pick === v.id}
+              />
+            </TabsContent>
+          ))}
+        </div>
+      </Tabs>
 
       <AnswerPanel
         key={spec.id}

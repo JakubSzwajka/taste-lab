@@ -21,6 +21,9 @@ const NATIVE_ROLES = new Set([
   "radio",
   "switch",
   "menuitem",
+  "menuitemcheckbox",
+  "menuitemradio",
+  "menu",
   "tab",
   "option",
 ]);
@@ -89,4 +92,24 @@ export function arrowAction(
   if (target?.tagName === "SELECT") return "ignore";
   if (ARROW_ROLES.has(target?.role ?? "")) return "ignore";
   return e.key === "ArrowLeft" ? "prev" : "next";
+}
+
+/** DOM selector for widgets that own plain keys. Callers test `target.closest`. */
+export const MENU_SELECTOR =
+  "[role=menu],[role=menuitem],[role=menuitemcheckbox],[role=menuitemradio],[role=listbox],[role=option],[role=combobox]";
+
+/**
+ * Whether a plain key (1-4, n, m) may act as a pick shortcut. Never in text
+ * fields, with modifiers, or inside a menu or listbox: those own digits and
+ * letters (typeahead) and portal outside the variant frame. `inMenu` is true
+ * when the target sits inside such a widget (checked by the caller via the DOM).
+ */
+export function pickShortcutAllowed(
+  e: Pick<EnterEvent, "ctrlKey" | "metaKey" | "altKey">,
+  target: KeyTarget | null,
+  inMenu = false,
+): boolean {
+  if (e.ctrlKey || e.metaKey || e.altKey) return false;
+  if (isTextTarget(target) || inMenu) return false;
+  return true;
 }

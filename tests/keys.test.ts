@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { arrowAction, enterAction } from "../src/lib/keys";
+import {
+  arrowAction,
+  enterAction,
+  MENU_SELECTOR,
+  pickShortcutAllowed,
+} from "../src/lib/keys";
 
 const plain = {
   ctrlKey: false,
@@ -95,5 +100,36 @@ describe("arrowAction", () => {
     for (const mod of ["ctrlKey", "metaKey", "altKey", "shiftKey"] as const) {
       expect(arrowAction({ ...left, [mod]: true }, null)).toBe("ignore");
     }
+  });
+});
+
+describe("pickShortcutAllowed", () => {
+  it("allows a plain key on the body or a button", () => {
+    expect(pickShortcutAllowed(plain, { tagName: "BODY" })).toBe(true);
+    expect(pickShortcutAllowed(plain, { tagName: "BUTTON" })).toBe(true);
+  });
+
+  // Regression: with the A actions menu open, "2" flipped to B and left the
+  // menu open over it. Menus own digits and letters.
+  it("ignores keys when the target sits inside a menu", () => {
+    expect(pickShortcutAllowed(plain, { tagName: "DIV" }, true)).toBe(false);
+  });
+
+  it("ignores text fields and modifier combos", () => {
+    expect(pickShortcutAllowed(plain, { tagName: "TEXTAREA" })).toBe(false);
+    expect(pickShortcutAllowed(plain, { tagName: "INPUT" })).toBe(false);
+    for (const mod of ["ctrlKey", "metaKey", "altKey"] as const) {
+      expect(pickShortcutAllowed({ ...plain, [mod]: true }, null)).toBe(false);
+    }
+  });
+
+  it("selector covers menu, menu items and listbox", () => {
+    for (const role of ["menu", "menuitem", "menuitemradio", "listbox"]) {
+      expect(MENU_SELECTOR).toContain(`[role=${role}]`);
+    }
+  });
+
+  it("Enter on a focused menu container is native, not a submit", () => {
+    expect(enterAction(plain, { tagName: "DIV", role: "menu" })).toBe("native");
   });
 });

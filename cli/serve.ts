@@ -1,7 +1,7 @@
 import { existsSync } from "node:fs";
 import { join, resolve } from "node:path";
 import type { ViteDevServer } from "vite";
-import { labPaths } from "../server/lab-dir.ts";
+import { dirProblem, labPaths } from "../server/lab-dir.ts";
 import { pickPort } from "./port.ts";
 
 export const LAB_ROOT = resolve(import.meta.dirname, "..");
@@ -11,6 +11,8 @@ export async function serve(
   dir: string,
   port?: number,
 ): Promise<{ server: ViteDevServer; url: string }> {
+  const bad = dirProblem(dir);
+  if (bad) throw new Error(bad);
   if (!existsSync(labPaths(dir).fixtures)) {
     throw new Error(
       `${dir} has no fixtures/index.ts. Create it with: taste-lab init --dir ${dir}`,

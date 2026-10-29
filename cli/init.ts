@@ -1,6 +1,6 @@
 import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
-import { defaultName } from "../server/lab-dir.ts";
+import { defaultName, dirProblem } from "../server/lab-dir.ts";
 
 export class InitError extends Error {}
 
@@ -79,6 +79,8 @@ Each rule cites the rounds that support it. Nothing here yet.
  * Returns the created files, relative to `dir`.
  */
 export function initDataDir(dir: string, opts: { name?: string } = {}) {
+  const bad = dirProblem(dir);
+  if (bad) throw new InitError(bad);
   if (existsSync(dir)) {
     throw new InitError(`${dir} already exists. Not touching it.`);
   }

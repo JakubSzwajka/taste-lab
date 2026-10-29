@@ -46,3 +46,39 @@ export function readLabConfig(dataDir: string): LabConfig {
     return fallback;
   }
 }
+
+/**
+ * Why Tailwind's `@source "<dir>"` cannot carry `dir` literally, or null when it can.
+ * Tailwind reads the quoted text raw: no escape decoding, and the text is a glob.
+ * So a line break ends the string, a quote can end it early (and inject rules),
+ * a backslash is ambiguous, and `*`, `{` and `}` turn into glob syntax.
+ * `serve`, `init` and `check` reject such dirs up front with this message.
+ */
+export function unsafeDirReason(dir: string): string | null {
+  // biome-ignore lint/suspicious/noControlCharactersInRegex: control chars are the point
+  if (/[\u0000-\u001f\u007f\u0085\u2028\u2029]/.test(dir)) {
+    return "contains a control or line-break character";
+  }
+  if (dir.includes("\\")) return "contains a backslash";
+  if (/[*{}]/.test(dir)) return "contains a glob character (* { })";
+  if (dir.includes('"') && dir.includes("'")) {
+    return "contains both a single and a double quote";
+  }
+  return null;
+}
+
+/** The `@source` rule for `dir`: raw text in a quote the path does not contain. */
+export function tailwindSource(dir: string): string {
+  const reason = unsafeDirReason(dir);
+  if (reason) throw new Error(`${dir} ${reason}. Tailwind cannot scan it.`);
+  const q = dir.includes('"') ? "'" : '"';
+  return `@source ${q}${dir}${q};`;
+}
+
+/** Same message for every command. Null when the path is fine. */
+export function dirProblem(dir: string): string | null {
+  const reason = unsafeDirReason(dir);
+  return reason
+    ? `${JSON.stringify(dir)} ${reason}. Tailwind cannot scan such a path. Move the data dir to a path without it.`
+    : null;
+}

@@ -1,31 +1,111 @@
-import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
+import { lstatSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
-import { configProblems, labPaths } from "../server/lab-dir.ts";
+import { configProblems, dirProblem, labPaths } from "../server/lab-dir.ts";
 import { type GlobInput, loadRounds } from "../src/lib/rounds.ts";
 import { scanVariants } from "./scan-variants.ts";
 
-const isDir = (p: string) => existsSync(p) && statSync(p).isDirectory();
+type Kind = "dir" | "file" | "missing" | "dangling" | "error";
 
-/** Loads `fixtures/index.ts` with Vite and returns the keys of its `fixtures` map. */
+/** What `p` is, following symlinks. Never throws. */
+function kindOf(p: string): Kind {
+  try {
+    const st = statSync(p);
+    return st.isDirectory() ? "dir" : st.isFile() ? "file" : "error";
+  } catch (e) {
+    if ((e as NodeJS.ErrnoException).code !== "ENOENT") return "error";
+    try {
+      lstatSync(p);
+      return "dangling";
+    } catch {
+      return "missing";
+    }
+  }
+}
+
+const errMsg = (e: unknown) => {
+  const code = (e as NodeJS.ErrnoException)?.code;
+  return code ?? (e instanceof Error ? e.message.split("\n")[0] : String(e));
+};
+
+/** Reads a text file. Returns a readable problem instead of throwing. */
+function readText(
+  file: string,
+  label: string,
+): { text: string } | { error: string } {
+  switch (kindOf(file)) {
+    case "file":
+      break;
+    case "dir":
+      return { error: `${label} is a directory, not a file` };
+    case "dangling":
+      return { error: `${label} is a dangling symlink` };
+    case "missing":
+      return { error: `${label} is missing` };
+    default:
+      return {
+        error: `${label} cannot be read (not a regular file or a symlink loop)`,
+      };
+  }
+  try {
+    return { text: readFileSync(file, "utf8") };
+  } catch (e) {
+    return { error: `${label} cannot be read (${errMsg(e)})` };
+  }
+}
+
+/**
+ * Loads `fixtures/index.ts` with Vite and checks the two exports the app uses:
+ * `fixtures` (key -> data) and `fixtureKeys` (the keys, as the app reads them).
+ * Returns the keys, or readable problems.
+ */
 async function loadFixtureKeys(
   file: string,
   root: string,
-): Promise<{ keys: string[] } | { error: string }> {
+): Promise<{ keys: string[] } | { errors: string[] }> {
+  let module: { fixtures?: unknown; fixtureKeys?: unknown };
   try {
     const { runnerImport } = await import("vite");
-    const { module } = await runnerImport<{ fixtures?: unknown }>(file, {
+    ({ module } = await runnerImport<typeof module>(file, {
       root,
       logLevel: "silent",
-    });
-    const map = module.fixtures;
-    if (typeof map !== "object" || map === null || Array.isArray(map)) {
-      return { error: "fixtures/index.ts must export a `fixtures` object" };
-    }
-    return { keys: Object.keys(map) };
+    }));
   } catch (e) {
     const msg = e instanceof Error ? e.message.split("\n")[0] : String(e);
-    return { error: `fixtures/index.ts could not be loaded: ${msg}` };
+    return { errors: [`fixtures/index.ts could not be loaded: ${msg}`] };
   }
+  const { fixtures, fixtureKeys } = module;
+  const errors: string[] = [];
+  const mapOk =
+    typeof fixtures === "object" &&
+    fixtures !== null &&
+    !Array.isArray(fixtures);
+  if (!mapOk) errors.push("fixtures/index.ts must export a `fixtures` object");
+  const keysOk =
+    Array.isArray(fixtureKeys) &&
+    fixtureKeys.every((k) => typeof k === "string");
+  if (!keysOk) {
+    errors.push(
+      "fixtures/index.ts must export `fixtureKeys`, an array of strings",
+    );
+  }
+  if (!mapOk || !keysOk) return { errors };
+  const mapKeys = Object.keys(fixtures as object);
+  const listed = fixtureKeys as string[];
+  const missing = mapKeys.filter((k) => !listed.includes(k));
+  const extra = [...new Set(listed.filter((k) => !mapKeys.includes(k)))];
+  if (missing.length > 0) {
+    errors.push(`fixtureKeys lacks fixtures: ${missing.join(", ")}`);
+  }
+  if (extra.length > 0) {
+    errors.push(
+      `fixtureKeys names keys that are not in fixtures: ${extra.join(", ")}`,
+    );
+  }
+  if (new Set(listed).size !== listed.length) {
+    errors.push("fixtureKeys has duplicate entries");
+  }
+  if (errors.length > 0) return { errors };
+  return { keys: mapKeys };
 }
 
 /**
@@ -34,55 +114,98 @@ async function loadFixtureKeys(
  * Returns readable problems. Empty means clean.
  */
 export async function checkDataDir(dir: string): Promise<string[]> {
-  if (!isDir(dir)) return [`${dir} is not a directory`];
+  if (kindOf(dir) !== "dir") return [`${dir} is not a directory`];
+  const bad = dirProblem(dir);
+  if (bad) return [bad];
   const paths = labPaths(dir);
   const problems: string[] = [];
 
-  if (existsSync(paths.config)) {
-    try {
-      problems.push(
-        ...configProblems(JSON.parse(readFileSync(paths.config, "utf8"))),
-      );
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : String(e);
-      problems.push(`config.json is not valid JSON: ${msg}`);
+  if (kindOf(paths.config) !== "missing") {
+    const r = readText(paths.config, "config.json");
+    if ("error" in r) problems.push(r.error);
+    else {
+      try {
+        problems.push(...configProblems(JSON.parse(r.text)));
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        problems.push(`config.json is not valid JSON: ${msg}`);
+      }
     }
   }
 
   let fixtureKeys: string[] = [];
-  if (!existsSync(paths.fixtures)) {
+  const fixturesKind = kindOf(paths.fixtures);
+  if (fixturesKind === "missing") {
     problems.push("fixtures/index.ts is missing");
+  } else if (fixturesKind !== "file") {
+    problems.push(
+      `fixtures/index.ts is ${fixturesKind === "dir" ? "a directory, not a file" : "not readable (dangling or looping symlink?)"}`,
+    );
   } else {
     const r = await loadFixtureKeys(paths.fixtures, dir);
-    if ("error" in r) problems.push(r.error);
+    if ("errors" in r) problems.push(...r.errors);
     else fixtureKeys = r.keys;
   }
 
-  if (!isDir(paths.rounds)) {
-    problems.push("rounds/ is missing");
+  const roundsKind = kindOf(paths.rounds);
+  if (roundsKind !== "dir") {
+    problems.push(
+      roundsKind === "missing"
+        ? "rounds/ is missing"
+        : "rounds/ is not a readable directory",
+    );
     return problems;
   }
   // Same input shape as the app's import.meta.glob, so the same validator runs.
   const input: GlobInput = { json: {}, modules: {} };
   const stub = async () => ({ default: () => null });
-  for (const name of readdirSync(paths.rounds).sort()) {
+  let names: string[] = [];
+  try {
+    names = readdirSync(paths.rounds).sort();
+  } catch (e) {
+    problems.push(`rounds/ cannot be read (${errMsg(e)})`);
+  }
+  for (const name of names) {
     const roundDir = join(paths.rounds, name);
-    if (!isDir(roundDir)) continue;
-    const json = join(roundDir, "round.json");
-    if (!existsSync(json)) {
-      problems.push(`rounds/${name}: round.json is missing`);
+    const kind = kindOf(roundDir);
+    if (kind === "dangling") {
+      problems.push(`rounds/${name}: dangling symlink`);
       continue;
     }
-    input.json[`/rounds/${name}/round.json`] = readFileSync(json, "utf8");
-    for (const f of readdirSync(roundDir)) {
-      if (f.endsWith(".tsx")) input.modules[`/rounds/${name}/${f}`] = stub;
+    if (kind !== "dir") continue;
+    const r = readText(
+      join(roundDir, "round.json"),
+      `rounds/${name}/round.json`,
+    );
+    if ("error" in r) {
+      problems.push(
+        r.error.endsWith("is missing")
+          ? `rounds/${name}: round.json is missing`
+          : r.error,
+      );
+      continue;
+    }
+    input.json[`/rounds/${name}/round.json`] = r.text;
+    try {
+      for (const f of readdirSync(roundDir)) {
+        if (f.endsWith(".tsx")) input.modules[`/rounds/${name}/${f}`] = stub;
+      }
+    } catch (e) {
+      problems.push(`rounds/${name}: cannot list files (${errMsg(e)})`);
     }
   }
   for (const r of loadRounds(input, fixtureKeys)) {
     if (!r.ok) for (const e of r.errors) problems.push(`rounds/${r.id}: ${e}`);
   }
   for (const v of scanVariants(paths.rounds)) {
-    problems.push(`rounds/${v.file}:${v.line}: ${v.message}`);
+    const at = `rounds/${v.file}`;
+    if (v.line === 0) {
+      // Skip a filesystem problem already reported above for the same path.
+      const seen = problems.some(
+        (p) => p.startsWith(`${at}:`) || p.startsWith(`${at} `),
+      );
+      if (!seen) problems.push(`${at}: ${v.message}`);
+    } else problems.push(`${at}:${v.line}: ${v.message}`);
   }
   return problems;
 }

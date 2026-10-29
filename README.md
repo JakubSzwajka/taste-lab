@@ -21,6 +21,8 @@ node <taste-lab>/bin/taste-lab.mjs serve --dir ../my-app/.taste-lab [--port N]
 
 `init` creates the folder with a sample fixture and refuses to overwrite one that exists. `check` validates rounds and scans variant files; it exits 1 and lists the problems when something is wrong. `serve` starts the lab on 127.0.0.1. Without `--port` it takes the first free port from 5300, skipping 3000, 3326, 5173 and 5310.
 
+`check` loads `fixtures/index.ts` and needs both exports: `fixtures` and `fixtureKeys` (the same keys). It reports broken files, dangling or looping symlinks and unreadable paths as problems. Data dir paths may contain spaces, quotes (not both kinds) and `$`. `serve`, `init` and `check` reject paths with a line break or control character, a backslash, `*`, `{` or `}`, or both quote kinds: Tailwind reads its `@source` path raw as a glob and cannot carry them.
+
 Node version is pinned in `.node-version`. pnpm version is in `package.json`.
 
 ## Use

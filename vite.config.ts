@@ -12,6 +12,9 @@ const dataDir = path.resolve(
   lab,
   process.env.TASTE_LAB_DIR ?? "examples/demo/.taste-lab",
 );
+// Vite applies aliases with `String.replace`, so `$&`, `$1` or `$$` in a path would
+// be expanded. Double each `$` to keep directory names literal.
+const literal = (p: string) => p.replace(/\$/g, "$$$$");
 const dirKey = createHash("sha1").update(dataDir).digest("hex").slice(0, 10);
 
 export default defineConfig({
@@ -28,9 +31,12 @@ export default defineConfig({
     // First match wins. Variants import `@/fixtures` from the data dir and
     // `@/components/ui/*`, `@/lib/utils` from the lab.
     alias: [
-      { find: /^@\/fixtures$/, replacement: labPaths(dataDir).fixtures },
-      { find: /^@lab\//, replacement: `${dataDir}/` },
-      { find: "@", replacement: path.join(lab, "src") },
+      {
+        find: /^@\/fixtures$/,
+        replacement: literal(labPaths(dataDir).fixtures),
+      },
+      { find: /^@lab\//, replacement: literal(`${dataDir}/`) },
+      { find: "@", replacement: literal(path.join(lab, "src")) },
     ],
     // Data dir files can live outside this repo. Resolve their bare imports
     // from the lab's node_modules, and keep one React.

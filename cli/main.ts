@@ -36,7 +36,13 @@ export async function run(argv: string[], io: Io = consoleIo): Promise<number> {
         return 1;
       }
     case "check": {
-      const problems = await checkDataDir(cli.dir);
+      let problems: string[];
+      try {
+        problems = await checkDataDir(cli.dir);
+      } catch (e) {
+        // Backstop: an unexpected failure is still a readable problem, not a stack trace.
+        problems = [`unexpected error: ${e instanceof Error ? e.message : e}`];
+      }
       if (problems.length === 0) {
         io.out(`taste-lab check: ${cli.dir} is clean`);
         return 0;

@@ -283,6 +283,7 @@ describe("check", () => {
     writeFileSync(join(dir, "fixtures/index.ts"), "export const nope = 1;\n");
     expect(await checkDataDir(dir)).toEqual([
       "fixtures/index.ts must export a `fixtures` object",
+      "fixtures/index.ts must export `fixtureKeys`, an array of strings",
     ]);
     writeFileSync(join(dir, "fixtures/index.ts"), 'import "./missing";\n');
     const [p] = await checkDataDir(dir);

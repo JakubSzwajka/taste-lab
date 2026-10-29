@@ -32,7 +32,8 @@ node <taste-lab>/bin/taste-lab.mjs serve --dir <repo>/.taste-lab [--port N]
 ```
 
 - `init` writes the skeleton above with one sample fixture (`items`), an empty `taste.jsonl` and a `DESIGN.md` stub. It refuses to touch a path that exists.
-- `check` loads the fixtures, validates every `round.json` with the app's validator and runs the variant scanner on `rounds/`. Exit 0 when clean, 1 with one line per problem, 2 on a usage error.
+- `check` loads the fixtures (both `fixtures` and `fixtureKeys` must be exported and list the same keys), validates every `round.json` with the app's validator and runs the variant scanner on `rounds/`. Exit 0 when clean, 1 with one line per problem (filesystem trouble such as a dangling symlink included), 2 on a usage error.
+- A data dir path must not contain a line break or control character, a backslash, `*`, `{`, `}` or both quote kinds. Tailwind reads `@source` raw and as a glob, so `serve`, `init` and `check` reject such paths up front. Spaces, `$`, one kind of quote and `[`, `]`, `(`, `)`, `!` work.
 - `serve` starts the lab on 127.0.0.1 and prints the URL. Without `--port` it takes the first free port from 5300 and never picks 3000, 3326, 5173 or 5310. Stop it with Ctrl+C.
 
 ## Core principle: 100% shadcn

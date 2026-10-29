@@ -1,6 +1,6 @@
 import { relative } from "node:path";
 import type { Plugin, ViteDevServer } from "vite";
-import { labPaths, readLabConfig } from "./lab-dir.ts";
+import { labPaths, readLabConfig, tailwindSource } from "./lab-dir.ts";
 import { createTasteMiddleware } from "./taste-log.ts";
 
 export const CONFIG_MODULE = "virtual:taste-lab/config";
@@ -38,7 +38,7 @@ export function tasteLab(opts: { dataDir: string; css: string }): Plugin {
       filter: { id: /\.css(?:\?.*)?$/ },
       handler(code, id) {
         if (id.split("?")[0] !== css) return;
-        return `${code}\n@source ${JSON.stringify(dataDir)};\n`;
+        return `${code}\n${tailwindSource(dataDir)}\n`;
       },
     },
     configureServer(server) {

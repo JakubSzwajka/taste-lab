@@ -1,3 +1,4 @@
+import type { CSSProperties } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -18,19 +19,33 @@ import { cn } from "@/lib/utils";
 
 type Cell = TokenRow["light"];
 
-/** A swatch of the resolved value. `--radius` is a sample box with that radius. */
-function Swatch({ name, cell }: { name: string; cell: Cell }) {
+/**
+ * A swatch of the resolved value. `--radius` is a sample box with that radius.
+ * `scope` holds every token of this column's mode as custom properties on the
+ * swatch, so a `var()` value resolves in its own mode, not the page's.
+ */
+function Swatch({
+  name,
+  cell,
+  scope,
+}: {
+  name: string;
+  cell: Cell;
+  scope: CSSProperties;
+}) {
   const isRadius = name === "--radius";
   return (
     <div className="flex items-center gap-3">
       <span
         role="img"
         aria-label={`${name} ${cell.value}`}
-        style={
-          isRadius
+        data-swatch={name}
+        style={{
+          ...scope,
+          ...(isRadius
             ? { borderRadius: cell.value }
-            : { backgroundColor: cell.value }
-        }
+            : { backgroundColor: cell.value }),
+        }}
         className={cn(
           "size-8 shrink-0 border",
           isRadius
@@ -64,6 +79,12 @@ export function ThemeView({
   problems: ThemeProblem[];
 }) {
   const rows = resolveTokens(stock, theme);
+  const scopeOf = (mode: "light" | "dark") =>
+    Object.fromEntries(
+      rows.map((r) => [r.name, r[mode].value]),
+    ) as CSSProperties;
+  const lightScope = scopeOf("light");
+  const darkScope = scopeOf("dark");
   const overridden = rows.filter(
     (r) => r.light.source === "theme" || r.dark.source === "theme",
   );
@@ -127,10 +148,10 @@ export function ThemeView({
                       {r.name}
                     </TableCell>
                     <TableCell>
-                      <Swatch name={r.name} cell={r.light} />
+                      <Swatch name={r.name} cell={r.light} scope={lightScope} />
                     </TableCell>
                     <TableCell>
-                      <Swatch name={r.name} cell={r.dark} />
+                      <Swatch name={r.name} cell={r.dark} scope={darkScope} />
                     </TableCell>
                     <TableCell>
                       {lightTheme || darkTheme ? (

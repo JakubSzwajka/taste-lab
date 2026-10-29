@@ -69,7 +69,7 @@ This repo:
 ```
 bin/taste-lab.mjs        CLI entry (Node runs the TypeScript in cli/ directly)
 cli/                     serve, init, check, port picking, variant scanner
-examples/demo/.taste-lab the demo data dir (rounds 1 to 6, empty theme.css)
+examples/demo/.taste-lab the demo data dir (rounds 1 to 7, empty theme.css)
 server/                  Vite plugin and /api/taste middleware
 src/                     lab UI
 src/components/ui/       stock shadcn primitives, generated, not hand-edited

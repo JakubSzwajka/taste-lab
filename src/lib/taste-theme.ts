@@ -132,7 +132,12 @@ function scanRules(text: string, problems: ThemeProblem[]): Rule[] {
 
 type Decl = { raw: string; line: number };
 
-/** Splits a block body into declarations at top-level `;`. */
+/**
+ * Splits a block body into declarations at `;` outside strings and parentheses.
+ * A `;` inside `(` that is followed by `--name:` also splits: the `(` is never
+ * closed, and it must not swallow the declarations after it.
+ * `declarationProblem` rejects the broken one.
+ */
 function splitDeclarations(body: string, bodyLine: number): Decl[] {
   const out: Decl[] = [];
   let depth = 0;
@@ -151,7 +156,11 @@ function splitDeclarations(body: string, bodyLine: number): Decl[] {
     if (c === '"' || c === "'") i = skipString(body, i) - 1;
     else if (c === "(") depth++;
     else if (c === ")") depth = Math.max(0, depth - 1);
-    else if (c === ";" && depth === 0) {
+    else if (
+      c === ";" &&
+      (depth === 0 || /^\s*--[\w-]+\s*:/.test(body.slice(i + 1)))
+    ) {
+      depth = 0;
       push(i);
       start = i + 1;
     }
@@ -268,6 +277,11 @@ function declarationProblem(
   if (/url\s*\(/i.test(value)) {
     return { message: `url() is not allowed (${name})` };
   }
+  if (value.includes(";")) {
+    return { message: `stray ";" inside the value of ${name}` };
+  }
+  const broken = delimiterProblem(value);
+  if (broken) return { message: `${broken} (${name})` };
   if (/!\s*important/i.test(value)) {
     return {
       message: `!important is not allowed (${name}). It would beat round tokens`,
@@ -279,6 +293,25 @@ function declarationProblem(
     };
   }
   return { name, value };
+}
+
+/** Why a value's `()`, `[]` or quotes do not pair up, or null when they do. */
+function delimiterProblem(value: string): string | null {
+  const close: Record<string, string> = { "(": ")", "[": "]" };
+  const stack: string[] = [];
+  for (let i = 0; i < value.length; i++) {
+    const c = value[i];
+    if (c === '"' || c === "'") {
+      const end = skipString(value, i);
+      if (value[end - 1] !== c || end - 1 === i)
+        return "string is never closed";
+      i = end - 1;
+    } else if (c in close) stack.push(close[c]);
+    else if (c === ")" || c === "]") {
+      if (stack.pop() !== c) return `unmatched "${c}"`;
+    }
+  }
+  return stack.length > 0 ? `"${stack[stack.length - 1]}" is missing` : null;
 }
 
 export type TokenSource = "stock" | "theme";

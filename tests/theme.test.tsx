@@ -146,6 +146,33 @@ describe("theme.css validator", () => {
     expect(msgs(":root { .a { --ring: red; } }")[0]).toContain("nested");
   });
 
+  it("rejects unbalanced delimiters, never emits them and keeps neighbors", () => {
+    const bad = [
+      ":root { --primary: oklch(0.5 0.2 255; --ring: red; }\n.dark { --input: blue; }",
+      ":root { --primary: oklch(0.5 0.2 255)); --ring: red; }\n.dark { --input: blue; }",
+      ":root { --primary: oklch[0.5); --ring: red; }\n.dark { --input: blue; }",
+      ':root { --primary: "red; --ring: red;\n}\n.dark { --input: blue; }',
+      ":root { --primary: calc(1px;2px); --ring: red; }\n.dark { --input: blue; }",
+      ":root { --primary: oklch(0.5 }0.2); --ring: red; }\n.dark { --input: blue; }",
+    ];
+    for (const css of bad) {
+      const r = check(css);
+      expect(r.problems.length, css).toBeGreaterThan(0);
+      expect(r.problems.every((p) => p.line >= 1)).toBe(true);
+      expect(r.theme.light["--primary"], css).toBeUndefined();
+      expect(r.theme.dark["--input"], css).toBe("blue");
+      const out = themeToCss(stock, r.theme);
+      expect(out).not.toContain("0.2");
+      expect(out).not.toContain("px");
+      expect(out.split("(").length).toBe(out.split(")").length);
+    }
+    const one = check(":root { --primary: oklch(0.5 0.2 255; --ring: red; }");
+    expect(one.problems).toHaveLength(1);
+    expect(one.problems[0].line).toBe(1);
+    expect(one.problems[0].message).toContain('")" is missing');
+    expect(one.theme.light).toEqual({ "--ring": "red" });
+  });
+
   it("keeps the last declaration and merges repeated blocks", () => {
     const r = check(
       ":root { --ring: red; --ring: blue; }\n:root { --input: green; }",
@@ -312,6 +339,22 @@ describe("Theme page", () => {
   it("shows --radius as a sample box with that radius", () => {
     const html = render(":root { --radius: 1rem; }");
     expect(html).toContain("border-radius:1rem");
+  });
+
+  it("resolves each swatch column in its own mode", () => {
+    const html = render(
+      ":root { --primary: var(--destructive); }\n.dark { --primary: var(--destructive); }",
+    );
+    const row = /data-source="theme"[\s\S]*?<\/tr>/.exec(html)?.[0] ?? "";
+    const swatches = [...row.matchAll(/<span role="img"[^>]*style="([^"]*)"/g)];
+    expect(swatches).toHaveLength(2);
+    const [light, dark] = swatches.map((m) => m[1]);
+    const val = (style: string, name: string) =>
+      new RegExp(`${name}:([^;]+)`).exec(style)?.[1];
+    expect(light).toContain("background-color:var(--destructive)");
+    expect(val(light, "--destructive")).toBe(stock.light["--destructive"]);
+    expect(val(dark, "--destructive")).toBe(stock.dark["--destructive"]);
+    expect(val(light, "--destructive")).not.toBe(val(dark, "--destructive"));
   });
 
   it("has a route", () => {

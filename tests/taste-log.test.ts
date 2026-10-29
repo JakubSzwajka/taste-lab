@@ -10,6 +10,7 @@ import {
   readLog,
   validateEntry,
 } from "../server/taste-log";
+import { TAGS } from "../src/lib/taste";
 
 const valid = {
   round: "round-001",
@@ -35,6 +36,15 @@ describe("validateEntry", () => {
     const r = validateEntry(valid, () => new Date("2026-01-02T03:04:05Z"));
     expect(r).toMatchObject({ ok: true });
     if (r.ok) expect(r.entry.ts).toBe("2026-01-02T03:04:05.000Z");
+  });
+
+  it("accepts an ISO ts and every allowed tag", () => {
+    const r = validateEntry({
+      ...valid,
+      ts: "2026-01-02T03:04:05.123Z",
+      tags: [...TAGS],
+    });
+    expect(r.ok).toBe(true);
   });
 
   it("accepts none and mix with a reason", () => {
@@ -63,6 +73,9 @@ describe("validateEntry", () => {
     ["tags not strings", { ...valid, tags: [1] }],
     ["empty round", { ...valid, round: "" }],
     ["bad ts", { ...valid, ts: "yesterday" }],
+    ["numeric ts", { ...valid, ts: "1" }],
+    ["date-only ts", { ...valid, ts: "2026-01-02" }],
+    ["unknown tag", { ...valid, tags: ["airy", "spicy"] }],
   ])("rejects %s", (_n, body) => {
     expect(validateEntry(body).ok).toBe(false);
   });

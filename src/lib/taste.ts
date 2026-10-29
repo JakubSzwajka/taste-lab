@@ -33,6 +33,11 @@ const THEMES = ["light", "dark"];
 
 const isString = (v: unknown): v is string => typeof v === "string";
 
+const ISO_TS =
+  /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?(?:Z|[+-]\d{2}:\d{2})$/;
+const isIsoTimestamp = (v: string) =>
+  ISO_TS.test(v) && !Number.isNaN(Date.parse(v));
+
 /** Validates an untrusted POST body. `ts` is filled by the server when absent. */
 export function validateEntry(
   input: unknown,
@@ -72,6 +77,13 @@ export function validateEntry(
   if (!Array.isArray(tags) || !tags.every(isString)) {
     return { ok: false, error: "tags must be an array of strings" };
   }
+  const unknownTag = tags.find((t) => !(TAGS as readonly string[]).includes(t));
+  if (unknownTag !== undefined) {
+    return {
+      ok: false,
+      error: `unknown tag "${unknownTag}". Allowed: ${TAGS.join(", ")}`,
+    };
+  }
   const reason = o.reason ?? "";
   if (!isString(reason)) {
     return { ok: false, error: "reason must be a string" };
@@ -82,7 +94,7 @@ export function validateEntry(
   let ts: string;
   if (o.ts === undefined) {
     ts = now().toISOString();
-  } else if (isString(o.ts) && !Number.isNaN(Date.parse(o.ts))) {
+  } else if (isString(o.ts) && isIsoTimestamp(o.ts)) {
     ts = o.ts;
   } else {
     return { ok: false, error: "ts must be an ISO date string" };

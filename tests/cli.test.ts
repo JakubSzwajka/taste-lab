@@ -164,6 +164,7 @@ describe("init", () => {
       "rounds/.gitkeep",
       "library/.gitkeep",
       "taste.jsonl",
+      "theme.css",
       "DESIGN.md",
     ]);
     for (const f of files) expect(existsSync(join(dir, f))).toBe(true);

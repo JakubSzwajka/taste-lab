@@ -420,6 +420,17 @@ describe("sibling imports resolve to scanned files only", () => {
       'import "./Helper" must point to a .ts or .tsx file in this folder',
     ]);
   });
+
+  it("rejects a directory named Helper.ts or Helper.tsx", () => {
+    for (const ext of ["ts", "tsx"]) {
+      const msgs = scanDir({
+        "Card.tsx": card,
+        [`Helper.${ext}/index.ts`]: helper,
+      });
+      expect(msgs).toHaveLength(1);
+      expect(msgs[0]).toContain(`Helper.${ext} is not a file`);
+    }
+  });
 });
 
 describe("style rule is scoped to props", () => {
@@ -461,13 +472,42 @@ export default () => <div {...b} />;
 export default () => <div {...props()} />;
 `;
     expect(scanText(fnProps)).toEqual([STYLE]);
-    const factory = `import { createElement } from "react";
-export default () => createElement("div", { style: { margin: 1 } });
-`;
-    expect(scanText(factory)).toEqual([STYLE]);
     const dom =
       "export const f = (el: HTMLElement) => { el.style.margin = '1px'; };\n";
     expect(scanText(dom)).toEqual([ACCESS]);
+  });
+
+  it("bans element factories, aliased, namespaced and destructured", () => {
+    const FACTORY =
+      "element factories (createElement, cloneElement, jsx, jsxs, jsxDEV) are not allowed, use JSX";
+    const cases = [
+      'import { createElement } from "react";\nexport default () => createElement("div");\n',
+      'import { createElement as h } from "react";\nexport default () => h("div", { style: { margin: 1 } });\n',
+      'import { cloneElement as c } from "react";\nexport const x = c;\n',
+      'import React from "react";\nexport default () => React.createElement("div");\n',
+      'import * as R from "react";\nexport const x = R.cloneElement;\n',
+      'import * as R from "react";\nexport const x = R["createElement"];\n',
+      'import * as R from "react";\nexport const { createElement: h } = R;\n',
+      'import { jsx } from "react/jsx-runtime";\nexport const x = jsx;\n',
+      'import { jsxs as j } from "react/jsx-runtime";\nexport const x = j;\n',
+    ];
+    for (const src of cases) {
+      expect(scanText(src), src).toContain(FACTORY);
+    }
+    // Plain JSX and unrelated names stay fine.
+    expect(
+      scanText(
+        'import { useState } from "react";\nexport default () => <div>{String(useState)}</div>;\n',
+      ),
+    ).toEqual([]);
+  });
+
+  it("does not scan factory children as props", () => {
+    const src = `export default () => (
+  <p>{new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(1)}</p>
+);
+`;
+    expect(scanText(src)).toEqual([]);
   });
 
   it("does not flag a style object that never reaches JSX", () => {

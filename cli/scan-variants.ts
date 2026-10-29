@@ -287,6 +287,17 @@ function siblingProblem(dir: string, spec: string): string | null {
     return null; // the walk already reports an unreadable folder
   }
   const hit = RESOLVE_EXTS.filter((e) => names.includes(base + e));
+  // A folder named `Helper.ts` is not a module. Every candidate must be a regular file.
+  const notFile = hit.find((e) => {
+    try {
+      return !statSync(join(dir, base + e)).isFile();
+    } catch {
+      return true;
+    }
+  });
+  if (notFile) {
+    return `import "${spec}" must point to a regular .ts or .tsx file, but ${base}${notFile} is not a file`;
+  }
   if (names.includes(base)) {
     return `import "${spec}" must point to a .ts or .tsx file in this folder`;
   }
@@ -359,6 +370,8 @@ function walkNodes(n: unknown, fn: (node: Node) => void) {
   }
 }
 
+// Element factories are banned (see `visit`), so the only way a style object
+// becomes a prop is a JSX spread.
 const ELEMENT_FACTORIES = new Set([
   "createElement",
   "cloneElement",
@@ -366,11 +379,21 @@ const ELEMENT_FACTORIES = new Set([
   "jsxs",
   "jsxDEV",
 ]);
+const FACTORY_MESSAGE =
+  "element factories (createElement, cloneElement, jsx, jsxs, jsxDEV) are not allowed, use JSX";
+
+/** The name a member access or key reads, for `a.b`, `a["b"]` and `{ b }`. */
+function accessName(prop: unknown, computed: unknown): string | null {
+  if (!isNode(prop)) return null;
+  if (!computed)
+    return prop.type === "Identifier" ? (prop.name as string) : null;
+  return staticString(prop);
+}
 
 /**
- * `style` keys in objects that become React props: spread into JSX, passed to
- * createElement/cloneElement, or held in a variable that is. Other objects with a
- * `style` key (`Intl.NumberFormat(l, { style: "currency" })`) are not props.
+ * `style` keys in objects that become React props: spread into JSX, or held in a
+ * variable that is. Other objects with a `style` key
+ * (`Intl.NumberFormat(l, { style: "currency" })`) are not props.
  * The match is by name and over-approximate: it may flag an unrelated object that
  * shares a name with a spread one. It never looks across files.
  */
@@ -390,18 +413,6 @@ function styleSinkProps(ast: unknown): Set<unknown> {
     if (n.type === "JSXSpreadAttribute") {
       markStyleKeys(n.argument);
       collectNames(n.argument);
-    } else if (n.type === "CallExpression" && isNode(n.callee)) {
-      const c = n.callee;
-      const name =
-        c.type === "Identifier"
-          ? (c.name as string)
-          : c.type === "MemberExpression"
-            ? propName(c.property)
-            : null;
-      if (name && ELEMENT_FACTORIES.has(name)) {
-        markStyleKeys(n.arguments);
-        collectNames(n.arguments);
-      }
     } else if (
       n.type === "VariableDeclarator" &&
       isNode(n.id) &&
@@ -510,9 +521,34 @@ function visit(
       }
       break;
     }
-    case "MemberExpression":
+    case "MemberExpression": {
+      const name = accessName(node.property, node.computed);
       if (banStyle && propName(node.property) === "style") {
         report(at, "style access is not allowed (put tokens in round.json)");
+      }
+      if (banStyle && name && ELEMENT_FACTORIES.has(name)) {
+        report(at, FACTORY_MESSAGE);
+      }
+      break;
+    }
+    case "ImportSpecifier":
+    case "ExportSpecifier": {
+      const name = propName(
+        node.type === "ImportSpecifier" ? node.imported : node.local,
+      );
+      if (banStyle && name && ELEMENT_FACTORIES.has(name)) {
+        report(at, FACTORY_MESSAGE);
+      }
+      break;
+    }
+    case "ObjectPattern":
+      // `const { createElement: h } = React`
+      for (const p of node.properties as Node[]) {
+        const name =
+          p.type === "Property" ? accessName(p.key, p.computed) : null;
+        if (banStyle && name && ELEMENT_FACTORIES.has(name)) {
+          report(at, FACTORY_MESSAGE);
+        }
       }
       break;
     case "Property": {

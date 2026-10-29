@@ -5,6 +5,7 @@ import {
   type LucideIcon,
   TriangleAlert,
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import {
   Table,
   TableBody,
@@ -80,13 +81,17 @@ export default function CompactGrid() {
                   <div className="flex items-center gap-1.5">
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <span className="flex shrink-0">
+                        <Button
+                          variant="ghost"
+                          size="icon-xs"
+                          className="-m-1 size-5"
+                        >
                           <Icon
                             aria-hidden
                             className={cn("size-3.5", status.className)}
                           />
                           <span className="sr-only">{status.label}</span>
-                        </span>
+                        </Button>
                       </TooltipTrigger>
                       <TooltipContent>{status.label}</TooltipContent>
                     </Tooltip>
@@ -103,7 +108,14 @@ export default function CompactGrid() {
                 <TableCell className={cn(OWNER, "text-muted-foreground")}>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <span>{r.owner.initials}</span>
+                      <Button
+                        variant="ghost"
+                        size="xs"
+                        className="-mx-1 -my-0.5 h-5 px-1 font-normal text-muted-foreground"
+                      >
+                        {r.owner.initials}
+                        <span className="sr-only">, {r.owner.name}</span>
+                      </Button>
                     </TooltipTrigger>
                     <TooltipContent>{r.owner.name}</TooltipContent>
                   </Tooltip>

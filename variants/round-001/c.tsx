@@ -134,7 +134,10 @@ export default function RichDashboard() {
                 </span>
                 <span className="flex shrink-0 items-center gap-1">
                   <MessageSquare aria-hidden className="size-3.5" />
-                  {t.comments}
+                  <span aria-hidden>{t.comments}</span>
+                  <span className="sr-only">
+                    {t.comments} {t.comments === 1 ? "comment" : "comments"}
+                  </span>
                 </span>
               </CardFooter>
             </Card>

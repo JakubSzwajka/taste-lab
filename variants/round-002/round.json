@@ -23,7 +23,9 @@
       "changes": "Owner avatars, status badges, progress bars, two lines per cell, 16px row padding, muted indigo accent",
       "tokens": {
         "--primary": "light-dark(oklch(0.48 0.09 265), oklch(0.76 0.07 265))",
-        "--primary-foreground": "light-dark(oklch(0.985 0 0), oklch(0.2 0.03 265))"
+        "--primary-foreground": "light-dark(oklch(0.985 0 0), oklch(0.2 0.03 265))",
+        "--muted-foreground": "light-dark(oklch(0.52 0 0), oklch(0.708 0 0))",
+        "--destructive": "light-dark(oklch(0.5 0.2 27.325), oklch(0.704 0.191 22.216))"
       }
     },
     {
@@ -37,7 +39,9 @@
         "--card": "light-dark(oklch(1 0 0), oklch(0.21 0.007 240))",
         "--primary": "light-dark(oklch(0.55 0.11 175), oklch(0.74 0.12 175))",
         "--primary-foreground": "light-dark(oklch(0.985 0 0), oklch(0.2 0.03 175))",
-        "--chart-4": "light-dark(oklch(0.7 0.15 75), oklch(0.78 0.14 75))"
+        "--chart-4": "light-dark(oklch(0.7 0.15 75), oklch(0.78 0.14 75))",
+        "--muted-foreground": "light-dark(oklch(0.52 0 0), oklch(0.708 0 0))",
+        "--destructive": "light-dark(oklch(0.5 0.2 27.325), oklch(0.704 0.191 22.216))"
       }
     }
   ]

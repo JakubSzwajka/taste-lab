@@ -13,6 +13,7 @@ import {
   TriangleAlert,
 } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardTitle } from "@/components/ui/card";
 import {
   Tooltip,
@@ -87,13 +88,13 @@ export default function DenseList() {
               <div className="flex items-center gap-2">
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <span className="flex shrink-0">
+                    <Button variant="ghost" size="icon-xs" className="-m-1">
                       <StatusIcon
                         aria-hidden
                         className={cn("size-4", status.className)}
                       />
                       <span className="sr-only">{status.label}</span>
-                    </span>
+                    </Button>
                   </TooltipTrigger>
                   <TooltipContent>{status.label}</TooltipContent>
                 </Tooltip>
@@ -107,12 +108,16 @@ export default function DenseList() {
                 </CardTitle>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <span className="relative flex shrink-0">
+                    <Button
+                      variant="ghost"
+                      size="icon-xs"
+                      className="relative -m-1"
+                    >
                       {t.priority !== "urgent" && (
                         // Faint full bar set behind, so low and medium still read as bars.
                         <Signal
                           aria-hidden
-                          className="absolute inset-0 size-4 text-muted-foreground/30"
+                          className="absolute inset-1 size-4 text-muted-foreground/30"
                         />
                       )}
                       <PriorityIcon
@@ -120,7 +125,7 @@ export default function DenseList() {
                         className={cn("relative size-4", priority.className)}
                       />
                       <span className="sr-only">{priority.label} priority</span>
-                    </span>
+                    </Button>
                   </TooltipTrigger>
                   <TooltipContent>{priority.label} priority</TooltipContent>
                 </Tooltip>
@@ -131,7 +136,10 @@ export default function DenseList() {
                 {t.comments > 0 && (
                   <span className="flex items-center gap-1">
                     <MessageSquare aria-hidden className="size-3" />
-                    {t.comments}
+                    <span aria-hidden>{t.comments}</span>
+                    <span className="sr-only">
+                      {t.comments} {t.comments === 1 ? "comment" : "comments"}
+                    </span>
                   </span>
                 )}
                 <span className="min-w-0 flex-1 truncate">

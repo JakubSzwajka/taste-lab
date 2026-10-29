@@ -47,24 +47,27 @@ export default function RowCards() {
                   </CardAction>
                 </CardHeader>
                 <CardContent className="flex flex-col gap-3">
+                  {/* Each dt/dd pair is one column; subgrid keeps labels and values on shared rows. */}
                   <dl className="grid grid-cols-[minmax(0,1fr)_auto_auto] gap-x-5 gap-y-0.5 text-sm tabular-nums">
-                    <dt className="text-xs text-muted-foreground">Owner</dt>
-                    <dt className="text-xs text-muted-foreground">Budget</dt>
-                    <dt className="text-right text-xs text-muted-foreground">
-                      Updated
-                    </dt>
-                    <dd className="flex min-w-0 items-center gap-1.5">
-                      <Avatar size="sm">
-                        <AvatarFallback>{r.owner.initials}</AvatarFallback>
-                      </Avatar>
-                      <span className="truncate">{r.owner.name}</span>
-                    </dd>
-                    <dd className="self-center font-medium">
-                      {formatCurrency(r.amount)}
-                    </dd>
-                    <dd className="self-center text-right">
-                      {formatDate(r.updated)}
-                    </dd>
+                    <div className="row-span-2 grid min-w-0 grid-rows-subgrid">
+                      <dt className="text-xs text-muted-foreground">Owner</dt>
+                      <dd className="flex min-w-0 items-center gap-1.5">
+                        <Avatar size="sm">
+                          <AvatarFallback>{r.owner.initials}</AvatarFallback>
+                        </Avatar>
+                        <span className="truncate">{r.owner.name}</span>
+                      </dd>
+                    </div>
+                    <div className="row-span-2 grid grid-rows-subgrid">
+                      <dt className="text-xs text-muted-foreground">Budget</dt>
+                      <dd className="self-center font-medium">
+                        {formatCurrency(r.amount)}
+                      </dd>
+                    </div>
+                    <div className="row-span-2 grid grid-rows-subgrid text-right">
+                      <dt className="text-xs text-muted-foreground">Updated</dt>
+                      <dd className="self-center">{formatDate(r.updated)}</dd>
+                    </div>
                   </dl>
                   <div className="flex items-center gap-3">
                     <Progress

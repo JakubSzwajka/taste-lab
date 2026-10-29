@@ -31,13 +31,14 @@ Run them from anywhere. Relative `--dir` paths resolve against the current folde
 ```sh
 node <taste-lab>/bin/taste-lab.mjs init  --dir <repo>/.taste-lab [--name X]
 node <taste-lab>/bin/taste-lab.mjs check --dir <repo>/.taste-lab
-node <taste-lab>/bin/taste-lab.mjs serve --dir <repo>/.taste-lab [--port N]
+node <taste-lab>/bin/taste-lab.mjs serve --dir <repo>/.taste-lab [--port N] [--lan [--host <ip>]]
 ```
 
 - `init` writes the skeleton above with one sample fixture (`items`), an empty `library/`, an empty `taste.jsonl`, a `theme.css` with a header comment and empty `:root` and `.dark` blocks, and a `DESIGN.md` stub. It refuses to touch a path that exists.
 - `check` validates `theme.css` (see "Theme"), loads the fixtures (both `fixtures` and `fixtureKeys` must be exported and list the same keys), validates every `round.json` with the app's validator, runs the variant scanner on `rounds/` and validates `library/` (see "Library"). Exit 0 when clean, 1 with one line per problem (filesystem trouble such as a dangling symlink included), 2 on a usage error.
 - A data dir path must not contain a line break or control character, a backslash, `*`, `{`, `}` or both quote kinds. Tailwind reads `@source` raw and as a glob, so `serve`, `init` and `check` reject such paths up front. Spaces, `$`, one kind of quote and `[`, `]`, `(`, `)`, `!` work.
 - `serve` starts the lab on 127.0.0.1 and prints the URL. Without `--port` it takes the first free port from 5300 and never picks 3000, 3326, 5173 or 5310. Stop it with Ctrl+C.
+- `serve --lan` is opt-in LAN access, see "LAN mode". `--host` without `--lan` is a usage error (exit 2).
 
 ## Core principle: 100% shadcn
 
@@ -300,6 +301,16 @@ export default function Dense() {
 ```
 
 Or copy the component into the round and change one thing. A copy can import `class-variance-authority` but not sibling files, so inline anything it takes from a sibling. Say in `question` and `changes` that the round iterates a library component. `basedOn` stays a round. When the operator picks a variant, update `library/<name>/` and add the round to `provenance`.
+
+## LAN mode
+
+`serve --lan [--host <ip>]` lets the operator open the lab from another device on the home LAN. Without `--lan`, nothing here applies: loopback only, no token.
+
+- It binds one private IPv4 address, never 0.0.0.0. Auto-pick: the interface with the default route (Linux `/proc/net/route`), else the first private IPv4 not on a `docker*`, `br-*`, `veth*`, `virbr*`, `tailscale*` or similar interface. It prints the choice and other candidates. `--host <ip>` must be a private or loopback IPv4 (10/8, 172.16/12, 192.168/16, 127/8).
+- It prints `http://<ip>:<port>/?k=<token>`. The token is `crypto.randomBytes(16)` base64url, new each run, in memory only. It appears in that URL line and nowhere else: not in logs, files or the data dir. Do not copy it into notes, commits or chat.
+- The app stores `k` in `localStorage`, removes it from the address bar with `history.replaceState` and sends it as `X-Taste-Token` on every API call (`src/lib/token.ts`, `src/lib/api.ts`). On 401 it shows "Open the link printed by `taste-lab serve --lan`".
+- Guard on `GET` and `POST /api/taste` (`server/lan.ts`, used by `server/taste-log.ts`): remote address private (10/8, 172.16/12, 192.168/16, 127/8, `::1`, `fc00::/7`, IPv4-mapped forms), `Host` equal to `<ip>:<port>`, `Origin` (if sent) equal to `http://<ip>:<port>`, token match in constant time. Address, Host or Origin failure is 403. Missing or wrong token is 401. Content type, size limit and validation rules are unchanged. Reads need the token too.
+- Not protected: static assets and Vite dev endpoints. The round and library source is readable by anyone on the LAN who reaches the port. No HTTPS.
 
 ## Known limits
 

@@ -1,8 +1,9 @@
 import { relative } from "node:path";
 import type { Plugin, ViteDevServer } from "vite";
 import { themeToCss } from "../src/lib/taste-theme.ts";
+import { onAppendOf } from "./events.ts";
 import { labPaths, readLabConfig, tailwindSource } from "./lab-dir.ts";
-import { lanSettingsOf } from "./lan-gate.ts";
+import { fromLoopbackOf, lanSettingsOf } from "./lan-gate.ts";
 import { createTasteMiddleware } from "./taste-log.ts";
 import { loadTheme } from "./theme-file.ts";
 
@@ -68,9 +69,15 @@ export function tasteLab(opts: { dataDir: string; css: string }): Plugin {
       },
     },
     configureServer(server) {
-      // Per server: the LAN settings come from this server's own plugin list.
+      // Per server: LAN settings, listener check and answer hook come from this
+      // server's own plugin list.
+      const plugins = server.config.plugins;
       server.middlewares.use(
-        createTasteMiddleware(log, lanSettingsOf(server.config.plugins)),
+        createTasteMiddleware(log, {
+          lan: lanSettingsOf(plugins),
+          fromLoopback: fromLoopbackOf(plugins),
+          onAppend: onAppendOf(plugins),
+        }),
       );
       server.watcher.add(dataDir);
       const themeFile = labPaths(dataDir).theme;

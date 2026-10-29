@@ -1,12 +1,29 @@
+import { eventLine, type ServeEvent } from "../server/events.ts";
 import { parseCli, USAGE, UsageError } from "./args.ts";
 import { checkDataDir } from "./check.ts";
 import { InitError, initDataDir } from "./init.ts";
 
 export type Io = { out: (s: string) => void; err: (s: string) => void };
+// stdout by hand, not console.log: `--events` points console.log at stderr.
 const consoleIo: Io = {
-  out: (s) => console.log(s),
+  out: (s) => void process.stdout.write(`${s}\n`),
   err: (s) => console.error(s),
 };
+
+/**
+ * `--events`: stdout must hold only JSON lines. Anything in this process that
+ * logs with console.log (a plugin, a dependency) goes to stderr instead.
+ */
+function keepStdoutForEvents() {
+  const toErr = (...a: unknown[]) => console.error(...a);
+  console.log = toErr;
+  console.info = toErr;
+  console.debug = toErr;
+}
+
+/** `serve --events` as typed, before parsing: a usage error is reported as an event too. */
+const wantsEvents = (argv: string[]) =>
+  argv[0] === "serve" && argv.includes("--events");
 
 /**
  * Runs one command and returns the exit code. `serve` resolves once the server
@@ -18,6 +35,9 @@ export async function run(argv: string[], io: Io = consoleIo): Promise<number> {
     cli = parseCli(argv);
   } catch (e) {
     if (!(e instanceof UsageError)) throw e;
+    if (wantsEvents(argv)) {
+      io.out(eventLine({ event: "error", message: e.message }));
+    }
     io.err(`taste-lab: ${e.message}\n\n${USAGE}`);
     return 2;
   }
@@ -54,41 +74,80 @@ export async function run(argv: string[], io: Io = consoleIo): Promise<number> {
       );
       return 1;
     }
-    case "serve": {
-      const { serve } = await import("./serve.ts");
-      try {
-        const { server, url, lan } = await serve(
-          cli.dir,
-          cli.port,
-          cli.lan ? { host: cli.host } : undefined,
-        );
-        const notes: string[] = [];
-        if (lan) {
-          notes.push(
-            `  LAN address ${lan.address}${lan.iface ? ` (${lan.iface})` : ""}. The link token changes on every run.`,
-          );
-          if (lan.others.length > 0) {
-            notes.push(
-              `  Other candidates: ${lan.others.map((c) => `${c.address} (${c.iface})`).join(", ")}. Choose one with --host <ip>.`,
-            );
+    case "serve":
+      return runServe(cli, io);
+  }
+}
+
+type ServeCli = Extract<ReturnType<typeof parseCli>, { command: "serve" }>;
+
+/**
+ * `serve`. Without `--events`: human text on stdout, ending with the link.
+ * With it: one JSON event per line on stdout (ready, answer, error) and human
+ * text on stderr. The LAN link with its token goes only into `ready.lan`.
+ */
+async function runServe(cli: ServeCli, io: Io): Promise<number> {
+  const { PortBusyError, serve } = await import("./serve.ts");
+  const events = cli.events === true;
+  if (events && io === consoleIo) keepStdoutForEvents();
+  const emit = (e: ServeEvent) => io.out(eventLine(e));
+  const human = events ? io.err : io.out;
+  try {
+    const { server, url, local, lan } = await serve(
+      cli.dir,
+      cli.port,
+      cli.lan ? { host: cli.host } : undefined,
+      events
+        ? {
+            onAppend: (entry) => emit({ event: "answer", entry }),
+            logToStderr: true,
           }
-          if (lan.skippedVirtual > 0) {
-            notes.push(
-              `  Skipped ${lan.skippedVirtual} virtual (docker, bridge, tunnel) address(es).`,
-            );
-          }
-        }
-        io.out(
-          `taste-lab: serving ${cli.dir}${notes.length > 0 ? `\n${notes.join("\n")}` : ""}\n  ${url}`,
+        : {},
+    );
+    const port = server.config.server.port as number;
+    const notes: string[] = [];
+    if (lan) {
+      notes.push(
+        `  LAN address ${lan.address}${lan.iface ? ` (${lan.iface})` : ""}. The link token changes on every run.`,
+      );
+      if (lan.others.length > 0) {
+        notes.push(
+          `  Other candidates: ${lan.others.map((c) => `${c.address} (${c.iface})`).join(", ")}. Choose one with --host <ip>.`,
         );
-        const stop = () => void server.close().then(() => process.exit(0));
-        process.once("SIGINT", stop);
-        process.once("SIGTERM", stop);
-        return 0;
-      } catch (e) {
-        io.err(`taste-lab serve: ${e instanceof Error ? e.message : e}`);
-        return 1;
       }
+      if (lan.skippedVirtual > 0) {
+        notes.push(
+          `  Skipped ${lan.skippedVirtual} virtual (docker, bridge, tunnel) address(es).`,
+        );
+      }
+      notes.push(`  On this machine, no token: ${local}`);
     }
+    // In events mode the token link is in the ready event only, never in stderr.
+    const link = events
+      ? lan
+        ? "  LAN link: in the ready event"
+        : `  ${local}`
+      : `  ${url}`;
+    human(
+      `taste-lab: serving ${cli.dir}${notes.length > 0 ? `\n${notes.join("\n")}` : ""}\n${link}`,
+    );
+    if (events) {
+      emit({
+        event: "ready",
+        port,
+        dataDir: cli.dir,
+        local,
+        lan: lan ? url : null,
+      });
+    }
+    const stop = () => void server.close().then(() => process.exit(0));
+    process.once("SIGINT", stop);
+    process.once("SIGTERM", stop);
+    return 0;
+  } catch (e) {
+    const message = e instanceof Error ? e.message : String(e);
+    if (events) emit({ event: "error", message });
+    io.err(`taste-lab serve: ${message}`);
+    return e instanceof PortBusyError ? 2 : 1;
   }
 }

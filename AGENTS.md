@@ -12,6 +12,7 @@ The lab is a tool. The taste data lives in a `.taste-lab` data dir inside each a
   fixtures/index.ts    named fixtures + `fixtures` map + `fixtureKeys`
   fixtures/*.ts        fixture data and types
   rounds/round-NNN/    round.json + 2 to 4 variant .tsx files
+  library/<name>/      agreed components: <Name>.tsx, examples.tsx, meta.json
   taste.jsonl          answers, append-only
   DESIGN.md            rules for this app
 ```
@@ -19,7 +20,7 @@ The lab is a tool. The taste data lives in a `.taste-lab` data dir inside each a
 - `config.json`: `version` is `1`. `name` is optional and defaults to the parent folder name (`<repo>`). The header shows it.
 - `fixtures/index.ts` is what variants get from `@/fixtures`. It must export `fixtures`, an object that maps each `fixture` key used in `round.json` to its data, and `fixtureKeys`. Other named exports (data, types, helpers) are up to the app.
 - Everything the served app shows comes from the data dir. From this repo, the lab takes only its UI code, the stock primitives in `src/components/ui/` and the neutral theme in `src/index.css`.
-- A later step adds `library/` for promoted components. Do not create it yet.
+- `library/` holds the components the operator agreed on. See "Library" below. `init` creates it empty.
 
 ## Commands for a data dir
 
@@ -31,8 +32,8 @@ node <taste-lab>/bin/taste-lab.mjs check --dir <repo>/.taste-lab
 node <taste-lab>/bin/taste-lab.mjs serve --dir <repo>/.taste-lab [--port N]
 ```
 
-- `init` writes the skeleton above with one sample fixture (`items`), an empty `taste.jsonl` and a `DESIGN.md` stub. It refuses to touch a path that exists.
-- `check` loads the fixtures (both `fixtures` and `fixtureKeys` must be exported and list the same keys), validates every `round.json` with the app's validator and runs the variant scanner on `rounds/`. Exit 0 when clean, 1 with one line per problem (filesystem trouble such as a dangling symlink included), 2 on a usage error.
+- `init` writes the skeleton above with one sample fixture (`items`), an empty `library/`, an empty `taste.jsonl` and a `DESIGN.md` stub. It refuses to touch a path that exists.
+- `check` loads the fixtures (both `fixtures` and `fixtureKeys` must be exported and list the same keys), validates every `round.json` with the app's validator, runs the variant scanner on `rounds/` and validates `library/` (see "Library"). Exit 0 when clean, 1 with one line per problem (filesystem trouble such as a dangling symlink included), 2 on a usage error.
 - A data dir path must not contain a line break or control character, a backslash, `*`, `{`, `}` or both quote kinds. Tailwind reads `@source` raw and as a glob, so `serve`, `init` and `check` reject such paths up front. Spaces, `$`, one kind of quote and `[`, `]`, `(`, `)`, `!` work.
 - `serve` starts the lab on 127.0.0.1 and prints the URL. Without `--port` it takes the first free port from 5300 and never picks 3000, 3326, 5173 or 5310. Stop it with Ctrl+C.
 
@@ -55,17 +56,18 @@ A variant is a `.tsx` file in a round folder. It default-exports a React compone
 
 Allowed imports, nothing else:
 
-| Import              | Use                     |
-| ------------------- | ----------------------- |
-| `react`             | hooks, types            |
-| `@/components/ui/*` | shadcn primitives       |
-| `@/fixtures`        | the data dir's fixtures |
-| `@/lib/utils`       | `cn()`                  |
-| `lucide-react`      | icons                   |
+| Import                    | Use                     |
+| ------------------------- | ----------------------- |
+| `react`                   | hooks, types            |
+| `@/components/ui/*`       | shadcn primitives       |
+| `@/fixtures`              | the data dir's fixtures |
+| `@/lib/utils`             | `cn()`                  |
+| `@/library/<name>/<Name>` | a library component     |
+| `lucide-react`            | icons                   |
 
 Available primitives: `avatar`, `badge`, `button`, `card`, `checkbox`, `dropdown-menu`, `progress`, `separator`, `table`, `textarea`, `toggle`, `toggle-group`, `tooltip`.
 
-`@/fixtures` resolves to `<dataDir>/fixtures/index.ts`. `@/components/ui/*` and `@/lib/utils` resolve to the lab's own stock primitives. `react` and `lucide-react` come from the lab's `node_modules`, so a data dir needs no install.
+`@/fixtures` resolves to `<dataDir>/fixtures/index.ts`. `@/library/<name>/<Name>` resolves to `<dataDir>/library/<name>/<Name>.tsx`. Nothing deeper or looser is allowed. `@/components/ui/*` and `@/lib/utils` resolve to the lab's own stock primitives. `react` and `lucide-react` come from the lab's `node_modules`, so a data dir needs no install.
 
 Fixtures in the demo (`examples/demo/.taste-lab/fixtures/`). Other data dirs define their own:
 
@@ -185,14 +187,86 @@ Endpoints, served by `taste-lab serve` and `pnpm preview` for the served data di
 5. Every ~5 rounds, distill the log into `<dataDir>/DESIGN.md`: Do, Don't, Tokens, Open questions. Cite round ids.
 6. Read tags and reasons. A "none" means all options missed. Change direction, not detail.
 
-## Promoting a winner (later step, documented only)
+## Library
 
-Not automated. A later step adds `<dataDir>/library/<name>/` for promoted components. Until then, when a direction is settled, record it in `<dataDir>/DESIGN.md`:
+The library holds the components the operator agreed on, with examples and where each came from. It is the source of truth for a component. The lab shows it on the Library page. Later steps copy entries into apps.
 
-1. The winning round and variant, by id.
-2. The axes that differed between rounds. They become `cva` variants of the promoted component, with a `className` passthrough merged with `cn()`.
-3. The winning `tokens`. The lab keeps its neutral stock theme for every app, so tokens stay per variant.
-4. The component stays built from `@/components/ui/*` only.
+```
+<dataDir>/library/<name>/        name: kebab-case, e.g. task-card
+  <Name>.tsx                     named export <Name> (PascalCase of name), plus `<name>Variants` (cva) when it has variants
+  examples.tsx                   named exports, each a no-props React component showing one example or state
+  meta.json
+```
+
+`meta.json`:
+
+```json
+{
+  "name": "task-card",
+  "title": "Task card",
+  "description": "One task in a list: status, priority, up to 2 quiet tags, title, description, owner footer.",
+  "status": "agreed",
+  "examples": [
+    { "export": "Default", "title": "Typical tasks", "width": "column" },
+    {
+      "export": "ManyTags",
+      "title": "More than 2 tags shows +n",
+      "width": "column"
+    }
+  ],
+  "provenance": [
+    {
+      "round": "round-001",
+      "pick": "c",
+      "note": "liked proportions; tags too much"
+    }
+  ],
+  "rules": ["Quiet over loud: tags as muted #text"]
+}
+```
+
+- `name` equals the folder name. `title`, `description` are non-empty strings.
+- `status` is `draft` or `agreed`.
+- `examples` has at least one entry. `export` is a named export of `examples.tsx`, unique in the list. `width` is `column` (about 420px) or `full`.
+- `provenance` and `rules` are arrays and may be empty. Each provenance `round` must exist in `rounds/`.
+- Files follow the variant rules: 100% shadcn, no raw colors, no `style` prop. Allowed imports are the variant allowlist plus `class-variance-authority`, plus sibling files by relative path without extension (`./TaskCard`).
+- Components take data through props. Only `examples.tsx` may import values from `@/fixtures`. `import type { Task } from "@/fixtures"` is fine anywhere.
+
+Pages: `#/library` lists entries (title, status, description, example count). `#/library/<name>` shows each example at its width in the current light or dark theme, the provenance as links to `#/round/<id>`, and the rules. A broken entry (bad `meta.json`, missing file, missing export) shows its errors in place and does not break the page. Header has a Library link next to History.
+
+`taste-lab check` validates `library/*`: folder name, `<Name>.tsx` and `examples.tsx` present, `meta.json` schema, `<Name>` exported by `<Name>.tsx`, every example `export` found in `examples.tsx`, provenance rounds that exist, and the scanner with the library rules on every `.ts` and `.tsx`. `library/` missing or holding only `.gitkeep` is fine.
+
+### Promoting a winner
+
+When the operator settles a direction, promote it. Do this yourself, then run `check`.
+
+1. Create `library/<name>/`. Copy the winning variant to `<Name>.tsx`. Rename the default export to a named `<Name>`.
+2. Turn the fixture use into props: one item (or a list) plus an optional `className` merged with `cn()`. Remove the `@/fixtures` value import. A type import is fine.
+3. The axes that differed between rounds become `cva` variants (`<name>Variants`), only where they are natural. Do not invent axes.
+4. Write `examples.tsx` with named exports for the default case and for each state that matters. They import `@/fixtures` and the component.
+5. Write `meta.json`. Put the winning round and pick in `provenance` with the operator's words as the note. Put settled rules in `rules`. Set `status` to `agreed` once the operator agrees.
+6. The winning `tokens` stay per variant. The lab keeps its neutral stock theme, so record them in `DESIGN.md`.
+
+### Iterating on a library component
+
+Write a round whose variants import the component with changed props or a wrapper:
+
+```tsx
+import { TaskCard } from "@/library/task-card/TaskCard";
+import { tasks } from "@/fixtures";
+
+export default function Dense() {
+  return (
+    <div className="grid gap-2">
+      {tasks.map((t) => (
+        <TaskCard key={t.id} task={t} className="p-2" />
+      ))}
+    </div>
+  );
+}
+```
+
+Or copy the component into the round and change one thing. A copy cannot import `class-variance-authority` or sibling files, so inline the variants it needs. Say in `question` and `changes` that the round iterates a library component. `basedOn` stays a round. When the operator picks a variant, update `library/<name>/` and add the round to `provenance`.
 
 ## Known limits
 

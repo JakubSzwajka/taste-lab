@@ -242,6 +242,13 @@ export function loadLibrary(input: LibraryGlob): LibraryEntry[] {
   return entries.sort((a, b) => a.name.localeCompare(b.name));
 }
 
+/**
+ * An own export of a module, or undefined. Names come from meta.json, so
+ * `__proto__`, `constructor` and `toString` must not reach the prototype chain.
+ */
+export const ownExport = (mod: ModuleExports, name: string): unknown =>
+  Object.hasOwn(mod, name) ? mod[name] : undefined;
+
 /** Runtime check on loaded modules. Returns one error per problem. */
 export function moduleProblems(
   meta: LibraryMeta,
@@ -251,14 +258,15 @@ export function moduleProblems(
   const name = pascalCase(meta.name);
   const isComponent = (v: unknown) =>
     typeof v === "function" || (typeof v === "object" && v !== null);
-  const out: Record<string, string> = {};
+  // Null prototype: an example named `__proto__` must stay a plain key.
+  const out: Record<string, string> = Object.create(null);
   for (const ex of meta.examples) {
-    if (!isComponent(examples[ex.export])) {
+    if (!isComponent(ownExport(examples, ex.export))) {
       out[ex.export] = `examples.tsx does not export ${ex.export}`;
     }
   }
   return {
-    component: isComponent(component[name])
+    component: isComponent(ownExport(component, name))
       ? null
       : `${name}.tsx does not export ${name}`,
     examples: out,

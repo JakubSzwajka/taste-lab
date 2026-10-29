@@ -1,6 +1,7 @@
 import { readdirSync, readFileSync, realpathSync, statSync } from "node:fs";
-import { basename, join, posix, relative } from "node:path";
+import { basename, dirname, join, posix, relative } from "node:path";
 import { parseAst } from "vite";
+import { NAME_RE, pascalCase } from "../src/lib/library.ts";
 
 export type Violation = { file: string; line: number; message: string };
 
@@ -116,7 +117,14 @@ function walk(
 }
 
 // `@/library/<name>/<Name>`: one library component, never a deeper or looser path.
-const LIBRARY_IMPORT = /^@\/library\/[a-z0-9]+(?:-[a-z0-9]+)*\/[A-Za-z0-9]+$/;
+// <name> follows the shared kebab rule and <Name> is its PascalCase.
+const LIBRARY_IMPORT = /^@\/library\/([^/]+)\/([^/]+)$/;
+const isLibraryImport = (spec: string) => {
+  const m = LIBRARY_IMPORT.exec(spec);
+  return (
+    !!m && NAME_RE.test(m[1] as string) && pascalCase(m[1] as string) === m[2]
+  );
+};
 // `./TaskCard`: a sibling file in the same library folder, no extension.
 const SIBLING_IMPORT = /^\.\/[A-Za-z0-9_-]+$/;
 
@@ -137,7 +145,7 @@ export function importAllowed(
   if (spec.split("/").some((seg) => seg === ".." || seg === ".")) return false;
   return (
     IMPORT_ALLOW_EXACT.includes(spec) ||
-    LIBRARY_IMPORT.test(spec) ||
+    isLibraryImport(spec) ||
     IMPORT_ALLOW_PREFIX.some(
       (p) => spec.startsWith(p) && /^[a-z0-9-]+$/.test(spec.slice(p.length)),
     )
@@ -262,7 +270,38 @@ function staticStrings(n: unknown, out: string[] = []): string[] {
   return out;
 }
 
+// Extensions the bundler tries for `./Name`, in its order.
+const RESOLVE_EXTS = [".mjs", ".js", ".mts", ".ts", ".jsx", ".tsx", ".json"];
+
+/**
+ * Why `./Name` in `dir` is not a scanned source file, or null when it is.
+ * Only `.ts` and `.tsx` are scanned, so a `.js` or `.jsx` sibling (or a folder
+ * with an index file) would run unchecked code.
+ */
+function siblingProblem(dir: string, spec: string): string | null {
+  const base = spec.slice(2);
+  let names: string[];
+  try {
+    names = readdirSync(dir);
+  } catch {
+    return null; // the walk already reports an unreadable folder
+  }
+  const hit = RESOLVE_EXTS.filter((e) => names.includes(base + e));
+  if (names.includes(base)) {
+    return `import "${spec}" must point to a .ts or .tsx file in this folder`;
+  }
+  if (hit.length === 0)
+    return `import "${spec}" does not match a .ts or .tsx file`;
+  const other = hit.find((e) => e !== ".ts" && e !== ".tsx");
+  if (other) {
+    return `import "${spec}" can resolve to ${base}${other}, which is not scanned (only .ts and .tsx are allowed)`;
+  }
+  return null;
+}
+
 type ImportPolicy = {
+  /** Folder of the file being scanned, to resolve sibling imports. */
+  dir: string;
   /** Library file rules: cva and sibling imports. */
   library: boolean;
   /** Library files other than examples.tsx may only import types from `@/fixtures`. */
@@ -286,6 +325,9 @@ function checkSpecifier(
     );
   } else if (!importAllowed(value, { library: policy.library })) {
     report(at, `import "${value}" is not allowed`);
+  } else if (policy.library && SIBLING_IMPORT.test(value)) {
+    const bad = siblingProblem(policy.dir, value);
+    if (bad) report(at, bad);
   } else if (
     value === "@/fixtures" &&
     policy.fixturesTypesOnly &&
@@ -304,11 +346,98 @@ function propName(key: unknown): string | null {
   return stringValue(key);
 }
 
+function walkNodes(n: unknown, fn: (node: Node) => void) {
+  if (Array.isArray(n)) {
+    for (const x of n) walkNodes(x, fn);
+    return;
+  }
+  if (!isNode(n)) return;
+  fn(n);
+  for (const [k, v] of Object.entries(n)) {
+    if (k === "type" || typeof v !== "object" || v === null) continue;
+    walkNodes(v, fn);
+  }
+}
+
+const ELEMENT_FACTORIES = new Set([
+  "createElement",
+  "cloneElement",
+  "jsx",
+  "jsxs",
+  "jsxDEV",
+]);
+
+/**
+ * `style` keys in objects that become React props: spread into JSX, passed to
+ * createElement/cloneElement, or held in a variable that is. Other objects with a
+ * `style` key (`Intl.NumberFormat(l, { style: "currency" })`) are not props.
+ * The match is by name and over-approximate: it may flag an unrelated object that
+ * shares a name with a spread one. It never looks across files.
+ */
+function styleSinkProps(ast: unknown): Set<unknown> {
+  const bad = new Set<unknown>();
+  const sinkNames = new Set<string>();
+  const markStyleKeys = (root: unknown) =>
+    walkNodes(root, (n) => {
+      if (n.type === "Property" && propName(n.key) === "style") bad.add(n);
+    });
+  const collectNames = (root: unknown) =>
+    walkNodes(root, (n) => {
+      if (n.type === "Identifier") sinkNames.add(n.name as string);
+    });
+  const bindings: { name: string; node: unknown }[] = [];
+  walkNodes(ast, (n) => {
+    if (n.type === "JSXSpreadAttribute") {
+      markStyleKeys(n.argument);
+      collectNames(n.argument);
+    } else if (n.type === "CallExpression" && isNode(n.callee)) {
+      const c = n.callee;
+      const name =
+        c.type === "Identifier"
+          ? (c.name as string)
+          : c.type === "MemberExpression"
+            ? propName(c.property)
+            : null;
+      if (name && ELEMENT_FACTORIES.has(name)) {
+        markStyleKeys(n.arguments);
+        collectNames(n.arguments);
+      }
+    } else if (
+      n.type === "VariableDeclarator" &&
+      isNode(n.id) &&
+      n.id.type === "Identifier" &&
+      n.init
+    ) {
+      bindings.push({ name: n.id.name as string, node: n.init });
+    } else if (
+      n.type === "FunctionDeclaration" &&
+      isNode(n.id) &&
+      n.id.type === "Identifier"
+    ) {
+      bindings.push({ name: n.id.name as string, node: n.body });
+    }
+  });
+  // A bound value that reaches a sink brings the names it uses along with it.
+  const done = new Set<unknown>();
+  for (let grew = true; grew; ) {
+    grew = false;
+    for (const b of bindings) {
+      if (done.has(b) || !sinkNames.has(b.name)) continue;
+      done.add(b);
+      grew = true;
+      markStyleKeys(b.node);
+      collectNames(b.node);
+    }
+  }
+  return bad;
+}
+
 function visit(
   node: unknown,
   ctx: {
     imports: boolean;
     banStyle: boolean;
+    styleProps: Set<unknown>;
     policy: ImportPolicy;
     report: (at: number, message: string) => void;
   },
@@ -319,7 +448,7 @@ function visit(
   }
   if (!isNode(node)) return;
   const at = node.start ?? 0;
-  const { imports, banStyle, report, policy } = ctx;
+  const { imports, banStyle, report, policy, styleProps } = ctx;
   switch (node.type) {
     case "ImportDeclaration":
     case "ExportAllDeclaration":
@@ -388,7 +517,7 @@ function visit(
       break;
     case "Property": {
       const key = propName(node.key);
-      if (banStyle && key === "style") {
+      if (banStyle && key === "style" && styleProps.has(node)) {
         report(at, "style prop is not allowed (put tokens in round.json)");
       }
       if (
@@ -495,7 +624,9 @@ export function scanVariants(
       visit(ast, {
         imports,
         banStyle,
+        styleProps: banStyle ? styleSinkProps(ast) : new Set(),
         policy: {
+          dir: dirname(file),
           library,
           fixturesTypesOnly: library && basename(file) !== "examples.tsx",
         },

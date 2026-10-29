@@ -19,10 +19,12 @@ const date = new Intl.DateTimeFormat("en-US", {
   day: "numeric",
   timeZone: "UTC",
 });
-// Budgets are whole USD. A `style: "currency"` option trips the variant
-// scanner's style-prop rule, so the $ is added by hand: 48500 -> "$48,500".
-const whole = new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 });
-const usd = (n: number) => `${n < 0 ? "-" : ""}$${whole.format(Math.abs(n))}`;
+// Budgets are whole USD: 48500 -> "$48,500".
+const usd = new Intl.NumberFormat("en-US", {
+  style: "currency",
+  currency: "USD",
+  maximumFractionDigits: 0,
+});
 
 // Pill variants are round-006 C. The dot is the operator's fix to C.
 // Round-006 A colored the dots with --primary and --chart-3 overrides. The
@@ -123,7 +125,7 @@ export function ProjectTable({ rows, className }: ProjectTableProps) {
                 </div>
               </TableCell>
               <TableCell className={cn("text-right font-medium", cell)}>
-                {usd(r.amount)}
+                {usd.format(r.amount)}
               </TableCell>
               <TableCell
                 className={cn("pr-0 text-right text-muted-foreground", cell)}

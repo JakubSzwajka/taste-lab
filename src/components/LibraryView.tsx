@@ -7,6 +7,7 @@ import {
   type LibraryMeta,
   type ModuleExports,
   moduleProblems,
+  ownExport,
 } from "@/lib/library";
 import type { LoadedRound } from "@/lib/rounds";
 import { hrefFor } from "@/lib/route";
@@ -143,10 +144,12 @@ function Examples({
         </p>
       )}
       {meta.examples.map((ex) => {
-        const Example = loaded.examples[ex.export] as
+        const Example = ownExport(loaded.examples, ex.export) as
           | (() => ReactNode)
           | undefined;
-        const problem = problems.examples[ex.export];
+        const problem = Object.hasOwn(problems.examples, ex.export)
+          ? problems.examples[ex.export]
+          : undefined;
         return (
           <section
             key={ex.export}

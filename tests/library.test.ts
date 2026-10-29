@@ -5,6 +5,7 @@ import {
   readdirSync,
   readFileSync,
   rmSync,
+  symlinkSync,
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
@@ -20,6 +21,7 @@ import {
   type LibraryGlob,
   loadLibrary,
   moduleProblems,
+  ownExport,
   pascalCase,
   validateMeta,
 } from "../src/lib/library";
@@ -190,6 +192,41 @@ describe("moduleProblems", () => {
   });
 });
 
+describe("export names that match Object.prototype", () => {
+  const fn = () => null;
+  const withNames = (...names: string[]) => {
+    const m = meta();
+    m.examples = names.map((n) => ({ export: n, title: n, width: "column" }));
+    return m;
+  };
+
+  it("reports a missing __proto__ example as an error, not as the prototype", () => {
+    const r = moduleProblems(withNames("__proto__"), { TaskChip: fn }, {});
+    expect(Object.hasOwn(r.examples, "__proto__")).toBe(true);
+    expect(Object.entries(r.examples)).toEqual([
+      ["__proto__", "examples.tsx does not export __proto__"],
+    ]);
+    expect(ownExport({}, "__proto__")).toBeUndefined();
+  });
+
+  it("does not count inherited names as exports", () => {
+    for (const n of ["constructor", "toString", "hasOwnProperty"]) {
+      const r = moduleProblems(withNames(n), { TaskChip: fn }, {});
+      expect(r.examples[n]).toBe(`examples.tsx does not export ${n}`);
+    }
+  });
+
+  it("accepts a real export named constructor", () => {
+    const r = moduleProblems(
+      withNames("constructor"),
+      { TaskChip: fn },
+      { constructor: fn },
+    );
+    expect(r.examples).toEqual({});
+    expect(ownExport({ constructor: fn }, "constructor")).toBe(fn);
+  });
+});
+
 describe("valueExports", () => {
   it("lists value exports and skips types", () => {
     const src = `export const A = 1;
@@ -201,11 +238,30 @@ export type T = string;
 export interface I {}
 export type { X } from "y";
 export default function () {}`;
-    expect(valueExports(src)).toEqual(["A", "B", "C", "D", "E"]);
+    expect(valueExports(src)).toEqual({
+      names: ["A", "B", "C", "D", "E"],
+      unverifiable: null,
+    });
   });
 
-  it("gives up on export * and on files that do not parse", () => {
-    expect(valueExports('export * from "./x";')).toBeNull();
+  it("marks export * and destructured exports as unverifiable", () => {
+    expect(valueExports('export * from "./x";')?.unverifiable).toMatch(
+      /export \*/,
+    );
+    expect(
+      valueExports("export const { unused } = { unused: 1 };")?.unverifiable,
+    ).toMatch(/destructured/);
+    expect(valueExports("export const [a] = [1];")?.unverifiable).toMatch(
+      /destructured/,
+    );
+    expect(valueExports('export * as ns from "./x";')).toEqual({
+      names: ["ns"],
+      unverifiable: null,
+    });
+    expect(valueExports('export type * from "./x";')?.unverifiable).toBeNull();
+  });
+
+  it("gives up on files that do not parse", () => {
     expect(valueExports("export function X( {")).toBeNull();
   });
 });
@@ -289,7 +345,11 @@ export default function V() { return <div className={cva("p-2")()} />; }
   });
 
   it("lets round variants import library components, nothing looser", () => {
-    for (const ok of ["@/library/task-card/TaskCard", "@/library/a1/B2"]) {
+    for (const ok of [
+      "@/library/task-card/TaskCard",
+      "@/library/a1/A1",
+      "@/library/table-2/Table2",
+    ]) {
       expect(importAllowed(ok)).toBe(true);
     }
     for (const no of [
@@ -300,9 +360,121 @@ export default function V() { return <div className={cva("p-2")()} />; }
       "@/library/Task_Card/TaskCard",
       "@/library//TaskCard",
       "@/library/task-card/../x",
+      // the file must be the PascalCase of the folder, not any helper
+      "@/library/task-card/examples",
+      "@/library/task-card/Other",
+      "@/library/task-card/Helper",
+      "@/library/task-card/taskCard",
+      // the folder must pass the kebab name rule
+      "@/library/1x/1x",
+      "@/library/task--card/TaskCard",
+      "@/library/-a/A",
     ]) {
       expect(importAllowed(no)).toBe(false);
     }
+  });
+});
+
+describe("sibling imports resolve to scanned files only", () => {
+  const scanDir = (files: Record<string, string>, target = "Card.tsx") => {
+    const dir = mkdtempSync(join(tmp, "sib-"));
+    for (const [f, text] of Object.entries(files)) {
+      mkdirSync(join(dir, f, ".."), { recursive: true });
+      writeFileSync(join(dir, f), text);
+    }
+    return scanVariants(dir, { library: true })
+      .filter((v) => v.file === target)
+      .map((v) => v.message);
+  };
+  const card = 'import { H } from "./Helper";\nexport const C = H;\n';
+  const helper = "export const H = 1;\n";
+
+  it("accepts a .ts or .tsx sibling", () => {
+    expect(scanDir({ "Card.tsx": card, "Helper.ts": helper })).toEqual([]);
+    expect(scanDir({ "Card.tsx": card, "Helper.tsx": helper })).toEqual([]);
+  });
+
+  it("rejects a .js or .jsx sibling that the scanner never reads", () => {
+    for (const ext of ["js", "jsx", "mjs", "json"]) {
+      const msgs = scanDir({ "Card.tsx": card, [`Helper.${ext}`]: helper });
+      expect(msgs).toHaveLength(1);
+      expect(msgs[0]).toContain(`Helper.${ext}`);
+    }
+  });
+
+  it("rejects a .js file that would win over a .ts file", () => {
+    const msgs = scanDir({
+      "Card.tsx": card,
+      "Helper.ts": helper,
+      "Helper.js": "export const H = 2;\n",
+    });
+    expect(msgs).toHaveLength(1);
+    expect(msgs[0]).toContain("Helper.js");
+  });
+
+  it("rejects a missing sibling and a folder with an index file", () => {
+    expect(scanDir({ "Card.tsx": card })).toEqual([
+      'import "./Helper" does not match a .ts or .tsx file',
+    ]);
+    expect(scanDir({ "Card.tsx": card, "Helper/index.ts": helper })).toEqual([
+      'import "./Helper" must point to a .ts or .tsx file in this folder',
+    ]);
+  });
+});
+
+describe("style rule is scoped to props", () => {
+  const scanText = (text: string) => {
+    const dir = mkdtempSync(join(tmp, "style-"));
+    writeFileSync(join(dir, "v.tsx"), text);
+    return scanVariants(dir).map((v) => v.message);
+  };
+  const STYLE = "style prop is not allowed (put tokens in round.json)";
+  const ACCESS = "style access is not allowed (put tokens in round.json)";
+
+  it("allows Intl.NumberFormat with style: currency", () => {
+    expect(
+      scanText(
+        `const f = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" });
+export default function V() { return <p>{f.format(1)}</p>; }
+`,
+      ),
+    ).toEqual([]);
+    expect(scanText('export const o = { style: "percent" };\n')).toEqual([]);
+  });
+
+  it("still flags style on JSX, spread objects and DOM mutation", () => {
+    const jsx = "export default () => <div style={{ margin: 1 }} />;\n";
+    expect(scanText(jsx)).toContain(STYLE);
+    const inline =
+      "export default () => <div {...{ style: { margin: 1 } }} />;\n";
+    expect(scanText(inline)).toEqual([STYLE]);
+    const bound = `const p = { className: "p-2", style: { margin: 1 } };
+export default () => <div {...p} />;
+`;
+    expect(scanText(bound)).toEqual([STYLE]);
+    const chained = `const a = { style: { margin: 1 } };
+const b = { ...a };
+export default () => <div {...b} />;
+`;
+    expect(scanText(chained)).toEqual([STYLE]);
+    const fnProps = `function props() { return { style: { margin: 1 } }; }
+export default () => <div {...props()} />;
+`;
+    expect(scanText(fnProps)).toEqual([STYLE]);
+    const factory = `import { createElement } from "react";
+export default () => createElement("div", { style: { margin: 1 } });
+`;
+    expect(scanText(factory)).toEqual([STYLE]);
+    const dom =
+      "export const f = (el: HTMLElement) => { el.style.margin = '1px'; };\n";
+    expect(scanText(dom)).toEqual([ACCESS]);
+  });
+
+  it("does not flag a style object that never reaches JSX", () => {
+    const src = `const p = { style: "currency" };
+export default () => <div {...{ className: "p-2" }}>{JSON.stringify(p)}</div>;
+`;
+    expect(scanText(src)).toEqual([]);
   });
 });
 
@@ -410,6 +582,46 @@ describe("check: library", () => {
     expect(await checkDataDir(dir)).toEqual([
       "library/task-chip: TaskChip.tsx must export a component named TaskChip",
     ]);
+  });
+
+  it("reports exports it cannot verify in the component and examples", async () => {
+    const dir = dirWithEntry();
+    const ex = join(dir, "library/task-chip/examples.tsx");
+    writeFileSync(
+      ex,
+      `${readFileSync(ex, "utf8")}export const { unused } = { unused: 1 };\n`,
+    );
+    setMeta(dir, (m) => {
+      (m.examples as { export: string }[])[1] = {
+        export: "Nope",
+        title: "x",
+        width: "full",
+      } as never;
+    });
+    expect(await checkDataDir(dir)).toEqual([
+      "library/task-chip: examples.tsx uses a destructured export, so its exports cannot be checked (export each name directly)",
+    ]);
+    writeFileSync(ex, 'export * from "./TaskChip";\n');
+    expect(await checkDataDir(dir)).toEqual([
+      "library/task-chip: examples.tsx uses `export *`, so its exports cannot be checked (export each name directly)",
+    ]);
+  });
+
+  it("does not count a folder named like a required file", async () => {
+    const dir = dirWithEntry();
+    const ex = join(dir, "library/task-chip/examples.tsx");
+    rmSync(ex);
+    mkdirSync(ex);
+    const problems = await checkDataDir(dir);
+    expect(problems).toContain(
+      "library/task-chip: examples.tsx is a directory, not a file",
+    );
+    expect(problems).not.toEqual([]);
+    rmSync(ex, { recursive: true });
+    symlinkSync(join(dir, "nowhere.tsx"), ex);
+    expect(await checkDataDir(dir)).toContain(
+      "library/task-chip: examples.tsx is a dangling symlink",
+    );
   });
 
   it("reports a provenance round that does not exist", async () => {

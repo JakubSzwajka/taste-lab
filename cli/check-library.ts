@@ -1,7 +1,12 @@
 import { readdirSync } from "node:fs";
 import { join } from "node:path";
 import { parseAst } from "vite";
-import { folderNameProblem, validateMeta } from "../src/lib/library.ts";
+import {
+  folderNameProblem,
+  NAME_RE,
+  pascalCase,
+  validateMeta,
+} from "../src/lib/library.ts";
 import { errMsg, kindOf, readText } from "./fs-util.ts";
 import { scanVariants } from "./scan-variants.ts";
 
@@ -9,12 +14,19 @@ type Node = { type: string; [k: string]: unknown };
 const isNode = (v: unknown): v is Node =>
   typeof v === "object" && v !== null && typeof (v as Node).type === "string";
 
+export type ExportInfo = {
+  names: string[];
+  /** Why the list may be incomplete: `export *` or a destructured export. */
+  unverifiable: string | null;
+};
+
 /**
  * Value exports of a module, read from the syntax. Null when the file does not
- * parse (the scanner reports that) or has `export *` (names cannot be known).
+ * parse (the scanner reports that). `unverifiable` is set when names cannot be
+ * known statically, so the caller must not trust the list as complete.
  * Type exports are left out: a type is not a component.
  */
-export function valueExports(source: string): string[] | null {
+export function valueExports(source: string): ExportInfo | null {
   let body: unknown[];
   try {
     body = (parseAst(source, { lang: "tsx" }) as unknown as { body: unknown[] })
@@ -23,9 +35,17 @@ export function valueExports(source: string): string[] | null {
     return null;
   }
   const names: string[] = [];
+  let unverifiable: string | null = null;
   for (const n of body) {
     if (!isNode(n)) continue;
-    if (n.type === "ExportAllDeclaration") return null;
+    if (n.type === "ExportAllDeclaration") {
+      if (n.exportKind === "type") continue;
+      const ex = n.exported;
+      if (isNode(ex))
+        names.push((ex.name ?? ex.value) as string); // export * as ns
+      else unverifiable ??= "uses `export *`";
+      continue;
+    }
     if (n.type !== "ExportNamedDeclaration" || n.exportKind === "type") {
       continue;
     }
@@ -36,7 +56,7 @@ export function valueExports(source: string): string[] | null {
           const id = decl.id;
           if (isNode(id) && id.type === "Identifier")
             names.push(id.name as string);
-          else return null; // destructuring: leave the file unchecked
+          else unverifiable ??= "uses a destructured export";
         }
       } else if (isNode(d.id) && d.id.type === "Identifier") {
         if (!d.type.startsWith("TS") && d.declare !== true) {
@@ -50,7 +70,7 @@ export function valueExports(source: string): string[] | null {
       names.push((ex.name ?? ex.value) as string);
     }
   }
-  return names;
+  return { names, unverifiable };
 }
 
 /**
@@ -104,12 +124,27 @@ export function checkLibrary(dir: string, rounds: string[]): string[] {
       out.push(`cannot list files (${errMsg(e)})`);
     }
     const exports: Record<string, string[]> = {};
+    // A required file must be a readable regular file. Keep the read error
+    // (directory, dangling link, no permission) instead of dropping it.
+    const sourceProblems: string[] = [];
+    const required = NAME_RE.test(name)
+      ? [`${pascalCase(name)}.tsx`, "examples.tsx"]
+      : [];
     for (const f of files) {
       const src = readText(join(folder, f), `${at}/${f}`);
-      if ("text" in src) {
-        const names = valueExports(src.text);
-        if (names) exports[f] = names;
+      if ("error" in src) {
+        sourceProblems.push(src.error.replace(`${at}/`, ""));
+        continue;
       }
+      const info = valueExports(src.text);
+      if (!info) continue;
+      if (info.unverifiable) {
+        if (required.includes(f)) {
+          sourceProblems.push(
+            `${f} ${info.unverifiable}, so its exports cannot be checked (export each name directly)`,
+          );
+        }
+      } else exports[f] = info.names;
     }
     if (out.length === 0) {
       out.push(
@@ -119,6 +154,7 @@ export function checkLibrary(dir: string, rounds: string[]): string[] {
       const bad = folderNameProblem(name);
       if (bad) out.push(bad);
     }
+    out.push(...sourceProblems);
     for (const m of out) problems.push(`${at}: ${m}`);
   }
   for (const v of scanVariants(root, { library: true })) {

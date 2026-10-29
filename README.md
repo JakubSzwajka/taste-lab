@@ -60,12 +60,22 @@ Node version is pinned in `.node-version`. pnpm version is in `package.json`.
 
 With no rounds in `.taste-lab/rounds/`, the app shows a "no rounds yet" screen.
 
+## The lab for taste-lab itself
+
+The repo root has its own data dir, `.taste-lab/`, so taste-lab's interface is tuned with taste-lab. Its rounds compare designs for the app chrome, starting with the header (round-001). Its `theme.css` starts from the demo's round-007 a blue accent. A pick there becomes a change in `src/` afterwards.
+
+```sh
+node bin/taste-lab.mjs serve --dir .taste-lab
+```
+
+`pnpm dev` still serves the demo. `pnpm check` type-checks both labs (`tsconfig.lab.json` points `@/fixtures` at the root lab) and `pnpm test` runs the variant rules and `check` on both.
+
 ## Scripts
 
 | Script         | Does                                                      |
 | -------------- | --------------------------------------------------------- |
 | `pnpm dev`     | `taste-lab serve` for the demo, on 127.0.0.1              |
-| `pnpm check`   | `tsc --noEmit` and Biome                                  |
+| `pnpm check`   | `tsc` for the demo and the root lab, then Biome           |
 | `pnpm test`    | Vitest                                                    |
 | `pnpm build`   | type check and Vite build                                 |
 | `pnpm preview` | serve the build on 127.0.0.1 (the log API works here too) |
@@ -90,7 +100,8 @@ This repo:
 ```
 bin/taste-lab.mjs        CLI entry (Node runs the TypeScript in cli/ directly)
 cli/                     serve, init, check, port picking, variant scanner
-examples/demo/.taste-lab the demo data dir (rounds 1 to 7, empty theme.css)
+examples/demo/.taste-lab the demo data dir (rounds 1 to 7, round-007 a accent in theme.css)
+.taste-lab/              the lab for taste-lab's own interface
 server/                  Vite plugin and /api/taste middleware
 src/                     lab UI
 src/components/ui/       stock shadcn primitives, generated, not hand-edited

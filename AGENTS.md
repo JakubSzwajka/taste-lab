@@ -69,7 +69,7 @@ Allowed imports, nothing else:
 | `lucide-react`             | icons                   |
 | `class-variance-authority` | `cva` variants          |
 
-Available primitives: `avatar`, `badge`, `button`, `card`, `checkbox`, `dropdown-menu`, `progress`, `separator`, `table`, `textarea`, `toggle`, `toggle-group`, `tooltip`.
+Available primitives: `avatar`, `badge`, `breadcrumb`, `button`, `card`, `checkbox`, `dropdown-menu`, `progress`, `separator`, `table`, `textarea`, `toggle`, `toggle-group`, `tooltip`.
 
 `@/fixtures` resolves to `<dataDir>/fixtures/index.ts`. `@/library/<name>/<Name>` resolves to `<dataDir>/library/<name>/<Name>.tsx`. Nothing deeper or looser is allowed. `@/components/ui/*` and `@/lib/utils` resolve to the lab's own stock primitives. `react`, `lucide-react` and `class-variance-authority` come from the lab's `node_modules`, so a data dir needs no install.
 
@@ -329,7 +329,8 @@ Or copy the component into the round and change one thing. A copy can import `cl
 
 - `pnpm dev` serves the demo: `taste-lab serve --dir examples/demo/.taste-lab`.
 - `node bin/taste-lab.mjs init|check|serve --dir <path>`, see "Commands for a data dir".
-- `pnpm check` runs `tsc --noEmit` and Biome.
+- `pnpm check` runs `tsc --noEmit` for the demo (`tsconfig.json`) and for the root lab (`tsconfig.lab.json`), then Biome.
+- `node bin/taste-lab.mjs serve --dir .taste-lab` serves the lab for taste-lab's own interface. Its rounds compare designs for `src/` chrome; a pick changes `src/` afterwards.
 - `pnpm test` runs Vitest.
 - `pnpm build` runs the type check and a Vite build of the demo. `TASTE_LAB_DIR=<path>` builds or previews another data dir.
 - `pnpm format` runs `biome check --write .`.

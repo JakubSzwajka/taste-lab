@@ -21,6 +21,8 @@ import { isPortFree, pickPort, RESERVED_PORTS } from "../cli/port";
 
 const repo = resolve(import.meta.dirname, "..");
 const demo = join(repo, "examples/demo/.taste-lab");
+// The lab for taste-lab itself, at the repo root.
+const rootLab = join(repo, ".taste-lab");
 const bin = join(repo, "bin/taste-lab.mjs");
 
 let tmp: string;
@@ -239,6 +241,10 @@ const roundJson = (id: string) => ({
 describe("check", () => {
   it("passes the demo data dir", async () => {
     expect(await checkDataDir(demo)).toEqual([]);
+  });
+
+  it("passes the repo's own data dir", async () => {
+    expect(await checkDataDir(rootLab)).toEqual([]);
   });
 
   it("passes a fresh init and an init plus one valid round", async () => {

@@ -1,0 +1,21 @@
+/* Taste theme for this app: shadcn tokens only, in :root (light) and .dark.
+ * Missing tokens fall back to the lab's stock theme. Order: stock, then this
+ * file, then each variant's round.json tokens (those still win).
+ * Allowed: the shadcn variables (--primary, --radius, ...) and comments.
+ * Not allowed: other selectors, at-rules, @import, url(), other properties.
+ * Promote a token round winner here: copy its tokens into :root and .dark and
+ * cite the round in a comment. Run `taste-lab check` after editing. */
+
+:root {
+  /* examples/demo round-007 a: blue accent, copied 2026-10-29 (one taste across repos) */
+  --primary: oklch(0.5 0.19 262);
+  --primary-foreground: oklch(0.985 0 0);
+  --ring: oklch(0.55 0.17 262);
+}
+
+.dark {
+  /* examples/demo round-007 a: blue accent, copied 2026-10-29 (one taste across repos) */
+  --primary: oklch(0.72 0.14 262);
+  --primary-foreground: oklch(0.2 0.04 262);
+  --ring: oklch(0.65 0.14 262);
+}

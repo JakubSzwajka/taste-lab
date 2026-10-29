@@ -37,6 +37,7 @@ import {
   lanGate,
   lanSettingsOf,
 } from "../server/lan-gate";
+import { loopbackDecision } from "../server/lan-loopback";
 import { createTasteMiddleware } from "../server/taste-log";
 
 type Reply = { status: number; headers: IncomingHttpHeaders; body: string };
@@ -339,6 +340,26 @@ describe("serve args", () => {
       expect(() => parse("--lan", "--host", h)).toThrow(UsageError);
     },
   );
+  it("rejects --host 127.0.0.1: the loopback listener holds it", () => {
+    expect(() => parse("--lan", "--host", "127.0.0.1")).toThrow(
+      "taken by the loopback listener",
+    );
+    expect(parse("--lan", "--host", "127.0.0.2")).toMatchObject({
+      host: "127.0.0.2",
+    });
+  });
+  it("accepts --events with and without --lan, on serve only", () => {
+    expect(parse("--events")).toEqual({ command: "serve", dir, events: true });
+    expect(parse("--lan", "--events")).toEqual({
+      command: "serve",
+      dir,
+      lan: true,
+      events: true,
+    });
+    expect(() => parseCli(["check", "--dir", dir, "--events"], "/")).toThrow(
+      '"check"',
+    );
+  });
   it("rejects --lan and --host on other commands", () => {
     expect(() => parseCli(["check", "--dir", dir, "--lan"], "/")).toThrow(
       '"check"',
@@ -676,7 +697,7 @@ describe("LAN taste API over HTTP", () => {
     dir = mkdtempSync(join(tmpdir(), "taste-lan-"));
     file = join(dir, "taste.jsonl");
     server = createServer((req, res) => {
-      createTasteMiddleware(file, cfg)(req, res, () => {
+      createTasteMiddleware(file, { lan: cfg })(req, res, () => {
         res.statusCode = 404;
         res.end();
       });
@@ -833,8 +854,10 @@ describe("serve --lan", () => {
       expect(await upgrade(port, "/", { ...jar, ...hmr }, "127.0.0.2")).toBe(
         101,
       );
-      // Not bound to loopback 127.0.0.1.
-      await expect(http(port, "/")).rejects.toThrow();
+      // The 127.0.0.1 listener on the same port serves the app without a token.
+      expect((await http(port, "/")).status).toBe(200);
+      expect((await http(port, "/api/taste")).status).toBe(200);
+      expect((await http(port, fsLog)).status).toBe(403);
 
       // The loopback server still needs no token, and still denies the file.
       expect((await http(loopPort, "/api/taste")).status).toBe(200);
@@ -856,4 +879,243 @@ describe("serve --lan", () => {
       serve(dir, 5499, { ifaces: { lo: [] }, defaultIface: undefined }),
     ).rejects.toThrow("--host");
   });
+});
+
+describe("loopbackDecision", () => {
+  it("passes loopback Host names and nothing else", () => {
+    for (const host of ["127.0.0.1:5301", "localhost:5301", "[::1]:5301"]) {
+      expect(loopbackDecision({ url: "/", host })).toEqual({ action: "pass" });
+    }
+    for (const host of [undefined, "192.168.1.23:5301", "evil.example"]) {
+      expect(loopbackDecision({ url: "/", host })).toMatchObject({
+        action: "deny",
+        status: 403,
+      });
+    }
+  });
+
+  it("drops a k parameter with a redirect, never a cookie", () => {
+    const host = "127.0.0.1:5301";
+    expect(loopbackDecision({ url: "/x?a=1&k=tok", host })).toEqual({
+      action: "redirect",
+      location: "/x?a=1",
+    });
+    expect(loopbackDecision({ url: "/\\evil.example/?k=tok", host })).toEqual({
+      action: "redirect",
+      location: "/",
+    });
+  });
+});
+
+describe("serve --lan, two listeners on one port", () => {
+  let tmp: string;
+  let before: string | undefined;
+  beforeEach(() => {
+    tmp = mkdtempSync(join(tmpdir(), "taste-lan-dual-"));
+    before = process.env.TASTE_LAB_DIR;
+  });
+  afterEach(() => {
+    rmSync(tmp, { recursive: true, force: true });
+    if (before === undefined) delete process.env.TASTE_LAB_DIR;
+    else process.env.TASTE_LAB_DIR = before;
+  });
+
+  const entry = (reason: string) =>
+    JSON.stringify({
+      round: "round-001",
+      component: "card",
+      level: "component",
+      shown: ["a", "b"],
+      pick: "a",
+      tags: [],
+      reason,
+      theme: "dark",
+    });
+
+  it("matrix: loopback rules on 127.0.0.1, the full gate on the LAN address", async () => {
+    const { serve } = await import("../cli/serve");
+    const dir = join(tmp, ".taste-lab");
+    initDataDir(dir);
+    const appended: unknown[] = [];
+    const port = await pickPort({ start: 5460 });
+    const { server, url, local } = await serve(
+      dir,
+      port,
+      { host: "127.0.0.2" },
+      { onAppend: (e) => appended.push(e) },
+    );
+    try {
+      expect(local).toBe(`http://127.0.0.1:${port}/`);
+      const token = new URL(url).searchParams.get("k") as string;
+      const lanAt = { address: "127.0.0.2" };
+      const lanHost = { host: `127.0.0.2:${port}` };
+      const loopHost = { host: `127.0.0.1:${port}` };
+      const cookie = { cookie: `${cookieName(port)}=${token}` };
+      const status = async (
+        path: string,
+        h: Record<string, string>,
+        at: { address?: string } = {},
+      ) => (await http(port, path, h, at)).status;
+
+      for (const path of ["/", "/api/taste"]) {
+        // Loopback, no cookie: 200.
+        expect([path, await status(path, loopHost)]).toEqual([path, 200]);
+        // LAN, no cookie: 401.
+        expect([path, await status(path, lanHost, lanAt)]).toEqual([path, 401]);
+        // LAN with the cookie: 200.
+        expect([
+          path,
+          await status(path, { ...lanHost, ...cookie }, lanAt),
+        ]).toEqual([path, 200]);
+        // Loopback listener with a LAN Host: 403, a cookie changes nothing.
+        expect([path, await status(path, { ...lanHost, ...cookie })]).toEqual([
+          path,
+          403,
+        ]);
+        // LAN listener with a loopback Host: 403, even with the cookie.
+        expect([
+          path,
+          await status(path, { ...loopHost, ...cookie }, lanAt),
+        ]).toEqual([path, 403]);
+      }
+
+      // Classified by listener, not headers: the loopback Origin check still holds.
+      const json = { "content-type": "application/json" };
+      const post = (h: Record<string, string>, at = {}, body = entry("x")) =>
+        http(
+          port,
+          "/api/taste",
+          { ...h, ...json },
+          { ...at, method: "POST", body },
+        );
+      expect(
+        (await post({ ...loopHost, origin: `http://127.0.0.2:${port}` }))
+          .status,
+      ).toBe(403);
+      expect(
+        (
+          await http(
+            port,
+            "/api/taste",
+            { ...loopHost, "content-type": "text/plain" },
+            {
+              method: "POST",
+              body: entry("x"),
+            },
+          )
+        ).status,
+      ).toBe(403);
+      expect(appended).toEqual([]);
+
+      // One POST per listener, each one append and one hook call.
+      const a = await post(
+        { ...loopHost, origin: `http://127.0.0.1:${port}` },
+        {},
+        entry("from loopback"),
+      );
+      expect(a.status).toBe(201);
+      const b = await post(
+        { ...lanHost, ...cookie, origin: `http://127.0.0.2:${port}` },
+        lanAt,
+        entry("from lan"),
+      );
+      expect(b.status).toBe(201);
+      const lines = readFileSync(join(dir, "taste.jsonl"), "utf8")
+        .trim()
+        .split("\n")
+        .map((l) => JSON.parse(l));
+      expect(appended).toEqual(lines);
+      expect(lines.map((l) => l.reason)).toEqual(["from loopback", "from lan"]);
+      expect(JSON.parse(a.body).entry).toEqual(lines[0]);
+
+      // HMR on both listeners: no cookie on loopback, cookie on the LAN.
+      const hmr = { "sec-websocket-protocol": "vite-hmr" };
+      expect(await upgrade(port, "/", { ...loopHost, ...hmr })).toBe(101);
+      expect(await upgrade(port, "/", { ...lanHost, ...hmr })).toBe(403);
+      expect(
+        await upgrade(port, "/", { ...lanHost, ...hmr }, "127.0.0.2"),
+      ).toBe(401);
+      expect(
+        await upgrade(
+          port,
+          "/",
+          { ...lanHost, ...cookie, ...hmr },
+          "127.0.0.2",
+        ),
+      ).toBe(101);
+
+      // A token on the loopback side is dropped before Vite, and sets no cookie.
+      const link = await http(port, `/?k=${token}`, loopHost);
+      expect(link.status).toBe(302);
+      expect(link.headers.location).toBe("/");
+      expect(link.headers["set-cookie"]).toBeUndefined();
+    } finally {
+      await server.close();
+    }
+    // Closing Vite closes the loopback listener too.
+    await expect(http(port, "/")).rejects.toThrow();
+  }, 30_000);
+
+  it("needs the port free on both addresses", async () => {
+    const { PortBusyError, serve } = await import("../cli/serve");
+    const dir = join(tmp, ".taste-lab");
+    initDataDir(dir);
+    const port = await pickPort({ start: 5470 });
+    // Something else holds the port on 127.0.0.1 only.
+    const squat = createServer();
+    await new Promise<void>((r) => squat.listen(port, "127.0.0.1", r));
+    try {
+      const err = await serve(dir, port, { host: "127.0.0.2" }).catch((e) => e);
+      expect(err).toBeInstanceOf(PortBusyError);
+      expect(err.message).toBe(
+        `port ${port} is in use on 127.0.0.1. Pick another --port, or leave it out to take a free one.`,
+      );
+      // The CLI exits 2 with that message.
+      const out: string[] = [];
+      const errs: string[] = [];
+      const code = await run(
+        [
+          "serve",
+          "--dir",
+          dir,
+          "--lan",
+          "--host",
+          "127.0.0.2",
+          "--port",
+          String(port),
+        ],
+        { out: (s) => out.push(s), err: (s) => errs.push(s) },
+      );
+      expect(code).toBe(2);
+      expect(out).toEqual([]);
+      expect(errs.join("")).toContain(`port ${port} is in use on 127.0.0.1`);
+    } finally {
+      await new Promise<void>((r) => squat.close(() => r()));
+    }
+  }, 30_000);
+
+  it("auto port skips a port taken on 127.0.0.1 only", async () => {
+    const { serve } = await import("../cli/serve");
+    const dir = join(tmp, ".taste-lab");
+    initDataDir(dir);
+    // Hold 5300..: every candidate the picker tries first. Take the first free
+    // port on loopback, then serve must skip it.
+    const first = await pickPort();
+    const squat = createServer();
+    await new Promise<void>((r) => squat.listen(first, "127.0.0.1", r));
+    try {
+      const { server, local } = await serve(dir, undefined, {
+        host: "127.0.0.2",
+      });
+      try {
+        const chosen = Number(new URL(local).port);
+        expect(chosen).not.toBe(first);
+        expect(chosen).toBeGreaterThan(first);
+      } finally {
+        await server.close();
+      }
+    } finally {
+      await new Promise<void>((r) => squat.close(() => r()));
+    }
+  }, 30_000);
 });

@@ -163,6 +163,54 @@ export function checkLanRequest(req: LanRequest, lan: LanConfig): LanDecision {
   return null;
 }
 
+// ---- Link token in URLs ----
+
+/** Splits `?a&k=x&b` and drops every `k` parameter. Keeps the rest byte for byte. */
+export function splitToken(url: string): { tokens: string[]; clean: string } {
+  const q = url.indexOf("?");
+  if (q < 0) return { tokens: [], clean: url };
+  const tokens: string[] = [];
+  const kept: string[] = [];
+  for (const part of url.slice(q + 1).split("&")) {
+    const eq = part.indexOf("=");
+    const rawName = eq < 0 ? part : part.slice(0, eq);
+    let name = rawName;
+    let value = eq < 0 ? "" : part.slice(eq + 1);
+    try {
+      name = decodeURIComponent(rawName.replace(/\+/g, " "));
+      value = decodeURIComponent(value.replace(/\+/g, " "));
+    } catch {
+      // Malformed escapes: compare the raw text.
+    }
+    if (name === "k") tokens.push(value);
+    else kept.push(part);
+  }
+  const path = url.slice(0, q);
+  return {
+    tokens,
+    clean: kept.length > 0 ? `${path}?${kept.join("&")}` : path,
+  };
+}
+
+/**
+ * The redirect target, or `/`. Only a same-origin path passes: one leading `/`,
+ * then no second `/` or `\`, and no backslash or control character anywhere.
+ * Browsers read `\` as `/`, so `/\evil.example/` would leave the server.
+ * The result must also resolve to the dummy origin it is parsed against.
+ */
+export function localPath(clean: string): string {
+  // biome-ignore lint/suspicious/noControlCharactersInRegex: control chars are the point
+  if (/[\\\u0000-\u001f\u007f]/.test(clean)) return "/";
+  if (!/^\/(?![/\\])/.test(clean)) return "/";
+  try {
+    const base = "http://taste-lab.invalid";
+    const u = new URL(clean, base);
+    return u.origin === base ? clean : "/";
+  } catch {
+    return "/";
+  }
+}
+
 // ---- Address picking ----
 
 export type Ifaces = Record<

@@ -229,3 +229,89 @@ describe("isSameOrigin", () => {
     expect(isSameOrigin("ftp://127.0.0.1:5173", "127.0.0.1:5173")).toBe(false);
   });
 });
+
+describe("per-server options", () => {
+  /** A server whose middleware has `opts`. Returns its port and a closer. */
+  async function withOptions(
+    opts: Parameters<typeof createTasteMiddleware>[1],
+  ): Promise<{ port: number; close: () => Promise<void> }> {
+    const srv = createServer((req, res) => {
+      createTasteMiddleware(file, opts)(req, res, () => res.end());
+    });
+    await new Promise<void>((r) => srv.listen(0, "127.0.0.1", r));
+    return {
+      port: (srv.address() as AddressInfo).port,
+      close: () => new Promise<void>((r) => srv.close(() => r())),
+    };
+  }
+  const send = (p: number, host: string, body?: unknown) =>
+    new Promise<number>((resolve, reject) => {
+      const req = request(
+        {
+          host: "127.0.0.1",
+          port: p,
+          path: "/api/taste",
+          method: body === undefined ? "GET" : "POST",
+          headers: { host, "content-type": "application/json" },
+        },
+        (res) => {
+          res.resume();
+          resolve(res.statusCode ?? 0);
+        },
+      );
+      req.on("error", reject);
+      req.end(body === undefined ? undefined : JSON.stringify(body));
+    });
+
+  it("onAppend gets each appended entry once, exactly as written", async () => {
+    const seen: unknown[] = [];
+    const s = await withOptions({ onAppend: (e) => seen.push(e) });
+    try {
+      const host = `127.0.0.1:${s.port}`;
+      expect(await send(s.port, host, valid)).toBe(201);
+      expect(await send(s.port, host, { ...valid, pick: "zzz" })).toBe(400);
+      expect(await send(s.port, host)).toBe(200);
+      expect(await send(s.port, host, { ...valid, reason: "two" })).toBe(201);
+      const lines = readFileSync(file, "utf8")
+        .trim()
+        .split("\n")
+        .map((l) => JSON.parse(l));
+      expect(seen).toEqual(lines);
+      expect(seen).toHaveLength(2);
+    } finally {
+      await s.close();
+    }
+  });
+
+  it("a throwing onAppend does not fail the request", async () => {
+    const s = await withOptions({
+      onAppend: () => {
+        throw new Error("listener broke");
+      },
+    });
+    try {
+      expect(await send(s.port, `127.0.0.1:${s.port}`, valid)).toBe(201);
+    } finally {
+      await s.close();
+    }
+  });
+
+  it("LAN mode: fromLoopback picks the rules, Host does not", async () => {
+    const lan = { address: "192.168.1.23", port: 1, token: "t" };
+    const loopRules = await withOptions({ lan, fromLoopback: () => true });
+    const lanRules = await withOptions({ lan, fromLoopback: () => false });
+    try {
+      // Loopback listener: no cookie, Host must be loopback.
+      expect(await send(loopRules.port, `127.0.0.1:${loopRules.port}`)).toBe(
+        200,
+      );
+      expect(await send(loopRules.port, "192.168.1.23:1")).toBe(403);
+      // LAN listener: a loopback Host is no way around the gate.
+      expect(await send(lanRules.port, `127.0.0.1:${lanRules.port}`)).toBe(403);
+      expect(await send(lanRules.port, "192.168.1.23:1")).toBe(401);
+    } finally {
+      await loopRules.close();
+      await lanRules.close();
+    }
+  });
+});

@@ -207,7 +207,7 @@ Order of the layers: the lab's stock tokens, then `<dataDir>/theme.css`, then th
 - Tags come from: airy, cramped, loud, quiet, dated, clean, playful, serious, too much, too little.
 - Never edit or reorder existing lines. Only the app middleware appends.
 
-Endpoints, served by `taste-lab serve` and `pnpm preview` for the served data dir (loopback only, Host must be 127.0.0.1, localhost or ::1):
+Endpoints, served by `taste-lab serve` and `pnpm preview` for the served data dir (loopback only, Host must be 127.0.0.1, localhost or ::1; `serve --lan` uses the LAN rules instead, see "LAN mode"). The app reads the log only here: Vite refuses to serve `taste.jsonl` as a file:
 
 - `POST /api/taste` validates the body and appends one line. `201 {entry}` on success, `400 {error}` on bad input.
 - `GET /api/taste` returns `{ entries, skipped }`. `skipped` counts unreadable lines.
@@ -307,10 +307,15 @@ Or copy the component into the round and change one thing. A copy can import `cl
 `serve --lan [--host <ip>]` lets the operator open the lab from another device on the home LAN. Without `--lan`, nothing here applies: loopback only, no token.
 
 - It binds one private IPv4 address, never 0.0.0.0. Auto-pick: the interface with the default route (Linux `/proc/net/route`), else the first private IPv4 not on a `docker*`, `br-*`, `veth*`, `virbr*`, `tailscale*` or similar interface. It prints the choice and other candidates. `--host <ip>` must be a private or loopback IPv4 (10/8, 172.16/12, 192.168/16, 127/8).
-- It prints `http://<ip>:<port>/?k=<token>`. The token is `crypto.randomBytes(16)` base64url, new each run, in memory only. It appears in that URL line and nowhere else: not in logs, files or the data dir. Do not copy it into notes, commits or chat.
-- The app stores `k` in `localStorage`, removes it from the address bar with `history.replaceState` and sends it as `X-Taste-Token` on every API call (`src/lib/token.ts`, `src/lib/api.ts`). On 401 it shows "Open the link printed by `taste-lab serve --lan`".
-- Guard on `GET` and `POST /api/taste` (`server/lan.ts`, used by `server/taste-log.ts`): remote address private (10/8, 172.16/12, 192.168/16, 127/8, `::1`, `fc00::/7`, IPv4-mapped forms), `Host` equal to `<ip>:<port>`, `Origin` (if sent) equal to `http://<ip>:<port>`, token match in constant time. Address, Host or Origin failure is 403. Missing or wrong token is 401. Content type, size limit and validation rules are unchanged. Reads need the token too.
-- Not protected: static assets and Vite dev endpoints. The round and library source is readable by anyone on the LAN who reaches the port. No HTTPS.
+- It prints `http://<ip>:<port>/?k=<token>`. The token is `crypto.randomBytes(16)` base64url, new each run, in server memory only. It appears in that URL line and in the browser cookie, nowhere else: not in logs (`DEBUG=vite:*` included), files or the data dir. Do not copy it into notes, commits or chat.
+- A gate in front of all of Vite's request handling covers every HTTP request and the HMR WebSocket upgrade (`server/lan-gate.ts`). It wraps the HTTP server's `request` and `upgrade` listeners, so Vite's own middleware, including its debug request log, only sees requests that passed.
+  1. Remote address not private (10/8, 172.16/12, 192.168/16, 127/8, `::1`, `fc00::/7`, IPv4-mapped forms), `Host` not `<ip>:<port>`, or `Origin` (if sent) not `http://<ip>:<port>`: 403.
+  2. `?k=<valid token>`: sets the cookie `taste_lab_<port>=<token>; HttpOnly; SameSite=Strict; Path=/` and redirects (302) to the same URL without `k`. Vite never sees the token. A wrong `k` is 401.
+  3. Otherwise the cookie must match in constant time, else 401 with a page that says "Open the link printed by `taste-lab serve --lan`" (JSON under `/api/`).
+- `/api/taste` checks the same cookie again (`server/taste-log.ts`). Content type, size limit and validation rules are unchanged. The app sends no token itself. On 401 it shows the same message (`src/lib/api.ts`).
+- Settings are per server and frozen. `serve` adds the `taste-lab:lan` plugin inline for that one server. The taste API reads its settings from that server's plugin list. A loopback server in the same process stays tokenless.
+- `server.fs.deny` lists `taste.jsonl` in every mode, so `/@fs/.../taste.jsonl` and `?raw` imports get 403 even with the cookie.
+- Anyone on the LAN with the link reads everything the lab serves, including round and library source. No HTTPS.
 
 ## Known limits
 

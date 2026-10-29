@@ -13,6 +13,7 @@ export function labPaths(dataDir: string) {
     library: join(dataDir, "library"),
     log: join(dataDir, "taste.jsonl"),
     design: join(dataDir, "DESIGN.md"),
+    theme: join(dataDir, "theme.css"),
   };
 }
 

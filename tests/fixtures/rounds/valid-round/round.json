@@ -1,0 +1,23 @@
+{
+  "id": "valid-round",
+  "level": "component",
+  "component": "card",
+  "question": "Which sample card feels right?",
+  "fixture": "tasks",
+  "basedOn": null,
+  "variants": [
+    {
+      "id": "a",
+      "file": "a.tsx",
+      "label": "Plain",
+      "changes": "Default card, title and status"
+    },
+    {
+      "id": "b",
+      "file": "b.tsx",
+      "label": "Tight",
+      "changes": "Smaller radius, muted background",
+      "tokens": { "--radius": "0.25rem" }
+    }
+  ]
+}

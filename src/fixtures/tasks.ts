@@ -1,0 +1,111 @@
+import type { Task } from "./types";
+
+export const tasks: Task[] = [
+  {
+    id: "TL-101",
+    title: "Migrate billing webhooks to the new queue",
+    status: "in-progress",
+    priority: "high",
+    assignee: { name: "Maya Okafor", initials: "MO" },
+    due: "2026-11-04",
+    tags: ["backend", "billing"],
+    comments: 7,
+    description:
+      "Move Stripe webhook handlers onto the job queue and add retries with backoff.",
+  },
+  {
+    id: "TL-102",
+    title: "Fix focus ring clipping in the sidebar",
+    status: "in-review",
+    priority: "medium",
+    assignee: { name: "Jonas Lindqvist", initials: "JL" },
+    due: "2026-11-02",
+    tags: ["ui", "a11y"],
+    comments: 3,
+    description:
+      "Focus outlines are cut off on collapsed nav items. Use inset rings instead.",
+  },
+  {
+    id: "TL-103",
+    title: "Write onboarding email sequence",
+    status: "todo",
+    priority: "low",
+    assignee: { name: "Priya Raman", initials: "PR" },
+    due: "2026-11-12",
+    tags: ["content"],
+    comments: 0,
+    description:
+      "Three emails over the first week. Keep the tone plain and short.",
+  },
+  {
+    id: "TL-104",
+    title: "Production deploys fail on cold cache",
+    status: "blocked",
+    priority: "urgent",
+    assignee: { name: "Tomás Herrera", initials: "TH" },
+    due: "2026-10-30",
+    tags: ["infra", "incident"],
+    comments: 14,
+    description:
+      "Build step times out when the dependency cache is empty. Waiting on registry access.",
+  },
+  {
+    id: "TL-105",
+    title: "Add CSV export to the reports page",
+    status: "todo",
+    priority: "medium",
+    assignee: { name: "Maya Okafor", initials: "MO" },
+    due: "2026-11-15",
+    tags: ["feature", "reports"],
+    comments: 2,
+    description:
+      "Export the filtered table as CSV. Respect the current sort and date range.",
+  },
+  {
+    id: "TL-106",
+    title: "Audit unused feature flags",
+    status: "done",
+    priority: "low",
+    assignee: { name: "Chen Wei", initials: "CW" },
+    due: "2026-10-25",
+    tags: ["cleanup"],
+    comments: 5,
+    description: "Remove 12 stale flags and delete their dead code paths.",
+  },
+  {
+    id: "TL-107",
+    title: "Design empty states for the inbox",
+    status: "in-progress",
+    priority: "medium",
+    assignee: { name: "Priya Raman", initials: "PR" },
+    due: "2026-11-06",
+    tags: ["design", "ui"],
+    comments: 9,
+    description:
+      "Cover first-run, filtered-to-zero and all-caught-up. One illustration style.",
+  },
+  {
+    id: "TL-108",
+    title: "Rate limit the public search API",
+    status: "in-review",
+    priority: "high",
+    assignee: { name: "Jonas Lindqvist", initials: "JL" },
+    due: "2026-11-01",
+    tags: ["backend", "security"],
+    comments: 6,
+    description:
+      "Token bucket per API key, 60 requests a minute, with a clear 429 body.",
+  },
+  {
+    id: "TL-109",
+    title: "Translate settings screen to German",
+    status: "todo",
+    priority: "low",
+    assignee: { name: "Chen Wei", initials: "CW" },
+    due: "2026-11-20",
+    tags: ["i18n", "content"],
+    comments: 1,
+    description:
+      "About 40 strings. Check that long German words do not break the layout.",
+  },
+];

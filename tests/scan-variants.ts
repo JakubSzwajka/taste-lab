@@ -96,14 +96,11 @@ export function isRawColorValue(value: string): boolean {
     .some((t) => HEX_VALUE.test(t) || NAMED_COLORS.has(t.toLowerCase()));
 }
 
-const ARBITRARY_UTIL_RE = new RegExp(
-  `(?<![\\w-])(?:${UTILS})-\\[([^\\]]*)\\]`,
-  "g",
-);
-// Tailwind arbitrary property: [color:red], [--x:oklch(...)].
+// Any utility with an arbitrary value: bg-[red], border-[1px_solid_red], drop-shadow-[0_0_red].
+const ARBITRARY_UTIL_RE = /(?<![\w-])(?:[a-z-]+:)*[a-z][\w-]*-\[([^\]]*)\]/g;
+// Tailwind arbitrary property: [color:red], [border:1px_solid_red], [--x:oklch(...)].
+// Any property name. The value is what gets checked.
 const ARBITRARY_PROP_RE = /(?<![\w\]-])\[(-{0,2}[a-z][a-z-]*):([^\]]*)\]/g;
-const COLOR_PROPS =
-  /^(?:color|background(?:-color|-image)?|border(?:-[a-z]+)*-color|border-color|fill|stroke|outline-color|caret-color|accent-color|text-decoration-color|box-shadow|text-shadow|--[\w-]+)$/;
 const STYLE_COLOR_KEYS = new Set([
   "color",
   "backgroundColor",
@@ -117,20 +114,32 @@ const STYLE_COLOR_KEYS = new Set([
   "boxShadow",
   "textShadow",
 ]);
+// JSX attributes that carry a color. Kebab names are valid JSX identifiers too.
+const JSX_COLOR_ATTRS = new Set([
+  "fill",
+  "stroke",
+  "color",
+  "stopColor",
+  "stop-color",
+  "floodColor",
+  "flood-color",
+  "lightingColor",
+  "lighting-color",
+]);
+
+/** Drops var(--token) references, which name a theme color. */
+const stripSafe = (v: string) => v.replace(/var\([^)]*\)/gi, "");
 
 function stringColorViolations(text: string): string[] {
   const out: string[] = [];
   for (const m of text.matchAll(ARBITRARY_UTIL_RE)) {
     const inner = m[1] as string;
-    if (/^color:/i.test(inner) || isRawColorValue(inner)) {
+    if (/^color:/i.test(inner) || isRawColorValue(stripSafe(inner))) {
       out.push("arbitrary color value");
     }
   }
   for (const m of text.matchAll(ARBITRARY_PROP_RE)) {
-    if (
-      COLOR_PROPS.test(m[1] as string) &&
-      isRawColorValue((m[2] as string).replace(/var\([^)]*\)/g, ""))
-    ) {
+    if (isRawColorValue(stripSafe(m[2] as string))) {
       out.push("arbitrary color value");
     }
   }
@@ -145,6 +154,46 @@ function stringValue(n: unknown): string | null {
   if (!isNode(n)) return null;
   if (n.type === "Literal" && typeof n.value === "string") return n.value;
   return null;
+}
+
+/** A string literal, or a template literal with no expressions, as its string value. */
+function staticString(n: unknown): string | null {
+  const plain = stringValue(n);
+  if (plain !== null) return plain;
+  if (isNode(n) && n.type === "TemplateLiteral") {
+    const quasis = n.quasis as Node[];
+    const exprs = n.expressions as unknown[];
+    if (exprs.length === 0 && quasis.length === 1) {
+      const v = quasis[0]?.value as { raw?: string; cooked?: string | null };
+      return v.cooked ?? v.raw ?? "";
+    }
+  }
+  return null;
+}
+
+/** Every static string inside a value, e.g. both arms of `a ? "red" : "blue"`. */
+function staticStrings(n: unknown, out: string[] = []): string[] {
+  if (Array.isArray(n)) {
+    for (const x of n) staticStrings(x, out);
+    return out;
+  }
+  if (!isNode(n)) return out;
+  const s = staticString(n);
+  if (s !== null) {
+    out.push(s);
+    return out;
+  }
+  if (n.type === "TemplateLiteral") {
+    for (const q of n.quasis as Node[]) {
+      const v = q.value as { raw?: string; cooked?: string | null };
+      out.push(v.cooked ?? v.raw ?? "");
+    }
+  }
+  for (const [k, v] of Object.entries(n)) {
+    if (k === "type" || typeof v !== "object" || v === null) continue;
+    staticStrings(v, out);
+  }
+  return out;
 }
 
 function checkSpecifier(
@@ -227,6 +276,14 @@ function visit(
       ) {
         report(at, "style prop is not allowed (put tokens in round.json)");
       }
+      if (
+        isNode(name) &&
+        name.type === "JSXIdentifier" &&
+        JSX_COLOR_ATTRS.has(name.name as string) &&
+        staticStrings(node.value).some((v) => isRawColorValue(stripSafe(v)))
+      ) {
+        report(at, "JSX color attribute (use currentColor or var(--token))");
+      }
       break;
     }
     case "MemberExpression":
@@ -239,12 +296,10 @@ function visit(
       if (banStyle && key === "style") {
         report(at, "style prop is not allowed (put tokens in round.json)");
       }
-      const val = stringValue(node.value);
       if (
         key &&
         STYLE_COLOR_KEYS.has(key) &&
-        val !== null &&
-        isRawColorValue(val.replace(/var\([^)]*\)/g, ""))
+        staticStrings(node.value).some((v) => isRawColorValue(stripSafe(v)))
       ) {
         report(at, "inline style color (use var(--token))");
       }

@@ -17,3 +17,14 @@ export default function Ok() {
     </Card>
   );
 }
+
+export const Allowed = () => (
+  <g fill="currentColor" stroke="none">
+    <circle fill="transparent" stroke="inherit" />
+    <circle fill="var(--primary)" stroke="var(--border)" />
+    <circle stroke={`currentColor`} />
+    <stop stopColor="var(--card)" floodColor="transparent" />
+    <i className="[border:1px_solid_var(--border)] [mask-type:alpha] [content:'x']" />
+  </g>
+);
+export const okStyleLike = { color: `var(--primary)`, fill: `none` };

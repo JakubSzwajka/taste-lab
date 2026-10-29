@@ -98,6 +98,24 @@ describe("variant scanner", () => {
     expect(msgs(17)).toContain("inline style color (use var(--token))");
   });
 
+  it("catches static templates, arbitrary properties and JSX color attributes", () => {
+    const hits = scanVariants(fx("bad")).filter(
+      (v) => v.file === "color-bypass.tsx",
+    );
+    const msgs = (line: number) =>
+      hits.filter((v) => v.line === line).map((v) => v.message);
+    const STYLE = "inline style color (use var(--token))";
+    const ARB = "arbitrary color value";
+    const JSX = "JSX color attribute (use currentColor or var(--token))";
+    expect(msgs(2)).toEqual([STYLE]); // {color: `red`}
+    expect(msgs(3)).toEqual([STYLE]); // template in a ternary arm
+    expect(msgs(4)).toEqual([ARB]); // [border:1px_solid_red]
+    expect(msgs(5)).toEqual([ARB]); // same, in a template
+    expect(msgs(6)).toEqual([ARB]); // drop-shadow-[...] and [mask:...]
+    for (const line of [7, 8, 9, 10, 11, 12, 13])
+      expect(msgs(line)).toEqual([JSX]);
+  });
+
   it("does not flag layout arbitrary values, var() or transparent", () => {
     expect(scanVariants(fx("good"))).toEqual([]);
   });

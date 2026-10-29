@@ -1,4 +1,6 @@
 // Shared by the browser and the dev-server middleware. Keep free of node imports.
+import { PREVIEW_MODES, type PreviewMode } from "./flip.ts";
+
 export const TAGS = [
   "airy",
   "cramped",
@@ -22,6 +24,8 @@ export type TasteEntry = {
   tags: string[];
   reason: string;
   theme: "light" | "dark";
+  /** How the variants were shown when answering. Absent in older lines. */
+  view?: PreviewMode;
 };
 
 export type ValidationResult =
@@ -91,6 +95,15 @@ export function validateEntry(
   if (o.pick === "mix" && reason.trim() === "") {
     return { ok: false, error: "mix needs a reason that says which parts" };
   }
+  if (
+    o.view !== undefined &&
+    !(PREVIEW_MODES as readonly unknown[]).includes(o.view)
+  ) {
+    return {
+      ok: false,
+      error: `view must be one of ${PREVIEW_MODES.join(", ")}`,
+    };
+  }
   let ts: string;
   if (o.ts === undefined) {
     ts = now().toISOString();
@@ -111,6 +124,7 @@ export function validateEntry(
       tags: tags as string[],
       reason,
       theme: o.theme as TasteEntry["theme"],
+      ...(o.view !== undefined && { view: o.view as PreviewMode }),
     },
   };
 }

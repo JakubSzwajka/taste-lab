@@ -54,6 +54,28 @@ describe("validateEntry", () => {
     ).toBe(true);
   });
 
+  it("accepts view columns or flip and keeps it", () => {
+    for (const view of ["columns", "flip"]) {
+      const r = validateEntry({ ...valid, view });
+      expect(r.ok && r.entry.view).toBe(view);
+    }
+  });
+
+  it("leaves view out when absent, so old lines stay valid", () => {
+    const r = validateEntry(valid);
+    expect(r.ok && "view" in r.entry).toBe(false);
+    const line = JSON.stringify({ ...valid, ts: "2026-01-02T03:04:05Z" });
+    expect(parseLog(line).entries).toHaveLength(1);
+  });
+
+  it.each([
+    ["unknown view", "grid"],
+    ["numeric view", 1],
+    ["null view", null],
+  ])("rejects %s", (_n, view) => {
+    expect(validateEntry({ ...valid, view }).ok).toBe(false);
+  });
+
   it("rejects mix without a reason", () => {
     const r = validateEntry({ ...valid, pick: "mix", reason: " " });
     expect(r.ok).toBe(false);

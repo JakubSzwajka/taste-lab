@@ -92,6 +92,28 @@ describe("validateRound", () => {
     expect(validateRound(base, ctx).errors).toEqual([]);
   });
 
+  it("defaults preview to columns and accepts both modes", () => {
+    expect(validateRound(base, ctx).spec?.preview).toBe("columns");
+    for (const preview of ["columns", "flip"]) {
+      const r = validateRound({ ...base, preview }, ctx);
+      expect(r.errors).toEqual([]);
+      expect(r.spec?.preview).toBe(preview);
+    }
+  });
+
+  it.each([
+    ["unknown string", "grid"],
+    ["number", 1],
+    ["null", null],
+    ["empty", ""],
+  ])("rejects a preview that is a %s with a readable error", (_n, preview) => {
+    const r = validateRound({ ...base, preview }, ctx);
+    expect(r.spec).toBeNull();
+    expect(r.errors.join()).toContain(
+      'preview must be one of "columns", "flip"',
+    );
+  });
+
   it("rejects duplicate ids and reserved ids", () => {
     const v = {
       ...base,

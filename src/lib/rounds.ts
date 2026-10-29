@@ -1,4 +1,5 @@
 import type { ComponentType } from "react";
+import { PREVIEW_MODES, type PreviewMode } from "./flip";
 
 export type Level = "token" | "component" | "layout";
 
@@ -17,6 +18,8 @@ export type RoundSpec = {
   question: string;
   fixture: string;
   basedOn: { round: string; pick: string } | null;
+  /** How the compare screen starts. Absent in round.json means "columns". */
+  preview: PreviewMode;
   variants: VariantSpec[];
 };
 
@@ -80,6 +83,14 @@ export function validateRound(
       );
     }
   }
+  if (
+    data.preview !== undefined &&
+    !(PREVIEW_MODES as readonly unknown[]).includes(data.preview)
+  ) {
+    errors.push(
+      `preview must be one of ${PREVIEW_MODES.map((m) => `"${m}"`).join(", ")} (or left out for "columns")`,
+    );
+  }
   const variants = data.variants;
   if (!Array.isArray(variants)) {
     errors.push("variants must be an array");
@@ -129,7 +140,14 @@ export function validateRound(
   }
   if (errors.length > 0) return { spec: null, errors };
   const d = data as unknown as RoundSpec;
-  return { spec: { ...d, basedOn: d.basedOn ?? null }, errors };
+  return {
+    spec: {
+      ...d,
+      basedOn: d.basedOn ?? null,
+      preview: d.preview ?? "columns",
+    },
+    errors,
+  };
 }
 
 const dirOf = (path: string) => {

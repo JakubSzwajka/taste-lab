@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { fetchLog, type LogResponse, postEntry } from "@/lib/api";
+import type { PreviewMode } from "@/lib/flip";
 import type { LoadedRound } from "@/lib/rounds";
 import { hrefFor, useRoute } from "@/lib/route";
 import { submitEntry } from "@/lib/submit";
@@ -70,7 +71,7 @@ export default function App({
         ? nextOpen
         : undefined;
 
-  async function submit(a: Answer) {
+  async function submit(a: Answer & { view: PreviewMode }) {
     if (!shown?.ok || inFlight.current) return; // state lags, the ref does not
     inFlight.current = true;
     setSubmitting(true);
@@ -88,6 +89,7 @@ export default function App({
             tags: a.tags,
             reason: a.reason.trim(),
             theme,
+            view: a.view,
           }),
         fetchLog,
         {
@@ -118,7 +120,7 @@ export default function App({
     <TooltipProvider>
       <div className="min-h-svh bg-background text-foreground">
         <header className="border-b">
-          <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-3 px-4 py-3">
+          <div className="mx-auto flex max-w-[120rem] flex-wrap items-center gap-3 px-4 py-3">
             <a href={hrefFor({ page: "current" })} className="font-semibold">
               taste-lab
             </a>
@@ -162,7 +164,7 @@ export default function App({
           </div>
         </header>
 
-        <main className="mx-auto flex max-w-7xl flex-col gap-6 px-4 py-6">
+        <main className="mx-auto flex max-w-[120rem] flex-col gap-6 px-4 py-6">
           {logError && (
             <p role="alert" className="text-sm text-destructive">
               Could not reach the taste log: {logError}. Run the app with pnpm

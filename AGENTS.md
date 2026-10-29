@@ -82,6 +82,7 @@ variants/
   "question": "Which task card feels right?",
   "fixture": "tasks",
   "basedOn": null,
+  "preview": "columns",
   "variants": [
     {
       "id": "a",
@@ -98,6 +99,7 @@ variants/
 - `level` is `token`, `component` or `layout`.
 - `fixture` is a key of `fixtures`.
 - `basedOn` is `null` or `{ "round": "round-000", "pick": "b" }`.
+- `preview` is optional: `"columns"` (default) or `"flip"`. It sets how the compare screen starts. `columns` shows the variants side by side. `flip` shows one variant at full page width with A/B/C tabs. Use `flip` for tables and layouts that need width. The operator can switch at any time, so this is only the starting view. Any other value is a round error.
 - `variants` has 2 to 4 entries. Each `file` is a `.tsx` file in the same folder. `label` and `changes` show in the frame header.
 - A bad `round.json` shows a readable error for that round in the app. Other rounds keep working.
 - The app finds rounds with `import.meta.glob`. No code change per round.
@@ -123,10 +125,12 @@ The app writes them as inline `style` custom properties on the variant frame ele
   "pick": "b",
   "tags": ["airy", "clean"],
   "reason": "less noise",
-  "theme": "dark"
+  "theme": "dark",
+  "view": "flip"
 }
 ```
 
+- `view` is optional: `"columns"` or `"flip"`, the view in use when the operator answered. Lines written before it existed have no `view` and stay valid.
 - `pick` is a variant id from `shown`, `"none"` or `"mix"`. For `mix`, `reason` is required and says which parts.
 - Tags come from: airy, cramped, loud, quiet, dated, clean, playful, serious, too much, too little.
 - Never edit or reorder existing lines. Only the app middleware appends.

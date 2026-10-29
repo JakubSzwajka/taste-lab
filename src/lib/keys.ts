@@ -51,3 +51,42 @@ export function enterAction(
   }
   return "submit";
 }
+
+export type ArrowEvent = EnterEvent & { key: string };
+
+/** Roles whose widgets move focus or values with the arrow keys. */
+const ARROW_ROLES = new Set([
+  "tab",
+  "radio",
+  "slider",
+  "spinbutton",
+  "menuitem",
+  "menuitemcheckbox",
+  "menuitemradio",
+  "option",
+  "combobox",
+  "listbox",
+  "tree",
+  "treeitem",
+  "grid",
+  "gridcell",
+]);
+
+/**
+ * What the global ArrowLeft/ArrowRight handler should do: flip the variant
+ * view, or nothing. It never acts in text fields, selects, or inside a widget
+ * that uses arrows itself (tabs, toggle groups, menus). `inArrowWidget` is true
+ * when the target sits inside such a group (checked by the caller via the DOM).
+ */
+export function arrowAction(
+  e: ArrowEvent,
+  target: KeyTarget | null,
+  inArrowWidget = false,
+): "prev" | "next" | "ignore" {
+  if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return "ignore";
+  if (e.ctrlKey || e.metaKey || e.altKey || e.shiftKey) return "ignore";
+  if (isTextTarget(target) || inArrowWidget) return "ignore";
+  if (target?.tagName === "SELECT") return "ignore";
+  if (ARROW_ROLES.has(target?.role ?? "")) return "ignore";
+  return e.key === "ArrowLeft" ? "prev" : "next";
+}

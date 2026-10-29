@@ -19,7 +19,7 @@ node <taste-lab>/bin/taste-lab.mjs check --dir ../my-app/.taste-lab
 node <taste-lab>/bin/taste-lab.mjs serve --dir ../my-app/.taste-lab [--port N]
 ```
 
-`init` creates the folder with a sample fixture and an empty `library/`, and refuses to overwrite one that exists. `check` validates rounds and `library/` entries and scans variant and library files; it exits 1 and lists the problems when something is wrong. `serve` starts the lab on 127.0.0.1. Without `--port` it takes the first free port from 5300, skipping 3000, 3326, 5173 and 5310.
+`init` creates the folder with a sample fixture, an empty `library/` and an empty `theme.css`, and refuses to overwrite one that exists. `check` validates `theme.css`, rounds and `library/` entries and scans variant and library files; it exits 1 and lists the problems when something is wrong. `serve` starts the lab on 127.0.0.1. Without `--port` it takes the first free port from 5300, skipping 3000, 3326, 5173 and 5310.
 
 `check` loads `fixtures/index.ts` and needs both exports: `fixtures` and `fixtureKeys` (the same keys). It reports broken files, dangling or looping symlinks and unreadable paths as problems. Data dir paths may contain spaces, quotes (not both kinds) and `$`. `serve`, `init` and `check` reject paths with a line break or control character, a backslash, `*`, `{` or `}`, or both quote kinds: Tailwind reads its `@source` path raw as a glob and cannot carry them.
 
@@ -34,6 +34,8 @@ Node version is pinned in `.node-version`. pnpm version is in `package.json`.
 4. Each submit appends one line to `.taste-lab/taste.jsonl` in the served folder and moves to the next round.
 5. Open History to see past answers, newest first.
 6. Open Library to see the agreed components: each entry has examples at their width, the rounds it came from (links to `#/round/<id>`) and its rules.
+
+7. Open Theme to see every shadcn token as a swatch in light and dark. Values from `theme.css` are marked. The rest are stock. `--radius` shows as a sample box.
 
 With no rounds in `.taste-lab/rounds/`, the app shows a "no rounds yet" screen.
 
@@ -55,6 +57,7 @@ A data dir, committed in each app repo:
 <repo>/.taste-lab/
   config.json         { "version": 1, "name": "<app name>" }, name defaults to <repo>
   fixtures/index.ts   sample data for variants, imported as @/fixtures
+  theme.css           shadcn tokens for this app, over the lab's stock theme (see Theme)
   rounds/round-NNN/   rounds written by the agent (round.json + a.tsx, b.tsx, ...)
   library/<name>/     agreed components: <Name>.tsx, examples.tsx, meta.json
   taste.jsonl         append-only answer log
@@ -66,12 +69,35 @@ This repo:
 ```
 bin/taste-lab.mjs        CLI entry (Node runs the TypeScript in cli/ directly)
 cli/                     serve, init, check, port picking, variant scanner
-examples/demo/.taste-lab the demo data dir (rounds 1 to 6)
+examples/demo/.taste-lab the demo data dir (rounds 1 to 7, empty theme.css)
 server/                  Vite plugin and /api/taste middleware
 src/                     lab UI
 src/components/ui/       stock shadcn primitives, generated, not hand-edited
 tests/                   loader, library, log writer, CLI and variant rule tests
 ```
+
+## Theme
+
+`<dir>/theme.css` holds the shadcn tokens this app's lab renders with: rounds, library, history and the app chrome. The lab's own `src/index.css` is the stock theme. Without a `theme.css`, or with empty blocks, you see stock.
+
+```css
+/* theme.css: only :root (light) and .dark, only shadcn custom properties */
+:root {
+  --primary: oklch(0.55 0.2 255);
+}
+.dark {
+  --primary: oklch(0.75 0.15 255);
+}
+```
+
+- Allowed: `:root` and `.dark` blocks, comments, and custom properties named like the variables in `src/index.css` (`--background`, `--primary`, `--radius`, `--chart-1` to `--chart-5`, `--sidebar-*` and the `-foreground` pairs). Raw colors are fine here. This file is the one place they live.
+- Not allowed: other selectors, at-rules, `@import`, `url()`, `!important`, other names, non-custom properties. `taste-lab check` lists each with its line. The app ignores a rejected part and the Theme page lists it.
+- Order: stock tokens, then `theme.css`, then each variant's `round.json` `tokens`. Round tokens win.
+- A token missing from a mode falls back to stock for that mode. A `:root` value does not change the stock `.dark` value. A token that stock defines only in `:root`, like `--radius`, applies to both modes.
+- A `theme.css` created, edited or deleted while the server runs updates the page without a restart or reload.
+- Do not use `light-dark()` in `theme.css`. Write the two values into `:root` and `.dark`.
+
+To promote a token round winner, copy the winning variant's `tokens` into `:root` and `.dark`. Split each `light-dark(a, b)` into `a` in `:root` and `b` in `.dark`. Cite the round in a comment next to the values and in the Tokens table of `DESIGN.md`. Then run `check`.
 
 ## Library
 

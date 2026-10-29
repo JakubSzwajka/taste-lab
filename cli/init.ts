@@ -50,6 +50,23 @@ export type FixtureKey = keyof typeof fixtures;
 export const fixtureKeys = Object.keys(fixtures) as FixtureKey[];
 `;
 
+const THEME = `/* Taste theme for this app: shadcn tokens only, in :root (light) and .dark.
+ * Missing tokens fall back to the lab's stock theme. Order: stock, then this
+ * file, then each variant's round.json tokens (those still win).
+ * Allowed: the shadcn variables (--primary, --radius, ...) and comments.
+ * Not allowed: other selectors, at-rules, @import, url(), other properties.
+ * Promote a token round winner here: copy its tokens into :root and .dark and
+ * cite the round in a comment. Run \`taste-lab check\` after editing. */
+
+:root {
+  /* light tokens */
+}
+
+.dark {
+  /* dark tokens */
+}
+`;
+
 const design = (name: string) => `# Design rules: ${name}
 
 Distilled from \`taste.jsonl\`. The agent rewrites this file every ~5 rounds.
@@ -92,6 +109,7 @@ export function initDataDir(dir: string, opts: { name?: string } = {}) {
     "rounds/.gitkeep": "",
     "library/.gitkeep": "",
     "taste.jsonl": "",
+    "theme.css": THEME,
     "DESIGN.md": design(name),
   };
   mkdirSync(dirname(dir), { recursive: true });

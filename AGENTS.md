@@ -11,6 +11,7 @@ The lab is a tool. The taste data lives in a `.taste-lab` data dir inside each a
   config.json          { "version": 1, "name": "<app name>" }
   fixtures/index.ts    named fixtures + `fixtures` map + `fixtureKeys`
   fixtures/*.ts        fixture data and types
+  theme.css            shadcn tokens for this app, over the lab's stock theme
   rounds/round-NNN/    round.json + 2 to 4 variant .tsx files
   library/<name>/      agreed components: <Name>.tsx, examples.tsx, meta.json
   taste.jsonl          answers, append-only
@@ -19,7 +20,8 @@ The lab is a tool. The taste data lives in a `.taste-lab` data dir inside each a
 
 - `config.json`: `version` is `1`. `name` is optional and defaults to the parent folder name (`<repo>`). The header shows it.
 - `fixtures/index.ts` is what variants get from `@/fixtures`. It must export `fixtures`, an object that maps each `fixture` key used in `round.json` to its data, and `fixtureKeys`. Other named exports (data, types, helpers) are up to the app.
-- Everything the served app shows comes from the data dir. From this repo, the lab takes only its UI code, the stock primitives in `src/components/ui/` and the neutral theme in `src/index.css`.
+- `theme.css` is optional. It holds this app's shadcn tokens. See "Theme" below.
+- Everything the served app shows comes from the data dir. From this repo, the lab takes only its UI code, the stock primitives in `src/components/ui/` and the stock theme in `src/index.css`. The data dir's `theme.css` sits on top of that stock theme.
 - `library/` holds the components the operator agreed on. See "Library" below. `init` creates it empty.
 
 ## Commands for a data dir
@@ -32,8 +34,8 @@ node <taste-lab>/bin/taste-lab.mjs check --dir <repo>/.taste-lab
 node <taste-lab>/bin/taste-lab.mjs serve --dir <repo>/.taste-lab [--port N]
 ```
 
-- `init` writes the skeleton above with one sample fixture (`items`), an empty `library/`, an empty `taste.jsonl` and a `DESIGN.md` stub. It refuses to touch a path that exists.
-- `check` loads the fixtures (both `fixtures` and `fixtureKeys` must be exported and list the same keys), validates every `round.json` with the app's validator, runs the variant scanner on `rounds/` and validates `library/` (see "Library"). Exit 0 when clean, 1 with one line per problem (filesystem trouble such as a dangling symlink included), 2 on a usage error.
+- `init` writes the skeleton above with one sample fixture (`items`), an empty `library/`, an empty `taste.jsonl`, a `theme.css` with a header comment and empty `:root` and `.dark` blocks, and a `DESIGN.md` stub. It refuses to touch a path that exists.
+- `check` validates `theme.css` (see "Theme"), loads the fixtures (both `fixtures` and `fixtureKeys` must be exported and list the same keys), validates every `round.json` with the app's validator, runs the variant scanner on `rounds/` and validates `library/` (see "Library"). Exit 0 when clean, 1 with one line per problem (filesystem trouble such as a dangling symlink included), 2 on a usage error.
 - A data dir path must not contain a line break or control character, a backslash, `*`, `{`, `}` or both quote kinds. Tailwind reads `@source` raw and as a glob, so `serve`, `init` and `check` reject such paths up front. Spaces, `$`, one kind of quote and `[`, `]`, `(`, `)`, `!` work.
 - `serve` starts the lab on 127.0.0.1 and prints the URL. Without `--port` it takes the first free port from 5300 and never picks 3000, 3326, 5173 or 5310. Stop it with Ctrl+C.
 
@@ -148,7 +150,37 @@ export default function Dense() {
 
 `tokens` is optional per variant. Keys are shadcn variable names (`--radius`, `--primary`, `--card`, `--muted`, `--border`, ...). Values are any CSS value for that variable.
 
-The app writes them as inline `style` custom properties on the variant frame element. The `.dark` class sits on `<html>`, so inline custom properties on a descendant always win over both `:root` and `.dark` values. A token override therefore holds in light and dark mode. Corollary: an override applies in both themes. If a color must differ per theme, use `light-dark(a, b)`. The frame sets `color-scheme` to the active theme so this works. Prefer `oklch(...)` values to match the theme; literals are allowed in `round.json` only, never in `.tsx`.
+The app writes them as inline `style` custom properties on the variant frame element. The `.dark` class sits on `<html>`, so inline custom properties on a descendant always win over both `:root` and `.dark` values. A token override therefore holds in light and dark mode. Corollary: an override applies in both themes. If a color must differ per theme, use `light-dark(a, b)`. The frame sets `color-scheme` to the active theme so this works. Prefer `oklch(...)` values to match the theme; literals are allowed in `round.json` and `theme.css` only, never in `.tsx`.
+
+Order of the layers: the lab's stock tokens, then `<dataDir>/theme.css`, then these per-variant overrides. Overrides win. See "Theme".
+
+## Theme
+
+`<dataDir>/theme.css` holds this app's shadcn tokens. The lab renders rounds, library, history and its own chrome with it. Token rounds decide what goes in. Accent colors come back through rounds, never hard-coded.
+
+```css
+:root {
+  --primary: oklch(0.55 0.2 255);
+}
+.dark {
+  --primary: oklch(0.75 0.15 255);
+}
+```
+
+- Allowed: `:root` and `.dark` blocks, comments, and custom properties whose names the lab's `src/index.css` defines in `:root` or `.dark`: `--background`, `--foreground`, `--card`, `--popover`, `--primary`, `--secondary`, `--muted`, `--accent`, `--destructive`, their `-foreground` pairs, `--border`, `--input`, `--ring`, `--chart-1` to `--chart-5`, `--radius` and `--sidebar`, `--sidebar-primary`, `--sidebar-accent`, `--sidebar-border`, `--sidebar-ring` with their `-foreground` pairs. Raw color literals are fine here. This file is the one place they live.
+- Not allowed, each reported by `check` with a line number: other selectors (including `:root, .dark`), at-rules, `@import`, `url()`, `!important`, quotes and backslashes in values, unbalanced `()` or `[]`, a stray `;` inside a value, names outside the set, non-custom properties. The app drops a rejected part and the Theme page lists it.
+- A missing file or empty blocks mean the stock theme. A token missing from a mode falls back to stock for that mode. A `:root` value does not replace the stock `.dark` value. A token that stock defines only in `:root` (`--radius`) applies to both modes.
+- Order: stock, then `theme.css`, then each variant's `round.json` `tokens`. A round override still wins.
+- The server loads `theme.css` as its own stylesheet, after `src/index.css`. Creating, editing or deleting it while the server runs updates the app without a restart.
+- No `light-dark()` in `theme.css`: the app root has no `color-scheme`. Write both values.
+- The Theme page (`#/theme`, header link beside Library) shows each token as a swatch in light and dark. A value from `theme.css` is marked "theme.css". Everything else is stock. `--radius` is a sample box.
+
+### Promoting a token round winner
+
+1. Copy the winning variant's `tokens` into `theme.css`. Put each value in `:root` (light) and in `.dark`.
+2. Split `light-dark(a, b)` into `a` in `:root` and `b` in `.dark`. A plain value goes in both blocks, or in `:root` alone when stock `.dark` should stay.
+3. Cite the round in a comment next to the values (`/* round-007 b */`) and in the Tokens table of `DESIGN.md`.
+4. Run `taste-lab check --dir <dataDir>`. Open the Theme page to see the values marked.
 
 ## Taste log contract
 
@@ -246,7 +278,7 @@ When the operator settles a direction, promote it. Do this yourself, then run `c
 3. The axes that differed between rounds become `cva` variants (`<name>Variants`), only where they are natural. Do not invent axes.
 4. Write `examples.tsx` with named exports for the default case and for each state that matters. They import `@/fixtures` and the component.
 5. Write `meta.json`. Put the winning round and pick in `provenance` with the operator's words as the note. Put settled rules in `rules`. Set `status` to `agreed` once the operator agrees.
-6. The winning `tokens` stay per variant. The lab keeps its neutral stock theme, so record them in `DESIGN.md`.
+6. The winning `tokens` of a component round stay per variant and go in `DESIGN.md`. A winning token round goes into `theme.css`. See "Promoting a token round winner".
 
 ### Iterating on a library component
 

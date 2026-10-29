@@ -5,6 +5,7 @@ import type { Answer } from "@/components/AnswerPanel";
 import { CompareScreen } from "@/components/CompareScreen";
 import { HistoryView } from "@/components/HistoryView";
 import { LibraryEntryView, LibraryView } from "@/components/LibraryView";
+import { ThemeView } from "@/components/ThemeView";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -18,6 +19,7 @@ import { hrefFor, useRoute } from "@/lib/route";
 import { submitEntry } from "@/lib/submit";
 import type { TasteEntry } from "@/lib/taste";
 import { useTheme } from "@/lib/theme";
+import { useThemeData } from "@/lib/theme-data";
 import { rounds as defaultRounds } from "@/lib/variants";
 
 export default function App({
@@ -29,6 +31,7 @@ export default function App({
 }) {
   const [theme, toggleTheme] = useTheme();
   const route = useRoute();
+  const themeData = useThemeData();
   const [entries, setEntries] = useState<TasteEntry[]>([]);
   const [skipped, setSkipped] = useState(0);
   const [loaded, setLoaded] = useState(false);
@@ -167,6 +170,13 @@ export default function App({
             <Button
               asChild
               size="sm"
+              variant={route.page === "theme" ? "secondary" : "ghost"}
+            >
+              <a href={hrefFor({ page: "theme" })}>Theme</a>
+            </Button>
+            <Button
+              asChild
+              size="sm"
               variant={route.page === "history" ? "secondary" : "ghost"}
             >
               <a href={hrefFor({ page: "history" })}>History</a>
@@ -197,31 +207,36 @@ export default function App({
             </p>
           )}
 
-          {broken.length > 0 && route.page !== "history" && !onLibrary && (
-            <div
-              role="alert"
-              className="flex flex-col gap-2 rounded-lg border border-destructive p-4"
-            >
-              <p className="text-sm font-medium text-destructive">
-                {broken.length} round(s) could not be loaded. Other rounds still
-                work.
-              </p>
-              {broken.map((r) =>
-                r.ok ? null : (
-                  <div key={r.id} className="text-sm">
-                    <span className="font-medium">{r.id}</span>
-                    <ul className="list-disc pl-5 text-muted-foreground">
-                      {r.errors.map((m) => (
-                        <li key={m}>{m}</li>
-                      ))}
-                    </ul>
-                  </div>
-                ),
-              )}
-            </div>
-          )}
+          {broken.length > 0 &&
+            route.page !== "history" &&
+            route.page !== "theme" &&
+            !onLibrary && (
+              <div
+                role="alert"
+                className="flex flex-col gap-2 rounded-lg border border-destructive p-4"
+              >
+                <p className="text-sm font-medium text-destructive">
+                  {broken.length} round(s) could not be loaded. Other rounds
+                  still work.
+                </p>
+                {broken.map((r) =>
+                  r.ok ? null : (
+                    <div key={r.id} className="text-sm">
+                      <span className="font-medium">{r.id}</span>
+                      <ul className="list-disc pl-5 text-muted-foreground">
+                        {r.errors.map((m) => (
+                          <li key={m}>{m}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  ),
+                )}
+              </div>
+            )}
 
-          {route.page === "library" ? (
+          {route.page === "theme" ? (
+            <ThemeView {...themeData} />
+          ) : route.page === "library" ? (
             <LibraryView entries={library} />
           ) : route.page === "library-entry" ? (
             <LibraryEntryView

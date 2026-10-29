@@ -2,6 +2,8 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import App from "./App";
 import "./index.css";
+// After the stock tokens, so theme.css wins over them.
+import "virtual:taste-lab/theme.css";
 
 const root = document.getElementById("root");
 if (!root) throw new Error("#root missing");

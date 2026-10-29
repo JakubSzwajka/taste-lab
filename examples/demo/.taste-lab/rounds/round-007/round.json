@@ -1,0 +1,39 @@
+{
+  "id": "round-007",
+  "level": "token",
+  "component": "theme",
+  "question": "Which accent goes into theme.css? Same library card and table in each. A is the blue from round-001 c (cards), B the muted indigo from round-002 b (tables), C the stock neutral control. The accent colors the in-progress, in-review and active dots, the High pill and the progress bars. Your pick becomes the app accent in theme.css.",
+  "fixture": "tasks",
+  "basedOn": { "round": "round-001", "pick": "c" },
+  "preview": "flip",
+  "variants": [
+    {
+      "id": "a",
+      "file": "a.tsx",
+      "label": "Blue accent",
+      "changes": "--primary, --primary-foreground and --ring from round-001 c (hue 262). --destructive and --muted-foreground stay stock. round-001 c's --chart-* are left out: the library does not read them.",
+      "tokens": {
+        "--primary": "light-dark(oklch(0.5 0.19 262), oklch(0.72 0.14 262))",
+        "--primary-foreground": "light-dark(oklch(0.985 0 0), oklch(0.2 0.04 262))",
+        "--ring": "light-dark(oklch(0.55 0.17 262), oklch(0.65 0.14 262))"
+      }
+    },
+    {
+      "id": "b",
+      "file": "b.tsx",
+      "label": "Muted indigo",
+      "changes": "--primary and --primary-foreground from round-002 b (hue 265, low chroma). --ring added in the same hue so focus matches. --destructive and --muted-foreground stay stock.",
+      "tokens": {
+        "--primary": "light-dark(oklch(0.48 0.09 265), oklch(0.76 0.07 265))",
+        "--primary-foreground": "light-dark(oklch(0.985 0 0), oklch(0.2 0.03 265))",
+        "--ring": "light-dark(oklch(0.55 0.08 265), oklch(0.62 0.07 265))"
+      }
+    },
+    {
+      "id": "c",
+      "file": "c.tsx",
+      "label": "Neutral (stock)",
+      "changes": "No overrides. Stock shadcn neutral: near-black accent in light, near-white in dark. The control."
+    }
+  ]
+}

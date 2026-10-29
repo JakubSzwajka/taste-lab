@@ -28,12 +28,17 @@ export default defineConfig({
     tailwindcss(),
   ],
   resolve: {
-    // First match wins. Variants import `@/fixtures` from the data dir and
-    // `@/components/ui/*`, `@/lib/utils` from the lab.
+    // First match wins. Variants import `@/fixtures` and `@/library/*` from the
+    // data dir and `@/components/ui/*`, `@/lib/utils` from the lab.
     alias: [
       {
         find: /^@\/fixtures$/,
         replacement: literal(labPaths(dataDir).fixtures),
+      },
+      {
+        // `@/library/<name>/<Name>` is a library component in the data dir.
+        find: /^@\/library\//,
+        replacement: literal(`${labPaths(dataDir).library}/`),
       },
       { find: /^@lab\//, replacement: literal(`${dataDir}/`) },
       { find: "@", replacement: literal(path.join(lab, "src")) },

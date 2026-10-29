@@ -17,6 +17,7 @@
     "types": ["vite/client", "node"],
     "paths": {
       "@/fixtures": ["./examples/demo/.taste-lab/fixtures/index.ts"],
+      "@/library/*": ["./examples/demo/.taste-lab/library/*"],
       "@/*": ["./src/*"]
     }
   },

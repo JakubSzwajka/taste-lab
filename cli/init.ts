@@ -90,6 +90,7 @@ export function initDataDir(dir: string, opts: { name?: string } = {}) {
     "fixtures/index.ts": INDEX,
     "fixtures/items.ts": ITEMS,
     "rounds/.gitkeep": "",
+    "library/.gitkeep": "",
     "taste.jsonl": "",
     "DESIGN.md": design(name),
   };

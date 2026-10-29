@@ -4,12 +4,15 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Answer } from "@/components/AnswerPanel";
 import { CompareScreen } from "@/components/CompareScreen";
 import { HistoryView } from "@/components/HistoryView";
+import { LibraryEntryView, LibraryView } from "@/components/LibraryView";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { fetchLog, type LogResponse, postEntry } from "@/lib/api";
 import type { PreviewMode } from "@/lib/flip";
+import type { LibraryEntry } from "@/lib/library";
+import { library as defaultLibrary } from "@/lib/library-entries";
 import type { LoadedRound } from "@/lib/rounds";
 import { hrefFor, useRoute } from "@/lib/route";
 import { submitEntry } from "@/lib/submit";
@@ -19,8 +22,10 @@ import { rounds as defaultRounds } from "@/lib/variants";
 
 export default function App({
   rounds = defaultRounds,
+  library = defaultLibrary,
 }: {
   rounds?: LoadedRound[];
+  library?: LibraryEntry[];
 }) {
   const [theme, toggleTheme] = useTheme();
   const route = useRoute();
@@ -65,6 +70,7 @@ export default function App({
   const broken = rounds.filter((r) => !r.ok);
   const nextOpen = rounds.find((r) => r.ok && !answered.has(r.id));
 
+  const onLibrary = route.page === "library" || route.page === "library-entry";
   const shown =
     route.page === "round"
       ? rounds.find((r) => r.id === route.id)
@@ -154,6 +160,13 @@ export default function App({
             <Button
               asChild
               size="sm"
+              variant={onLibrary ? "secondary" : "ghost"}
+            >
+              <a href={hrefFor({ page: "library" })}>Library</a>
+            </Button>
+            <Button
+              asChild
+              size="sm"
               variant={route.page === "history" ? "secondary" : "ghost"}
             >
               <a href={hrefFor({ page: "history" })}>History</a>
@@ -184,7 +197,7 @@ export default function App({
             </p>
           )}
 
-          {broken.length > 0 && route.page !== "history" && (
+          {broken.length > 0 && route.page !== "history" && !onLibrary && (
             <div
               role="alert"
               className="flex flex-col gap-2 rounded-lg border border-destructive p-4"
@@ -208,7 +221,16 @@ export default function App({
             </div>
           )}
 
-          {route.page === "history" ? (
+          {route.page === "library" ? (
+            <LibraryView entries={library} />
+          ) : route.page === "library-entry" ? (
+            <LibraryEntryView
+              key={route.name}
+              name={route.name}
+              entries={library}
+              rounds={rounds}
+            />
+          ) : route.page === "history" ? (
             <HistoryView
               entries={entries}
               skipped={skipped}

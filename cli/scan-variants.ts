@@ -1,5 +1,5 @@
 import { readdirSync, readFileSync, realpathSync, statSync } from "node:fs";
-import { join, posix, relative } from "node:path";
+import { basename, join, posix, relative } from "node:path";
 import { parseAst } from "vite";
 
 export type Violation = { file: string; line: number; message: string };
@@ -114,12 +114,30 @@ function walk(
   return out;
 }
 
-export function importAllowed(spec: string): boolean {
+// `@/library/<name>/<Name>`: one library component, never a deeper or looser path.
+const LIBRARY_IMPORT = /^@\/library\/[a-z0-9]+(?:-[a-z0-9]+)*\/[A-Za-z0-9]+$/;
+// `./TaskCard`: a sibling file in the same library folder, no extension.
+const SIBLING_IMPORT = /^\.\/[A-Za-z0-9_-]+$/;
+
+/**
+ * `library: true` is the rule set for files in `library/<name>/`: it also allows
+ * `class-variance-authority` and sibling imports like `./TaskCard`.
+ */
+export function importAllowed(
+  spec: string,
+  opts: { library?: boolean } = {},
+): boolean {
+  if (opts.library) {
+    if (spec === "class-variance-authority" || SIBLING_IMPORT.test(spec)) {
+      return true;
+    }
+  }
   // Normalizing must not change the specifier. This rejects "..", "." and "//".
   if (spec.includes("\\") || posix.normalize(spec) !== spec) return false;
   if (spec.split("/").some((seg) => seg === ".." || seg === ".")) return false;
   return (
     IMPORT_ALLOW_EXACT.includes(spec) ||
+    LIBRARY_IMPORT.test(spec) ||
     IMPORT_ALLOW_PREFIX.some(
       (p) => spec.startsWith(p) && /^[a-z0-9-]+$/.test(spec.slice(p.length)),
     )
@@ -244,22 +262,39 @@ function staticStrings(n: unknown, out: string[] = []): string[] {
   return out;
 }
 
+type ImportPolicy = {
+  /** Library file rules: cva and sibling imports. */
+  library: boolean;
+  /** Library files other than examples.tsx may only import types from `@/fixtures`. */
+  fixturesTypesOnly: boolean;
+};
+
 function checkSpecifier(
   spec: unknown,
   at: number,
   report: (at: number, message: string) => void,
-  dynamic = false,
+  policy: ImportPolicy,
+  opts: { dynamic?: boolean; typeOnly?: boolean } = {},
 ) {
   const value = stringValue(spec);
   if (value === null) {
     report(
       at,
-      dynamic
+      opts.dynamic
         ? "dynamic import needs a plain string literal specifier"
         : "import specifier must be a string literal",
     );
-  } else if (!importAllowed(value)) {
+  } else if (!importAllowed(value, { library: policy.library })) {
     report(at, `import "${value}" is not allowed`);
+  } else if (
+    value === "@/fixtures" &&
+    policy.fixturesTypesOnly &&
+    !opts.typeOnly
+  ) {
+    report(
+      at,
+      'import "@/fixtures" is only allowed in examples.tsx (components take data as props; `import type` is fine)',
+    );
   }
 }
 
@@ -274,6 +309,7 @@ function visit(
   ctx: {
     imports: boolean;
     banStyle: boolean;
+    policy: ImportPolicy;
     report: (at: number, message: string) => void;
   },
 ) {
@@ -283,21 +319,30 @@ function visit(
   }
   if (!isNode(node)) return;
   const at = node.start ?? 0;
-  const { imports, banStyle, report } = ctx;
+  const { imports, banStyle, report, policy } = ctx;
   switch (node.type) {
     case "ImportDeclaration":
     case "ExportAllDeclaration":
     case "ExportNamedDeclaration":
-      if (imports && node.source) checkSpecifier(node.source, at, report);
+      if (imports && node.source) {
+        const kind = node.importKind ?? node.exportKind;
+        checkSpecifier(node.source, at, report, policy, {
+          typeOnly: kind === "type",
+        });
+      }
       break;
     case "ImportExpression":
-      if (imports) checkSpecifier(node.source, at, report, true);
+      if (imports) {
+        checkSpecifier(node.source, at, report, policy, { dynamic: true });
+      }
       break;
     case "TSImportType":
-      if (imports) checkSpecifier(node.source, at, report);
+      if (imports) {
+        checkSpecifier(node.source, at, report, policy, { typeOnly: true });
+      }
       break;
     case "TSExternalModuleReference":
-      if (imports) checkSpecifier(node.expression, at, report);
+      if (imports) checkSpecifier(node.expression, at, report, policy);
       break;
     case "MetaProperty":
       if (imports) report(at, "import.meta is not allowed");
@@ -310,7 +355,9 @@ function visit(
         callee.type === "Identifier" &&
         callee.name === "require"
       ) {
-        checkSpecifier((node.arguments as unknown[])[0], at, report, true);
+        checkSpecifier((node.arguments as unknown[])[0], at, report, policy, {
+          dynamic: true,
+        });
       }
       break;
     }
@@ -377,12 +424,24 @@ function visit(
 /**
  * Scans .ts/.tsx files under `root`. Zero files means zero violations.
  * `imports: false` checks colors only (used for the app chrome).
+ * `library: true` applies the library rules (see `importAllowed`), and only
+ * `examples.tsx` may import values from `@/fixtures`.
  */
 export function scanVariants(
   root: string,
-  opts: { imports?: boolean; banStyle?: boolean; ignore?: string[] } = {},
+  opts: {
+    imports?: boolean;
+    banStyle?: boolean;
+    ignore?: string[];
+    library?: boolean;
+  } = {},
 ): Violation[] {
-  const { imports = true, banStyle = imports, ignore = [] } = opts;
+  const {
+    imports = true,
+    banStyle = imports,
+    ignore = [],
+    library = false,
+  } = opts;
   const violations: Violation[] = [];
   const problems: WalkProblem[] = [];
   const files = walk(root, [".tsx", ".ts"], ignore, problems);
@@ -436,6 +495,10 @@ export function scanVariants(
       visit(ast, {
         imports,
         banStyle,
+        policy: {
+          library,
+          fixturesTypesOnly: library && basename(file) !== "examples.tsx",
+        },
         report: (at, message) => add(lineAt(at), message),
       });
     } catch (e) {

@@ -1,0 +1,14 @@
+{
+  "name": "task-chip",
+  "title": "Task chip",
+  "description": "One task on one line: id badge and title.",
+  "status": "agreed",
+  "examples": [
+    { "export": "Default", "title": "Typical tasks", "width": "column" },
+    { "export": "Compact", "title": "Compact density", "width": "full" }
+  ],
+  "provenance": [
+    { "round": "round-001", "pick": "a", "note": "plain and quiet" }
+  ],
+  "rules": ["Quiet over loud: the id is a secondary badge"]
+}

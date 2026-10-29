@@ -1,42 +1,9 @@
-import {
-  Component,
-  type CSSProperties,
-  type ErrorInfo,
-  lazy,
-  type ReactNode,
-  Suspense,
-  useMemo,
-} from "react";
+import { type CSSProperties, lazy, Suspense, useMemo } from "react";
+import { Boundary } from "@/components/Boundary";
 import { Badge } from "@/components/ui/badge";
 import type { VariantLoader, VariantSpec } from "@/lib/rounds";
 import type { Theme } from "@/lib/theme";
 import { cn } from "@/lib/utils";
-
-class Boundary extends Component<
-  { children: ReactNode },
-  { error: Error | null }
-> {
-  state = { error: null as Error | null };
-  static getDerivedStateFromError(error: Error) {
-    return { error };
-  }
-  componentDidCatch(error: Error, info: ErrorInfo) {
-    console.error("variant crashed", error, info.componentStack);
-  }
-  render() {
-    if (this.state.error) {
-      return (
-        <div
-          role="alert"
-          className="rounded-md border border-destructive p-3 text-sm text-destructive"
-        >
-          This variant failed to render: {this.state.error.message}
-        </div>
-      );
-    }
-    return this.props.children;
-  }
-}
 
 /**
  * Renders one variant. Token overrides are inline CSS vars on the frame element.

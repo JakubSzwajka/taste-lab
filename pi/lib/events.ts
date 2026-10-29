@@ -14,31 +14,37 @@ export type AnswerEvent = { event: "answer"; entry: TasteEntry };
 export type ErrorEvent = { event: "error"; message: string };
 export type ServerEvent = ReadyEvent | AnswerEvent | ErrorEvent;
 
-/** A line longer than this without a newline is dropped as junk. */
+/** A line longer than this (before its newline, `\r` counted) is dropped as junk. */
 export const MAX_LINE = 1024 * 1024;
 
 /**
  * Splits a text stream into lines. Holds a partial line until its newline
- * arrives. `end()` flushes a last line without a newline.
+ * arrives. `end()` flushes a last line without a newline. A line longer than
+ * MAX_LINE never reaches `onLine`, however the chunks fall.
  */
 export function createLineSplitter(onLine: (line: string) => void) {
   let buf = "";
   let dropping = false;
   return {
     push(chunk: string) {
-      buf += chunk;
-      let nl = buf.indexOf("\n");
-      while (nl !== -1) {
-        const line = buf.slice(0, nl).replace(/\r$/, "");
-        buf = buf.slice(nl + 1);
-        if (!dropping) onLine(line);
-        dropping = false;
-        nl = buf.indexOf("\n");
-      }
-      if (buf.length > MAX_LINE) {
-        // Drop the rest of this overlong line, up to its newline.
+      let start = 0;
+      for (;;) {
+        const nl = chunk.indexOf("\n", start);
+        const piece = chunk.slice(start, nl === -1 ? undefined : nl);
+        // Check the size before buffering, so no complete line skips it.
+        if (!dropping) {
+          if (buf.length + piece.length > MAX_LINE) {
+            buf = "";
+            dropping = true;
+          } else {
+            buf += piece;
+          }
+        }
+        if (nl === -1) return;
+        if (!dropping) onLine(buf.replace(/\r$/, ""));
         buf = "";
-        dropping = true;
+        dropping = false;
+        start = nl + 1;
       }
     },
     end() {
@@ -70,6 +76,7 @@ export function parseEvent(line: string): ServerEvent | null {
         typeof port !== "number" ||
         !Number.isInteger(port) ||
         port <= 0 ||
+        port > 65535 ||
         !isString(dataDir) ||
         !isString(local) ||
         !(lan === null || isString(lan))

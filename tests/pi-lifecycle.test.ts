@@ -6,6 +6,7 @@ import {
   readdirSync,
   readFileSync,
   rmSync,
+  statSync,
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
@@ -221,12 +222,20 @@ describe("/taste lifecycle", () => {
     expect(sent[2].message.content).toContain("answered round-005");
     assertModelNeverSawSecrets();
 
-    // stderr went to a log under the temp dir, with the token scrubbed
-    const logs = readdirSync(join(tmp, "logs"));
-    expect(logs).toHaveLength(1);
-    const log = readFileSync(join(tmp, "logs", logs[0]), "utf8");
-    expect(log).toContain("LAN link: http://192.168.1.23:5301/?k=[redacted]");
+    // stderr went to a log in a private dir, with the token scrubbed
+    const dirs = readdirSync(join(tmp, "logs"));
+    expect(dirs).toHaveLength(1);
+    expect(dirs[0]).toMatch(/^taste-lab-pi-/);
+    const logDir = join(tmp, "logs", dirs[0]);
+    const files = readdirSync(logDir);
+    expect(files).toHaveLength(1);
+    const logPath = join(logDir, files[0]);
+    expect(statSync(logDir).mode & 0o777).toBe(0o700);
+    expect(statSync(logPath).mode & 0o777).toBe(0o600);
+    const log = readFileSync(logPath, "utf8");
+    expect(log).toContain("LAN link: [link redacted]");
     expect(log).not.toContain(TOKEN);
+    expect(log).not.toContain("k=");
   });
 
   it("local passes no --lan and a second /taste only shows the links", async () => {
@@ -312,7 +321,112 @@ describe("/taste lifecycle", () => {
     expect(init).toHaveBeenCalledWith(
       "/lab/bin/taste-lab.mjs",
       join(tmp, "new/.taste-lab"),
+      expect.any(AbortSignal),
     );
+    expect(spawnCalls).toHaveLength(1);
+  });
+
+  it("builds details from checked values, so hostile events leak nothing", async () => {
+    load();
+    await taste();
+    const child = children[0];
+    child.send({ ...ready(), dataDir: `/evil/${TOKEN}/?k=${TOKEN}` });
+    child.send({
+      event: "answer",
+      entry: {
+        ...entry,
+        round: `round-004?k=${TOKEN}`,
+        component: `card ${TOKEN}`,
+        shown: ["a", `k=${TOKEN}`],
+        pick: `k=${TOKEN}`,
+        reason: `${"x".repeat(378)}${TOKEN}`,
+      },
+    });
+    await flush();
+    expect(sent).toHaveLength(2);
+    assertModelNeverSawSecrets();
+    expect(sent[0].message.details).toEqual({ dataDir, port: 5301 });
+    expect(sent[0].message.content).toContain(`for ${dataDir} on port 5301`);
+    expect(sent[1].message.details).toEqual({
+      dataDir,
+      round: null,
+      pick: null,
+    });
+  });
+
+  it("shutdown during a slow init kills init and never spawns", async () => {
+    let finishInit: (() => void) | undefined;
+    let initSignal: AbortSignal | undefined;
+    const init = vi.fn(
+      (_bin: string, dir: string, signal: AbortSignal) =>
+        new Promise<{ ok: boolean; output: string }>((resolve) => {
+          initSignal = signal;
+          finishInit = () => {
+            mkdirSync(dir);
+            resolve({ ok: true, output: "" });
+          };
+        }),
+    );
+    load({ init });
+    const started = taste("--dir new-lab");
+    await flush();
+    expect(init).toHaveBeenCalledTimes(1);
+    // a second /taste while starting does not start another
+    await taste("--dir new-lab");
+    expect(notes().at(-1)).toBe("taste-lab is starting…");
+    const down = shutdown?.();
+    expect(initSignal?.aborted).toBe(true);
+    finishInit?.();
+    await down;
+    await started;
+    await flush();
+    expect(spawnCalls).toHaveLength(0);
+    // this runtime is closed: a later /taste does nothing
+    await taste();
+    expect(spawnCalls).toHaveLength(0);
+  });
+
+  it("/taste stop cancels a pending start, during the dialog or init", async () => {
+    let confirmSignal: AbortSignal | undefined;
+    ctx.ui.confirm.mockImplementationOnce(
+      (_t: string, _m: string, opts?: { signal?: AbortSignal }) =>
+        new Promise<boolean>((resolve) => {
+          confirmSignal = opts?.signal;
+          opts?.signal?.addEventListener("abort", () => resolve(false));
+        }),
+    );
+    let finishInit: (() => void) | undefined;
+    const init = vi.fn(
+      (_bin: string, dir: string, _signal: AbortSignal) =>
+        new Promise<{ ok: boolean; output: string }>((resolve) => {
+          finishInit = () => {
+            mkdirSync(dir, { recursive: true });
+            resolve({ ok: true, output: "" });
+          };
+        }),
+    );
+    load({ init });
+    const first = taste("--dir a-lab");
+    await flush();
+    await taste("stop");
+    expect(confirmSignal?.aborted).toBe(true);
+    await first;
+    expect(notes().at(-1)).toBe("taste-lab start cancelled");
+    expect(init).not.toHaveBeenCalled();
+
+    const second = taste("--dir b-lab");
+    await flush();
+    expect(init).toHaveBeenCalledTimes(1);
+    const stopping = taste("stop");
+    finishInit?.();
+    await stopping;
+    await second;
+    await flush();
+    expect(notes().at(-1)).toBe("taste-lab start cancelled");
+    expect(spawnCalls).toHaveLength(0);
+
+    // the runtime still works: the dir now exists, so /taste spawns
+    await taste("--dir b-lab");
     expect(spawnCalls).toHaveLength(1);
   });
 

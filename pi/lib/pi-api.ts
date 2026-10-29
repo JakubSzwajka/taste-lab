@@ -7,7 +7,12 @@ export type NotifyType = "info" | "warning" | "error";
 
 export interface TasteUi {
   notify(message: string, type?: NotifyType): void;
-  confirm(title: string, message: string): Promise<boolean>;
+  /** Pi 1.4.0 closes the dialog when `signal` aborts. */
+  confirm(
+    title: string,
+    message: string,
+    options?: { signal?: AbortSignal },
+  ): Promise<boolean>;
   setStatus(key: string, text: string | undefined): void;
   setWidget(
     key: string,

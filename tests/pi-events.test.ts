@@ -58,6 +58,28 @@ describe("line splitter", () => {
     s.push("more of the same line\nok\n");
     expect(lines).toEqual(["ok"]);
   });
+
+  it("drops an overlong line that ends in the same chunk as its newline", () => {
+    const lines: string[] = [];
+    const s = createLineSplitter((l) => lines.push(l));
+    s.push("x".repeat(MAX_LINE));
+    s.push("x\nok\n");
+    s.push(`${"y".repeat(MAX_LINE + 5)}\nok2\n`);
+    s.push("z".repeat(MAX_LINE + 1));
+    s.end();
+    expect(lines).toEqual(["ok", "ok2"]);
+    for (const l of lines) expect(l.length).toBeLessThanOrEqual(MAX_LINE);
+  });
+
+  it("keeps a line of exactly MAX_LINE", () => {
+    const lines: string[] = [];
+    const s = createLineSplitter((l) => lines.push(l));
+    s.push("x".repeat(MAX_LINE - 1));
+    s.push("x\n");
+    s.push("w".repeat(MAX_LINE));
+    s.end();
+    expect(lines.map((l) => l.length)).toEqual([MAX_LINE, MAX_LINE]);
+  });
 });
 
 describe("event parser", () => {

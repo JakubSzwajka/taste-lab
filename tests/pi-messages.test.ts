@@ -1,9 +1,12 @@
 import { describe, expect, it } from "vitest";
 import type { ReadyEvent } from "../pi/lib/events";
 import {
+  answerDetails,
   answerText,
+  LINK_REDACTED,
   lanToken,
   linkLines,
+  modelMessage,
   scrubSecrets,
   startedText,
   statusText,
@@ -18,6 +21,7 @@ const ready: ReadyEvent = {
   local: "http://127.0.0.1:5301/",
   lan: `http://192.168.1.23:5301/?k=${TOKEN}`,
 };
+const info = { port: 5301, dataDir: "/abs/.taste-lab", lan: true };
 const entry: TasteEntry = {
   ts: "2026-10-29T10:00:00.000Z",
   round: "round-003",
@@ -39,13 +43,13 @@ function assertNoSecret(text: string) {
 
 describe("model-visible messages", () => {
   it("started text names the dir and port, not the links", () => {
-    const text = startedText(ready, TOKEN);
+    const text = startedText(info, TOKEN);
     expect(text).toContain("/abs/.taste-lab");
     expect(text).toContain("5301");
     expect(text).toContain("taste skill");
     expect(text).not.toContain("http");
     assertNoSecret(text);
-    expect(startedText({ ...ready, lan: null })).toContain("local only");
+    expect(startedText({ ...info, lan: false })).toContain("local only");
   });
 
   it("answer text is one compact line with every field", () => {
@@ -67,11 +71,80 @@ describe("model-visible messages", () => {
   });
 
   it("scrubs a token or a k= link that the operator pasted into a reason", () => {
-    const pasted = { ...entry, reason: `see ${ready.lan} and ${TOKEN}` };
+    const pasted = {
+      ...entry,
+      reason: `see ${ready.lan} and ${TOKEN}, also k=${TOKEN}`,
+    };
     const text = answerText(pasted, ready.dataDir, TOKEN);
-    expect(text).not.toContain(TOKEN);
-    expect(text).not.toContain(`k=${TOKEN}`);
-    expect(text).toContain("[redacted]");
+    assertNoSecret(text);
+    expect(text).toContain(`reason "see ${LINK_REDACTED} and [redacted],`);
+  });
+
+  it("scrubs before truncating: a token at the cut leaks no prefix", () => {
+    // 378 is the review's case. The cap is 400, so sweep every cut position.
+    for (let pad = 370; pad <= 400; pad++) {
+      const reason = "x".repeat(pad) + TOKEN;
+      const text = answerText({ ...entry, reason }, ready.dataDir, TOKEN);
+      for (let n = 4; n <= TOKEN.length; n++) {
+        expect(text).not.toContain(TOKEN.slice(0, n));
+      }
+      assertNoSecret(text);
+    }
+  });
+
+  it("no literal k= survives, link or bare, while pick= words stay", () => {
+    expect(scrubSecrets("open http://h:1/?a=1&k=abc#x now")).toBe(
+      `open ${LINK_REDACTED} now`,
+    );
+    expect(scrubSecrets("k=abc")).toBe(LINK_REDACTED);
+    expect(scrubSecrets('"?k="')).toBe(`"${LINK_REDACTED}"`);
+    expect(scrubSecrets("i would pick=a, ok=fine")).toBe(
+      "i would pick=a, ok=fine",
+    );
+  });
+
+  it("answer details keep only round ids, short picks and the given dir", () => {
+    expect(answerDetails(entry, "/d")).toEqual({
+      dataDir: "/d",
+      round: "round-003",
+      pick: "b",
+    });
+    const hostile = {
+      ...entry,
+      round: `round-003 ${TOKEN}`,
+      pick: `k=${TOKEN}`,
+    };
+    expect(answerDetails(hostile, "/d")).toEqual({
+      dataDir: "/d",
+      round: null,
+      pick: null,
+    });
+    expect(answerDetails({ ...entry, pick: "mix" }, "/d").pick).toBe("mix");
+    expect(answerDetails({ ...entry, round: "round-1" }, "/d").round).toBe(
+      null,
+    );
+  });
+
+  it("modelMessage scrubs content and every string in details", () => {
+    const msg = modelMessage(
+      {
+        customType: "taste-lab-answer",
+        content: `x ${ready.lan}`,
+        display: true,
+        details: {
+          dataDir: `/a/${TOKEN}`,
+          nested: [{ [`k=${TOKEN}`]: `?k=${TOKEN}` }],
+          port: 5301,
+        },
+      },
+      TOKEN,
+    );
+    assertNoSecret(JSON.stringify(msg));
+    expect(msg.details).toEqual({
+      dataDir: "/a/[redacted]",
+      nested: [{ [LINK_REDACTED]: LINK_REDACTED }],
+      port: 5301,
+    });
   });
 
   it("caps a long reason", () => {
@@ -95,7 +168,7 @@ describe("UI-only text", () => {
     expect(lanToken(ready.lan)).toBe(TOKEN);
     expect(lanToken(null)).toBeUndefined();
     expect(lanToken("not a url")).toBeUndefined();
-    expect(scrubSecrets(`GET /?k=${TOKEN}&x=1`)).toBe("GET /?k=[redacted]&x=1");
+    expect(scrubSecrets(`GET /?k=${TOKEN}&x=1`)).toBe(`GET ${LINK_REDACTED}`);
     expect(scrubSecrets(`cookie ${TOKEN}`, [TOKEN])).toBe("cookie [redacted]");
   });
 });

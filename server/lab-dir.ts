@@ -1,6 +1,13 @@
 // The data dir contract, shared by the Vite plugin and the CLI. Node only.
-import { existsSync, readFileSync } from "node:fs";
-import { basename, dirname, join } from "node:path";
+import { existsSync, readFileSync, realpathSync } from "node:fs";
+import {
+  basename,
+  dirname,
+  isAbsolute,
+  join,
+  relative,
+  resolve,
+} from "node:path";
 
 export type LabConfig = { version: 1; name: string };
 
@@ -77,10 +84,46 @@ export function tailwindSource(dir: string): string {
   return `@source ${q}${dir}${q};`;
 }
 
+/** The lab's own folder (this file sits in `<lab>/server/`). */
+const LAB_ROOT = resolve(import.meta.dirname, "..");
+
+/** Real path of `p`, also when its tail does not exist yet (`init`): follows symlinks of the part that does. */
+function realpathLoose(p: string): string {
+  const abs = resolve(p);
+  const tail: string[] = [];
+  let cur = abs;
+  for (;;) {
+    try {
+      return join(realpathSync(cur), ...tail.reverse());
+    } catch {
+      const up = dirname(cur);
+      if (up === cur) return abs;
+      tail.push(basename(cur));
+      cur = up;
+    }
+  }
+}
+
+/**
+ * Defense in depth: the lab sets `publicDir: false`, so nothing is served from
+ * `<lab>/public/`. Were it served, Vite would skip its `fs.deny` list there and
+ * `taste.jsonl` would be readable. Null when `dir` is outside it. Symlinks are followed.
+ */
+export function publicDirReason(dir: string): string | null {
+  const pub = realpathLoose(join(LAB_ROOT, "public"));
+  const rel = relative(pub, realpathLoose(dir));
+  if (rel === "" || (!rel.startsWith("..") && !isAbsolute(rel))) {
+    return `is inside the lab's public/ folder (${pub}), which Vite serves as static files. Move the data dir out of it.`;
+  }
+  return null;
+}
+
 /** Same message for every command. Null when the path is fine. */
 export function dirProblem(dir: string): string | null {
   const reason = unsafeDirReason(dir);
-  return reason
-    ? `${JSON.stringify(dir)} ${reason}. Tailwind cannot scan such a path. Move the data dir to a path without it.`
-    : null;
+  if (reason) {
+    return `${JSON.stringify(dir)} ${reason}. Tailwind cannot scan such a path. Move the data dir to a path without it.`;
+  }
+  const pub = publicDirReason(dir);
+  return pub ? `${JSON.stringify(dir)} ${pub}` : null;
 }

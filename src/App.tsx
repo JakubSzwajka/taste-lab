@@ -10,7 +10,12 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { fetchLog, type LogResponse, postEntry } from "@/lib/api";
+import {
+  fetchLog,
+  type LogResponse,
+  postEntry,
+  UNAUTHORIZED_MESSAGE,
+} from "@/lib/api";
 import type { PreviewMode } from "@/lib/flip";
 import type { LibraryEntry } from "@/lib/library";
 import { library as defaultLibrary } from "@/lib/library-entries";
@@ -195,8 +200,9 @@ export default function App({
         <main className="mx-auto flex max-w-[120rem] flex-col gap-6 px-4 py-6">
           {logError && (
             <p role="alert" className="text-sm text-destructive">
-              Could not reach the taste log: {logError}. Run the app with pnpm
-              dev or pnpm preview.
+              {logError === UNAUTHORIZED_MESSAGE
+                ? `The taste log needs a link token. ${logError}.`
+                : `Could not reach the taste log: ${logError}. Run the app with pnpm dev or pnpm preview.`}
             </p>
           )}
 

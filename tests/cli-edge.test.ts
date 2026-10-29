@@ -15,7 +15,11 @@ import { checkDataDir } from "../cli/check";
 import { InitError, initDataDir } from "../cli/init";
 import { run } from "../cli/main";
 import { pickPort } from "../cli/port";
-import { tailwindSource, unsafeDirReason } from "../server/lab-dir";
+import {
+  publicDirReason,
+  tailwindSource,
+  unsafeDirReason,
+} from "../server/lab-dir";
 
 let tmp: string;
 beforeEach(() => {
@@ -179,6 +183,82 @@ describe("tailwind @source paths", () => {
     const i = capture();
     expect(await run(["init", "--dir", dir], i.io)).toBe(1);
     expect(i.err.join()).toContain("line-break");
+  });
+});
+
+describe("data dir inside the lab's public/ folder", () => {
+  const pub = join(import.meta.dirname, "..", "public");
+  // The lab has no public/ folder today. Make one for the test, remove it only if we made it.
+  let made: string | undefined;
+  beforeEach(() => {
+    made = mkdirSync(pub, { recursive: true });
+  });
+  afterEach(() => {
+    if (made) rmSync(pub, { recursive: true, force: true });
+  });
+
+  it("init, check and serve reject it, symlinks followed", async () => {
+    const { serve } = await import("../cli/serve");
+    const direct = join(pub, "x", ".taste-lab");
+    const link = join(tmp, "link");
+    symlinkSync(pub, link);
+    for (const dir of [direct, join(link, "y", ".taste-lab"), pub]) {
+      expect(() => initDataDir(dir)).toThrow(InitError);
+      expect(() => initDataDir(dir)).toThrow("public/ folder");
+      await expect(serve(dir, 5398)).rejects.toThrow("public/ folder");
+    }
+    mkdirSync(join(tmp, "real"));
+    expect(publicDirReason(join(tmp, "real"))).toBeNull();
+    const c = capture();
+    expect(await run(["check", "--dir", link], c.io)).toBe(1);
+    expect(c.err.join()).toContain("public/ folder");
+    const i = capture();
+    expect(await run(["init", "--dir", direct], i.io)).toBe(1);
+    expect(i.err.join()).toContain("public/ folder");
+  });
+});
+
+describe("public serving is off", () => {
+  const pub = join(import.meta.dirname, "..", "public");
+  let made: string | undefined;
+  beforeEach(() => {
+    made = mkdirSync(pub, { recursive: true });
+  });
+  afterEach(() => {
+    if (made) rmSync(pub, { recursive: true, force: true });
+  });
+
+  it("never serves taste.jsonl from a data dir under public/ or behind a symlink there", async () => {
+    const { serve } = await import("../cli/serve");
+    const secret = "PUBLIC-DIR-SECRET-LOG-LINE";
+    // `..data` starts with two dots but is a child of public/. The link points elsewhere.
+    const dotted = join(pub, "..data", ".taste-lab");
+    initDataDir(dotted);
+    writeFileSync(join(dotted, "taste.jsonl"), `${secret}\n`);
+    const target = join(tmp, "target", ".taste-lab");
+    initDataDir(target);
+    writeFileSync(join(target, "taste.jsonl"), `${secret}\n`);
+    symlinkSync(target, join(pub, "link"));
+
+    const cases = [
+      { dir: dotted, paths: ["/..data/.taste-lab/taste.jsonl"] },
+      { dir: join(pub, "link"), paths: ["/link/taste.jsonl"] },
+    ];
+    for (const { dir, paths } of cases) {
+      const port = await pickPort({ start: 5380 });
+      const { server, url } = await serve(dir, port);
+      try {
+        for (const p of paths) {
+          for (const q of ["", "?raw&import", "?raw", "?import"]) {
+            const res = await fetch(new URL(p + q, url));
+            const body = await res.text();
+            expect(body, `${p}${q}`).not.toContain(secret);
+          }
+        }
+      } finally {
+        await server.close();
+      }
+    }
   });
 });
 

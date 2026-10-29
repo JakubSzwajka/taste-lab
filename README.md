@@ -16,12 +16,33 @@ For another repo, from any folder:
 ```sh
 node <taste-lab>/bin/taste-lab.mjs init  --dir ../my-app/.taste-lab
 node <taste-lab>/bin/taste-lab.mjs check --dir ../my-app/.taste-lab
-node <taste-lab>/bin/taste-lab.mjs serve --dir ../my-app/.taste-lab [--port N]
+node <taste-lab>/bin/taste-lab.mjs serve --dir ../my-app/.taste-lab [--port N] [--lan [--host <ip>]]
 ```
 
 `init` creates the folder with a sample fixture, an empty `library/` and an empty `theme.css`, and refuses to overwrite one that exists. `check` validates `theme.css`, rounds and `library/` entries and scans variant and library files; it exits 1 and lists the problems when something is wrong. `serve` starts the lab on 127.0.0.1. Without `--port` it takes the first free port from 5300, skipping 3000, 3326, 5173 and 5310.
 
 `check` loads `fixtures/index.ts` and needs both exports: `fixtures` and `fixtureKeys` (the same keys). It reports broken files, dangling or looping symlinks and unreadable paths as problems. Data dir paths may contain spaces, quotes (not both kinds) and `$`. `serve`, `init` and `check` reject paths with a line break or control character, a backslash, `*`, `{` or `}`, or both quote kinds: Tailwind reads its `@source` path raw as a glob and cannot carry them.
+
+### Open the lab from another device on your LAN
+
+`serve --lan` binds one private IPv4 address instead of 127.0.0.1 and prints a link with a token:
+
+```sh
+node <taste-lab>/bin/taste-lab.mjs serve --dir ../my-app/.taste-lab --lan
+#   LAN address 192.168.1.23 (wlp10s0). The link token changes on every run.
+#   http://192.168.1.23:5301/?k=<token>
+```
+
+- The address is the interface that carries the default route (read from `/proc/net/route`, Linux only). Without a default route, it is the first private IPv4 that is not on a docker, bridge, veth, libvirt or tunnel interface. The output names other candidates.
+- `--host <ip>` picks the address yourself. It must be a private or loopback IPv4 (10/8, 172.16/12, 192.168/16, 127/8). `--host` without `--lan` is a usage error (exit 2). The server never binds 0.0.0.0.
+- Open the printed link once. The server swaps `?k=` for a cookie (`taste_lab_<port>`, `HttpOnly`, `SameSite=Strict`) and redirects to the same page without `k`. The app never sees the token, and nothing is kept in `localStorage`.
+- The token is 128 random bits, made at start. It lives in server memory, the printed URL and that browser cookie only. It is never written to disk or into the data dir, and Vite never sees a URL that carries it, so it stays out of `DEBUG=vite:*` logs. It changes on every run, so an old link or cookie stops working after a restart.
+- Protected: every HTTP request, including the page, modules, `/@fs` files, assets, `/api/taste` and the HMR WebSocket. A request needs a private remote address, `Host` equal to `<ip>:<port>`, an `Origin` (if sent) equal to `http://<ip>:<port>` and the cookie. A bad address, Host or Origin gets 403. A missing or wrong cookie gets 401 and a page that says "Open the link printed by `taste-lab serve --lan`". The JSON content type, size limit and validation rules of the API still apply.
+- The gate covers listeners attached before it, which today is all of Vite's HTTP and HMR handlers. A listener added later, such as a configured `server.proxy`, is not covered. The lab configures no proxy.
+- Anyone on the LAN who has the link can read everything the lab serves, including the round and library source. Use it on a network you trust. There is no HTTPS, so the token and cookie travel in clear text.
+- In every mode, Vite refuses to serve `taste.jsonl` as a file (`server.fs.deny`). The app reads the log only through `/api/taste`.
+- Vite public serving is off (`publicDir: false`), so nothing is served from a `public/` folder. A data dir inside the lab's `public/` folder is also rejected (symlinks followed), as defense in depth.
+- Without `--lan`, nothing changes: 127.0.0.1 only, no token.
 
 Node version is pinned in `.node-version`. pnpm version is in `package.json`.
 

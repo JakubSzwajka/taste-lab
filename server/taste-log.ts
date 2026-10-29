@@ -2,6 +2,7 @@ import { appendFileSync, existsSync, mkdirSync, readFileSync } from "node:fs";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { dirname } from "node:path";
 import { parseLog, type TasteEntry, validateEntry } from "../src/lib/taste.ts";
+import { checkLanRequest, type LanConfig } from "./lan.ts";
 
 export type { TasteEntry };
 export { parseLog, validateEntry };
@@ -102,8 +103,13 @@ export function isSameOrigin(
   }
 }
 
-/** Connect-style middleware for GET and POST /api/taste. */
-export function createTasteMiddleware(file: string) {
+/**
+ * Connect-style middleware for GET and POST /api/taste. `lan` is this server's
+ * LAN settings when `serve --lan` is on, else undefined: loopback-only, no
+ * token. It is fixed when the middleware is made, so servers never share it.
+ */
+export function createTasteMiddleware(file: string, lan?: LanConfig) {
+  const settings = lan ? Object.freeze({ ...lan }) : undefined;
   return async (
     req: IncomingMessage,
     res: ServerResponse,
@@ -112,7 +118,7 @@ export function createTasteMiddleware(file: string) {
     const path = (req.url ?? "").split("?")[0];
     if (path !== "/api/taste") return next();
     try {
-      await handle(req, res, file);
+      await handle(req, res, file, settings);
     } catch {
       // Async middleware: a throw here would be an unhandled rejection.
       if (!res.headersSent) send(res, 500, { error: "internal error" });
@@ -121,8 +127,26 @@ export function createTasteMiddleware(file: string) {
   };
 }
 
-async function handle(req: IncomingMessage, res: ServerResponse, file: string) {
-  if (
+async function handle(
+  req: IncomingMessage,
+  res: ServerResponse,
+  file: string,
+  lan: LanConfig | undefined,
+) {
+  if (lan) {
+    // The LAN gate has checked this already. Checked again so the API never
+    // depends on the gate running first.
+    const denied = checkLanRequest(
+      {
+        remoteAddress: req.socket.remoteAddress,
+        host: req.headers.host,
+        origin: req.headers.origin,
+        cookie: req.headers.cookie,
+      },
+      lan,
+    );
+    if (denied) return send(res, denied.status, { error: denied.error });
+  } else if (
     !isLoopbackAddress(req.socket.remoteAddress) ||
     !isLoopbackHost(req.headers.host)
   ) {

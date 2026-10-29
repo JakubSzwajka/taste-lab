@@ -19,6 +19,10 @@ const dirKey = createHash("sha1").update(dataDir).digest("hex").slice(0, 10);
 
 export default defineConfig({
   root: lab,
+  // No file is ever served from a `public/` folder. Vite serves it without the
+  // `server.fs.deny` check, so a data dir placed there (or a symlink into one) would
+  // expose taste.jsonl. The lab has no public assets.
+  publicDir: false,
   // One optimizer cache per data dir, so two labs running at once do not
   // overwrite each other's prebundled deps.
   cacheDir: path.join(lab, "node_modules/.vite", `lab-${dirKey}`),
@@ -49,7 +53,20 @@ export default defineConfig({
   },
   server: {
     host: "127.0.0.1",
-    fs: { allow: [lab, dataDir] },
+    fs: {
+      allow: [lab, dataDir],
+      // Setting `deny` replaces Vite's list, so its 8.x defaults are repeated here.
+      // The app reads the log only through /api/taste, never as a file.
+      deny: [
+        ".env",
+        ".env.*",
+        "*.{crt,pem,key,p12,pfx,cer,der}",
+        ".npmrc",
+        ".yarnrc.yml",
+        "**/.git/**",
+        "taste.jsonl",
+      ],
+    },
   },
   preview: { host: "127.0.0.1" },
   test: { include: ["tests/**/*.test.ts", "tests/**/*.test.tsx"] },

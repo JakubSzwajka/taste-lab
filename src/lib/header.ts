@@ -89,3 +89,22 @@ export function stepTargets(
   }
   return neighbors(items, shownId);
 }
+
+/**
+ * What the Compare page says when no round is shown on `#/`. Rounds that did
+ * not load are not "answered", so they must not read as completion.
+ */
+export function idleNotice(items: RoundItem[]): {
+  crumb: string;
+  message: string;
+} {
+  if (items.length === 0) return { crumb: "no rounds", message: "No rounds." };
+  const broken = items.filter((i) => i.status.kind === "error").length;
+  if (broken > 0) {
+    return {
+      crumb: "none open",
+      message: `No round to answer: ${broken} could not be loaded.`,
+    };
+  }
+  return { crumb: "all answered", message: "All rounds answered." };
+}

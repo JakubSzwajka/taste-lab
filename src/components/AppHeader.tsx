@@ -41,6 +41,7 @@ import {
 } from "@/components/ui/tooltip";
 import {
   answeredCount,
+  idleNotice,
   PAGES,
   type Page,
   pageOf,
@@ -92,31 +93,35 @@ export function AppHeader({
   const items = roundItems(rounds, entries);
   // A routed id that matches no round still shows in the breadcrumb.
   const roundLabel =
-    shown?.id ??
-    (route.page === "round"
-      ? route.id
-      : items.length > 0
-        ? "all answered"
-        : "no rounds");
+    shown?.id ?? (route.page === "round" ? route.id : idleNotice(items).crumb);
 
   return (
     <header>
       <div className="border-b">
         <div className="mx-auto flex h-14 max-w-[120rem] items-center gap-3 px-4">
+          {/* Below sm the lab crumbs hide, so the page crumb keeps the room. */}
           <Breadcrumb className="min-w-0">
             <BreadcrumbList className="flex-nowrap">
-              <BreadcrumbItem className="font-semibold text-foreground">
+              <BreadcrumbItem className="hidden font-semibold text-foreground sm:inline-flex">
                 taste-lab
               </BreadcrumbItem>
-              <BreadcrumbSeparator>/</BreadcrumbSeparator>
-              <BreadcrumbItem>
-                <BreadcrumbLink href={hrefFor({ page: "current" })}>
+              <BreadcrumbSeparator className="hidden sm:block">
+                /
+              </BreadcrumbSeparator>
+              <BreadcrumbItem className="hidden min-w-0 sm:inline-flex">
+                <BreadcrumbLink
+                  href={hrefFor({ page: "current" })}
+                  title={labName}
+                  className="max-w-40 truncate lg:max-w-96"
+                >
                   {labName}
                 </BreadcrumbLink>
               </BreadcrumbItem>
-              <BreadcrumbSeparator>/</BreadcrumbSeparator>
+              <BreadcrumbSeparator className="hidden sm:block">
+                /
+              </BreadcrumbSeparator>
               {page === "compare" ? (
-                <BreadcrumbItem>
+                <BreadcrumbItem className="min-w-0">
                   <RoundMenu
                     label={roundLabel}
                     items={items}
@@ -211,7 +216,7 @@ function PageCrumbs({ route }: { route: Route }) {
       </BreadcrumbItem>
       <BreadcrumbSeparator>/</BreadcrumbSeparator>
       <BreadcrumbItem className="min-w-0">
-        <BreadcrumbPage className="truncate font-mono">
+        <BreadcrumbPage className="truncate font-mono" title={route.name}>
           {route.name}
         </BreadcrumbPage>
       </BreadcrumbItem>
@@ -235,10 +240,11 @@ function RoundMenu({
         <Button
           size="sm"
           variant="ghost"
-          className="-mx-2 font-mono font-normal text-foreground"
+          title={label}
+          className="-mx-2 min-w-0 shrink font-mono font-normal text-foreground"
         >
-          {label}
-          <ChevronDown className="text-muted-foreground" />
+          <span className="truncate">{label}</span>
+          <ChevronDown className="shrink-0 text-muted-foreground" />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="w-80">
@@ -292,6 +298,10 @@ function RoundTier({
 }) {
   const { prev, next } = stepTargets(items, route, shown?.id);
   const answered = answeredCount(items);
+  // The full text for the title, since the line truncates when narrow.
+  const tierText = shown?.ok
+    ? `${shown.spec.component}: ${shown.spec.question}`
+    : undefined;
   return (
     <div className="border-b bg-muted/40">
       <div className="mx-auto flex h-11 max-w-[120rem] items-center gap-3 px-4">
@@ -316,7 +326,7 @@ function RoundTier({
           </Button>
         </div>
 
-        <p className="min-w-0 flex-1 truncate text-sm">
+        <p className="min-w-0 flex-1 truncate text-sm" title={tierText}>
           {shown?.ok ? (
             <>
               <span className="text-muted-foreground">
@@ -332,7 +342,7 @@ function RoundTier({
             <span className="text-muted-foreground">
               {route.page === "round"
                 ? `No round called ${route.id}.`
-                : "All rounds answered."}
+                : idleNotice(items).message}
             </span>
           )}
         </p>
@@ -351,7 +361,7 @@ function RoundTier({
           <Progress
             aria-hidden="true"
             value={(answered / items.length) * 100}
-            className="w-24"
+            className="hidden w-24 sm:block"
           />
         </div>
       </div>

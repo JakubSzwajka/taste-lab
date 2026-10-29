@@ -1,9 +1,11 @@
+import type { ReactElement, ReactNode } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { AppHeader } from "../src/components/AppHeader";
 import { TooltipProvider } from "../src/components/ui/tooltip";
 import {
   answeredCount,
+  idleNotice,
   neighbors,
   pageOf,
   roundItems,
@@ -171,7 +173,7 @@ describe("AppHeader markup", () => {
     const html = render({ page: "current" }, rounds[1]);
     expect(html).toContain(">taste-lab<");
     expect(html).toContain(">acme<");
-    expect(html).toMatch(/aria-haspopup="menu"[^>]*>round-002/);
+    expect(html).toMatch(/aria-haspopup="menu"[^>]*><span[^>]*>round-002/);
     expect(html).toContain("Question round-002?");
     expect(html).toContain("1 of 4 answered");
     expect(html).toMatch(
@@ -196,7 +198,7 @@ describe("AppHeader markup", () => {
     expect(err).toMatch(/data-slot="badge"[^>]*>error</);
     expect(err).toContain("This round could not be loaded.");
     const unknown = render({ page: "round", id: "round-999" }, undefined);
-    expect(unknown).toMatch(/aria-haspopup="menu"[^>]*>round-999/);
+    expect(unknown).toMatch(/aria-haspopup="menu"[^>]*><span[^>]*>round-999/);
     expect(unknown).toContain("No round called round-999.");
     expect(button(unknown, "Previous round")).toContain('disabled=""');
     expect(button(unknown, "Next round")).toContain('disabled=""');
@@ -235,16 +237,164 @@ describe("AppHeader markup", () => {
   });
 
   it("says all answered and enables prev only when no round is open", () => {
-    const html = render({ page: "current" }, undefined);
-    expect(html).toMatch(/aria-haspopup="menu"[^>]*>all answered/);
+    const html = render({ page: "current" }, undefined, [
+      ok("round-001"),
+      ok("round-002"),
+    ]);
+    expect(html).toMatch(/aria-haspopup="menu"[^>]*><span[^>]*>all answered/);
     expect(html).toContain("All rounds answered.");
     expect(button(html, "Previous round")).not.toContain('disabled=""');
     expect(button(html, "Next round")).toContain('disabled=""');
   });
 
+  it("does not call broken-only rounds all answered", () => {
+    const html = render({ page: "current" }, undefined, [broken("round-001")]);
+    expect(html).not.toContain("All rounds answered.");
+    expect(html).not.toContain("all answered");
+    expect(html).toContain("No round to answer: 1 could not be loaded.");
+    expect(html).toContain("0 of 1 answered");
+    expect(html).toMatch(/aria-haspopup="menu"[^>]*><span[^>]*>none open/);
+  });
+
+  it("keeps the all answered text when nothing is broken", () => {
+    expect(idleNotice(roundItems([ok("a")], [entry("a", "a")])).message).toBe(
+      "All rounds answered.",
+    );
+    expect(idleNotice(roundItems(rounds, entries)).message).toBe(
+      "No round to answer: 1 could not be loaded.",
+    );
+  });
+
+  it("bounds and truncates long crumbs, with the full text in a title", () => {
+    const name = "a-very-long-lab-name-".repeat(3).slice(0, 60);
+    const html = renderToStaticMarkup(
+      <TooltipProvider>
+        <AppHeader
+          labName={name}
+          route={{ page: "current" }}
+          rounds={rounds}
+          entries={entries}
+          shown={rounds[1]}
+          theme="dark"
+          onToggleTheme={() => {}}
+        />
+      </TooltipProvider>,
+    );
+    expect(html).toMatch(
+      new RegExp(`<a[^>]*class="[^"]*\\btruncate\\b[^"]*"[^>]*title="${name}"`),
+    );
+    expect(html).toMatch(/<a[^>]*class="[^"]*\bmax-w-40\b/);
+    expect(html).toMatch(/<li[^>]*class="[^"]*\bhidden\b[^"]*\bsm:inline-flex/);
+    expect(html).toMatch(
+      /<p[^>]*class="[^"]*\btruncate\b[^>]*title="card: Question round-002\?"/,
+    );
+    const lib = render(
+      { page: "library-entry", name: "x".repeat(60) },
+      undefined,
+    );
+    expect(lib).toMatch(/<span[^>]*\btruncate\b[^>]*title="x{60}"/);
+  });
+
   it("hides the tier when there are no rounds", () => {
     const html = render({ page: "current" }, undefined, []);
-    expect(html).toMatch(/aria-haspopup="menu"[^>]*>no rounds/);
+    expect(html).toMatch(/aria-haspopup="menu"[^>]*><span[^>]*>no rounds/);
     expect(html).not.toContain("Previous round");
+  });
+});
+
+// No DOM env in this repo. Call the handlers the header builds, on the element
+// tree, with a stubbed location. Opening the Radix menu and real keyboard
+// events stay untested here.
+type El = ReactElement<{ children?: ReactNode } & Record<string, unknown>>;
+
+/** Expand only the header's own function components, then collect all elements. */
+function flatten(node: ReactNode, out: El[] = []): El[] {
+  if (Array.isArray(node)) {
+    for (const n of node) flatten(n, out);
+    return out;
+  }
+  if (node === null || typeof node !== "object" || !("props" in node))
+    return out;
+  const el = node as El;
+  out.push(el);
+  const type = el.type as unknown;
+  if (typeof type === "function") {
+    const name = (type as { name: string }).name;
+    if (["RoundTier", "RoundMenu", "PageCrumbs"].includes(name)) {
+      flatten((type as (p: unknown) => ReactNode)(el.props), out);
+    }
+  }
+  flatten(el.props.children, out);
+  return out;
+}
+
+describe("AppHeader interaction", () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  const tree = (route: Route, shown: LoadedRound | undefined) => {
+    const header = AppHeader({
+      labName: "acme",
+      route,
+      rounds,
+      entries,
+      shown,
+      theme: "dark",
+      onToggleTheme: () => {},
+    }) as ReactNode;
+    return flatten(header);
+  };
+  const click = (els: El[], label: string) => {
+    const el = els.find((e) => e.props["aria-label"] === label);
+    expect(el, label).toBeDefined();
+    if (el) (el.props.onClick as () => void)();
+  };
+  const stubLocation = () => {
+    const loc = { hash: "#/" };
+    vi.stubGlobal("location", loc);
+    return loc;
+  };
+
+  it("sets the hash when a page item is clicked", () => {
+    const loc = stubLocation();
+    const els = tree({ page: "current" }, rounds[1]);
+    for (const [label, hash] of [
+      ["Library", "#/library"],
+      ["Theme", "#/theme"],
+      ["History", "#/history"],
+      ["Compare", "#/"],
+    ]) {
+      click(els, label as string);
+      expect(loc.hash).toBe(hash);
+    }
+  });
+
+  it("sets the hash to the neighbouring round on prev and next", () => {
+    const loc = stubLocation();
+    const els = tree({ page: "round", id: "round-002" }, rounds[1]);
+    click(els, "Previous round");
+    expect(loc.hash).toBe("#/round/round-001");
+    click(els, "Next round");
+    expect(loc.hash).toBe("#/round/round-003");
+  });
+
+  it("steps back to the last round from the all-answered page", () => {
+    const loc = stubLocation();
+    click(tree({ page: "current" }, undefined), "Previous round");
+    expect(loc.hash).toBe("#/round/round-004");
+  });
+
+  it("links each menu item to its own round", () => {
+    const links = tree({ page: "current" }, rounds[1]).filter(
+      (e) => e.type === "a" && String(e.props.href).startsWith("#/round/"),
+    );
+    expect(links.map((l) => l.props.href)).toEqual(
+      rounds.map((r) => `#/round/${r.id}`),
+    );
+    expect(links.map((l) => l.props["aria-current"])).toEqual([
+      undefined,
+      "page",
+      undefined,
+      undefined,
+    ]);
   });
 });

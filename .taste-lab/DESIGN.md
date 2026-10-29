@@ -1,10 +1,14 @@
 # Design rules: taste-lab
 
-This lab tunes taste-lab's own interface with taste-lab. Rounds compare designs for the app chrome (header, compare screen, history, library, theme pages). The fixture `lab` is a sample state of a lab mid-way: 14 rounds with mixed statuses, the 4 pages and the active one.
+This lab tunes taste-lab's own interface with taste-lab. Rounds compare designs for the app chrome (header, compare screen, history, library, theme pages). The fixture `lab` is a sample state of a lab mid-way: 14 rounds with mixed statuses, the 4 pages and the active one, 12 taste log answers (`history`), 4 library entries with one broken (`library`) and the current round's variants and rows for a mock variant frame (`sample`).
 
 Serve it from the repo root with `node bin/taste-lab.mjs serve --dir .taste-lab`. A pick here becomes a change in `src/`, made after the round is answered.
 
-Distilled from `taste.jsonl`. The agent rewrites this file every ~5 rounds. Each rule cites the rounds that support it. Distilled through round-002. The header rules are built in `src/components/AppHeader.tsx`.
+Distilled from `taste.jsonl`. The agent rewrites this file every ~5 rounds. Each rule cites the rounds that support it. Distilled through round-002. The header rules are built in `src/components/AppHeader.tsx` and promoted to `library/app-header/` (status agreed).
+
+## Library
+
+- `app-header` (agreed): `library/app-header/AppHeader.tsx`, from round-002 b with the arrow fix (20px icons in 36px buttons). Props: lab name, rounds, current round, active page, `showRoundTier` (defaults to Compare only). It mirrors `src/components/AppHeader.tsx`. Every layout round imports it from `@/library/app-header/AppHeader`, so only the page under it differs. Provenance round-001 mix and round-002 b.
 
 ## Starting point
 
@@ -37,4 +41,7 @@ Copied from `examples/demo` round-007 a (one taste across repos). Judged in dark
 ## Open questions
 
 - Closed: does listing every round in the header scale? No. round-001 and round-002 settled on the round menu plus the round tier.
-- Does the compare page still need its own question heading now that the round tier shows the question? Not tested.
+- Does the compare page still need its own question heading now that the round tier shows the question? Queued as round-003: a today (heading, answer panel below), b no heading with the answer panel in a sticky right sidebar, c no heading with a one-row answer bar pinned under a tall frame.
+- How much should one History answer show? Queued as round-004: a today (a card per answer with the winning variant rendered), b one dense table, c a timeline by day with the reason as a quote.
+- Library list: today's cards, a denser grid, or list and detail on one page? Queued as round-005: a today, b a dense card grid with status and example count pills and source rounds, c two panes (entry list, selected entry's examples, provenance and rules).
+- Rounds 003 to 005 are `layout` rounds on the `lab` fixture (its `history`, `library` and `sample` fields). Each shows the page in an 85svh screen box, so sticky parts can be judged. Variant a of each is the control, a copy of today's page in `src/components/`. The Theme page round comes later.

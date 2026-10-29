@@ -3,13 +3,15 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { enterAction } from "@/lib/keys";
 import { TAGS } from "@/lib/taste";
 
 export type Answer = { pick: string; tags: string[]; reason: string };
 
 /**
  * Pick, tags, reason, submit.
- * Keys: 1-4 pick variant, n none, m mix, Enter submit. In the textarea, Ctrl/Cmd+Enter submits.
+ * Keys: 1-4 pick variant, n none, m mix. Enter submits unless a button or link has focus.
+ * In the textarea, Ctrl/Cmd+Enter submits.
  */
 export function AnswerPanel({
   variantIds,
@@ -59,9 +61,9 @@ export function AnswerPanel({
       const typing =
         target?.tagName === "TEXTAREA" || target?.tagName === "INPUT";
       if (e.key === "Enter") {
-        if (typing && !(e.ctrlKey || e.metaKey)) return;
-        if (e.altKey || e.shiftKey) return;
-        if (target?.dataset.submit === "true") return; // the button handles itself
+        // Focused buttons, links and toggles keep their own Enter.
+        const action = enterAction(e, target);
+        if (action !== "submit") return;
         e.preventDefault();
         if (s.canSubmit)
           s.onSubmit({ pick: s.pick, tags: s.tags, reason: s.reason });
@@ -172,7 +174,8 @@ export function AnswerPanel({
           {submitting ? "Saving..." : "Submit"}
         </Button>
         <span className="text-xs text-muted-foreground">
-          Enter to submit. Ctrl/Cmd+Enter inside the text box.
+          Enter submits (not while a button has focus). Ctrl/Cmd+Enter inside
+          the text box.
         </span>
       </div>
     </form>

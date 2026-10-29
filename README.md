@@ -15,7 +15,7 @@ Node version is pinned in `.node-version`. pnpm version is in `package.json`.
 
 1. Open the URL. The current round is the first one with no answer.
 2. Toggle light or dark. All variants switch.
-3. Pick with keys `1` to `4`, `n` for none, `m` for mix. Add tags and a reason. Press Enter to submit.
+3. Pick with keys `1` to `4`, `n` for none, `m` for mix. Add tags and a reason. Press Enter to submit. In the reason box, use Ctrl/Cmd+Enter. Enter on a focused button or link keeps its normal action (toggle, follow) and does not submit.
 4. Each submit appends one line to `taste/taste.jsonl` and moves to the next round.
 5. Open History to see past answers, newest first.
 

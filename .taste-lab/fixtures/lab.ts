@@ -1,4 +1,12 @@
-import type { LabRound, LabState, Page } from "./types";
+import type {
+  HistoryEntry,
+  LabRound,
+  LabState,
+  LibraryItem,
+  Page,
+  Sample,
+  Tag,
+} from "./types";
 
 /** A sample lab mid-way: 9 answered, 3 open, 2 broken. */
 const rounds: LabRound[] = [
@@ -127,10 +135,312 @@ const pages: Page[] = ["Compare", "Library", "Theme", "History"];
 // Same rule as the app: the current round is the first one with no answer.
 const current = rounds.find((r) => r.status === "open")?.id ?? rounds[0].id;
 
+/** The answer panel's tags, in the app's order. */
+const tags: Tag[] = [
+  "airy",
+  "cramped",
+  "loud",
+  "quiet",
+  "dated",
+  "clean",
+  "playful",
+  "serious",
+  "too much",
+  "too little",
+];
+
+/**
+ * taste.jsonl, oldest first: 12 lines over 4 days. round-001, round-003 and
+ * round-005 were answered twice; the later line is the pick in `rounds`.
+ */
+const history: HistoryEntry[] = [
+  {
+    ts: "2026-10-26T09:12:04.120Z",
+    round: "round-001",
+    component: "card",
+    level: "component",
+    shown: ["a", "b", "c", "d"],
+    pick: "b",
+    tags: [],
+    reason: "",
+    theme: "light",
+    view: "columns",
+  },
+  {
+    ts: "2026-10-26T09:40:31.552Z",
+    round: "round-001",
+    component: "card",
+    level: "component",
+    shown: ["a", "b", "c", "d"],
+    pick: "c",
+    tags: ["airy", "clean"],
+    reason: "nice in general. like proportions. tags are too much",
+    theme: "light",
+    view: "columns",
+  },
+  {
+    ts: "2026-10-26T10:05:12.009Z",
+    round: "round-002",
+    component: "table",
+    level: "component",
+    shown: ["a", "b", "c"],
+    pick: "b",
+    tags: ["cramped"],
+    reason: "right columns, rows a bit tight",
+    theme: "light",
+    view: "flip",
+  },
+  {
+    ts: "2026-10-27T14:20:45.300Z",
+    round: "round-003",
+    component: "card",
+    level: "component",
+    shown: ["a", "b", "c"],
+    pick: "mix",
+    tags: [],
+    reason: "c's layout with b's tag row",
+    theme: "dark",
+    view: "columns",
+  },
+  {
+    ts: "2026-10-27T14:52:10.871Z",
+    round: "round-003",
+    component: "card",
+    level: "component",
+    shown: ["a", "b", "c"],
+    pick: "c",
+    tags: ["clean"],
+    reason: "exactly what i needed",
+    theme: "dark",
+    view: "columns",
+  },
+  {
+    ts: "2026-10-27T15:30:02.640Z",
+    round: "round-004",
+    component: "table",
+    level: "component",
+    shown: ["a", "b"],
+    pick: "a",
+    tags: ["airy", "clean"],
+    reason: "",
+    theme: "dark",
+    view: "flip",
+  },
+  {
+    ts: "2026-10-28T11:02:19.004Z",
+    round: "round-005",
+    component: "card",
+    level: "component",
+    shown: ["a", "b", "c"],
+    pick: "a",
+    tags: ["quiet"],
+    reason: "quiet, but the pills differ in size",
+    theme: "light",
+    view: "columns",
+  },
+  {
+    ts: "2026-10-28T11:18:55.731Z",
+    round: "round-005",
+    component: "card",
+    level: "component",
+    shown: ["a", "b", "c"],
+    pick: "b",
+    tags: ["quiet", "clean"],
+    reason: "quiet tags, and all pills the same size",
+    theme: "light",
+    view: "columns",
+  },
+  {
+    ts: "2026-10-28T16:45:40.218Z",
+    round: "round-006",
+    component: "table",
+    level: "component",
+    shown: ["a", "b", "c"],
+    pick: "c",
+    tags: ["clean"],
+    reason: "",
+    theme: "dark",
+    view: "flip",
+  },
+  {
+    ts: "2026-10-28T17:10:07.993Z",
+    round: "round-007",
+    component: "theme",
+    level: "token",
+    shown: ["a", "b", "c"],
+    pick: "a",
+    tags: ["clean", "serious"],
+    reason: "blue reads calm in both themes",
+    theme: "dark",
+    view: "columns",
+  },
+  {
+    ts: "2026-10-29T09:30:26.415Z",
+    round: "round-009",
+    component: "card",
+    level: "component",
+    shown: ["a", "b"],
+    pick: "a",
+    tags: ["quiet"],
+    reason: "fixed width keeps the row calm",
+    theme: "dark",
+    view: "columns",
+  },
+  {
+    ts: "2026-10-29T10:05:58.142Z",
+    round: "round-012",
+    component: "dialog",
+    level: "component",
+    shown: ["a", "b", "c"],
+    pick: "none",
+    tags: ["too much", "loud"],
+    reason: "all three shout. fewer sections",
+    theme: "dark",
+    view: "flip",
+  },
+];
+
+/** library/: 2 agreed, 1 draft, 1 broken. */
+const library: LibraryItem[] = [
+  {
+    ok: true,
+    name: "task-card",
+    title: "Task card",
+    status: "agreed",
+    description:
+      "One task in a list: status and priority pills, up to 2 quiet tags, title, description, owner footer.",
+    examples: [
+      { export: "Default", title: "Typical tasks", width: "column" },
+      {
+        export: "ManyTags",
+        title: "More than 2 tags shows +n",
+        width: "column",
+      },
+      { export: "Done", title: "Done, low priority", width: "column" },
+      { export: "BlockedUrgent", title: "Blocked and urgent", width: "column" },
+      { export: "NoTags", title: "No tags", width: "column" },
+    ],
+    provenance: [
+      {
+        round: "round-001",
+        pick: "c",
+        note: "nice in general. like proportions",
+      },
+      { round: "round-003", pick: "c", note: "exactly what i needed" },
+      {
+        round: "round-005",
+        pick: "b",
+        note: "quiet tags, and all pills the same size",
+      },
+    ],
+    rules: [
+      "At most 2 tags in the status row, then +n.",
+      "Tags are quiet muted text, never badges.",
+      "All pills share one height.",
+    ],
+  },
+  {
+    ok: true,
+    name: "project-table",
+    title: "Project table",
+    status: "agreed",
+    description:
+      "Projects as one compact table: name, owner, status, progress bar, amount, last update.",
+    examples: [
+      { export: "Default", title: "All projects", width: "full" },
+      { export: "AtRisk", title: "At-risk rows", width: "full" },
+      { export: "Empty", title: "No projects", width: "full" },
+    ],
+    provenance: [
+      {
+        round: "round-002",
+        pick: "b",
+        note: "right columns, rows a bit tight",
+      },
+      { round: "round-004", pick: "a", note: "" },
+      { round: "round-006", pick: "c", note: "" },
+    ],
+    rules: ["Full-width columns, never stacked cells.", "Compact rows."],
+  },
+  {
+    ok: true,
+    name: "status-pill",
+    title: "Status pill",
+    status: "draft",
+    description: "A fixed-width pill with a status dot and its label.",
+    examples: [
+      { export: "All", title: "Every status", width: "column" },
+      { export: "InRow", title: "In a table row", width: "full" },
+    ],
+    provenance: [
+      { round: "round-009", pick: "a", note: "fixed width keeps the row calm" },
+    ],
+    rules: [],
+  },
+  {
+    ok: false,
+    name: "empty-state",
+    errors: [
+      'meta.json: status must be "draft" or "agreed"',
+      "examples.tsx: export NewProject not found",
+    ],
+  },
+];
+
+/** The current round as the mock Compare page shows it. */
+const sample: Sample = {
+  round: "round-010",
+  basedOn: { round: "round-006", pick: "c" },
+  variants: [
+    {
+      id: "a",
+      label: "Avatar and name",
+      changes: "A small avatar before the owner's name in each row.",
+    },
+    {
+      id: "b",
+      label: "Name only",
+      changes: "The owner as plain text. No avatar.",
+    },
+    {
+      id: "c",
+      label: "Initials only",
+      changes: "The owner as an avatar with initials. No name.",
+    },
+  ],
+  tasks: [
+    {
+      id: "TL-101",
+      title: "Ship the onboarding checklist",
+      status: "in-progress",
+      owner: { name: "Maya Chen", initials: "MC" },
+      due: "Nov 4",
+    },
+    {
+      id: "TL-102",
+      title: "Fix rounding in the CSV export",
+      status: "blocked",
+      owner: { name: "Omar Haddad", initials: "OH" },
+      due: "Nov 6",
+    },
+    {
+      id: "TL-103",
+      title: "Write the pricing page copy",
+      status: "in-review",
+      owner: { name: "Lena Fischer", initials: "LF" },
+      due: "Nov 9",
+    },
+  ],
+};
+
 export const lab: LabState = {
   name: "acme-tasks",
   rounds,
   pages,
   activePage: "Compare",
   current,
+  tags,
+  history,
+  library,
+  sample,
 };

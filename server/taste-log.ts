@@ -80,18 +80,23 @@ export function isJsonContentType(value: string | undefined): boolean {
   return value.split(";")[0]?.trim().toLowerCase() === "application/json";
 }
 
-/** An Origin header, when present, must be the origin that serves the app. */
+/**
+ * An Origin header, when present, must be the origin that serves the app:
+ * same scheme, host and effective port. `encrypted` is true for a TLS socket.
+ */
 export function isSameOrigin(
   origin: string | undefined,
   host: string | undefined,
+  encrypted = false,
 ): boolean {
   if (origin === undefined) return true; // non-browser clients such as curl
   if (!host) return false;
   try {
-    const u = new URL(origin);
-    return (
-      (u.protocol === "http:" || u.protocol === "https:") && u.host === host
-    );
+    // URL.origin drops default ports, so :80 and no port compare equal.
+    const served = new URL(`${encrypted ? "https" : "http"}://${host}`).origin;
+    const given = new URL(origin);
+    if (given.protocol !== "http:" && given.protocol !== "https:") return false;
+    return given.origin === served;
   } catch {
     return false; // includes the literal "null" origin
   }
@@ -131,7 +136,13 @@ async function handle(req: IncomingMessage, res: ServerResponse, file: string) {
     }
   }
   if (req.method === "POST") {
-    if (!isSameOrigin(req.headers.origin, req.headers.host)) {
+    if (
+      !isSameOrigin(
+        req.headers.origin,
+        req.headers.host,
+        "encrypted" in req.socket && req.socket.encrypted === true,
+      )
+    ) {
       return send(res, 403, { error: "cross-origin request refused" });
     }
     if (!isJsonContentType(req.headers["content-type"])) {

@@ -122,6 +122,15 @@ describe("POST /api/taste", () => {
     expect(existsSync(file)).toBe(false);
   });
 
+  it("rejects an https Origin with the same host and port", async () => {
+    const r = await post(valid, {
+      "content-type": "application/json",
+      origin: `https://127.0.0.1:${port}`,
+    });
+    expect(r.status).toBe(403);
+    expect(existsSync(file)).toBe(false);
+  });
+
   it("rejects unknown tags with 400", async () => {
     const r = await post({ ...valid, tags: ["airy", "spicy"] });
     expect(r.status).toBe(400);
@@ -192,5 +201,21 @@ describe("isSameOrigin", () => {
     expect(isSameOrigin("http://localhost:5173", "127.0.0.1:5173")).toBe(false);
     expect(isSameOrigin("null", "127.0.0.1:5173")).toBe(false);
     expect(isSameOrigin("http://127.0.0.1:5173", undefined)).toBe(false);
+  });
+
+  it("compares scheme and effective port", () => {
+    expect(isSameOrigin("https://127.0.0.1:5173", "127.0.0.1:5173")).toBe(
+      false,
+    );
+    expect(isSameOrigin("http://127.0.0.1:5173", "127.0.0.1:5173", true)).toBe(
+      false,
+    );
+    expect(isSameOrigin("https://127.0.0.1:5173", "127.0.0.1:5173", true)).toBe(
+      true,
+    );
+    expect(isSameOrigin("http://127.0.0.1:80", "127.0.0.1")).toBe(true);
+    expect(isSameOrigin("https://127.0.0.1:443", "127.0.0.1", true)).toBe(true);
+    expect(isSameOrigin("http://127.0.0.1", "127.0.0.1:8080")).toBe(false);
+    expect(isSameOrigin("ftp://127.0.0.1:5173", "127.0.0.1:5173")).toBe(false);
   });
 });

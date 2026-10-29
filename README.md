@@ -46,6 +46,28 @@ node <taste-lab>/bin/taste-lab.mjs serve --dir ../my-app/.taste-lab --lan
 
 Node version is pinned in `.node-version`. pnpm version is in `package.json`.
 
+### Use it from pi
+
+This repo is a [pi](https://pi.dev) package with a `/taste` command and a `taste` skill. Install it once from the local checkout. It uses this repo's own `node_modules`, so run `pnpm install` first.
+
+```sh
+pi install ~/DEV/priv/taste-lab
+```
+
+Then, in a pi session in any repo:
+
+| Command               | Does                                                                                                          |
+| --------------------- | ------------------------------------------------------------------------------------------------------------- |
+| `/taste`              | Serves `<cwd>/.taste-lab` on 127.0.0.1 and the LAN. Shows both links. Offers `init` if the folder is missing. |
+| `/taste local`        | Same, without the LAN listener and link.                                                                      |
+| `/taste --dir <path>` | Serves another data dir. Combines with `local`.                                                               |
+| `/taste status`       | Shows the links again.                                                                                        |
+| `/taste stop`         | Stops the server. Quitting pi stops it too.                                                                   |
+
+The links, including the LAN token, show only in pi's UI: a notification, a widget below the editor and a status item. The agent never sees them. Each answer you log wakes the agent with one line (`answered round-NNN (...): pick b; tags ...; reason ...`). The `taste` skill then has it write the next round, run `check` and ask you to refresh. If the agent is busy, the answer waits until its current run ends.
+
+The server's stderr goes to a log in the OS temp folder (`taste-lab-pi/`). If the server dies, pi says so and names that log.
+
 ## Use
 
 1. Open the URL. The current round is the first one with no answer.
@@ -90,11 +112,12 @@ This repo:
 ```
 bin/taste-lab.mjs        CLI entry (Node runs the TypeScript in cli/ directly)
 cli/                     serve, init, check, port picking, variant scanner
+pi/                      pi package: /taste extension, taste skill, helpers in pi/lib
 examples/demo/.taste-lab the demo data dir (rounds 1 to 7, empty theme.css)
 server/                  Vite plugin and /api/taste middleware
 src/                     lab UI
 src/components/ui/       stock shadcn primitives, generated, not hand-edited
-tests/                   loader, library, log writer, CLI and variant rule tests
+tests/                   loader, library, log writer, CLI, variant rule and pi extension tests
 ```
 
 ## Theme

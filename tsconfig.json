@@ -27,6 +27,7 @@
     "cli",
     "vite.config.ts",
     "server",
-    "examples/demo/.taste-lab"
+    "examples/demo/.taste-lab/**/*.ts",
+    "examples/demo/.taste-lab/**/*.tsx"
   ]
 }

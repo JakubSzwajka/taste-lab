@@ -150,7 +150,12 @@ function ControlsSplit({
     const group = groupRef.current;
     if (!group || total <= 0) return;
     // Open: the dragged height, else the whole table. Never over the canvas min.
-    const fit = CONTROLS_HEADER_PX + (bodyRef.current?.scrollHeight ?? 0);
+    // Measure the table, not the body: the body's scrollHeight is at least its
+    // own height, so restoring from full would "fit" the whole main area.
+    const table = bodyRef.current?.firstElementChild;
+    const fit =
+      CONTROLS_HEADER_PX +
+      (table instanceof HTMLElement ? table.offsetHeight : 0);
     const open = Math.max(
       CONTROLS_MIN_PX,
       Math.min(height ?? fit, total - CANVAS_MIN_PX),

@@ -116,8 +116,17 @@ function fakeLayout() {
   const isBody = (el: Element) =>
     el.parentElement?.matches('section[aria-label="Controls"]') === true &&
     el === el.parentElement.lastElementChild;
+  const isTable = (el: Element) =>
+    el.parentElement !== null && isBody(el.parentElement);
+  /** The rendered controls panel, from the flex-grow the library set. */
+  const controlsPx = (el: Element) => {
+    const panel = el.closest("[data-group] > #controls") as HTMLElement | null;
+    const grow = Number.parseFloat(panel?.style.flexGrow ?? "");
+    return Number.isFinite(grow) ? (grow / 100) * groupPx : 0;
+  };
   fake(HTMLElement.prototype, "offsetHeight", {
     get(this: HTMLElement) {
+      if (isTable(this)) return BODY_PX;
       if (!this.hasAttribute("data-panel")) return 0;
       const n = this.parentElement?.querySelectorAll(":scope > [data-panel]");
       return groupPx / (n?.length || 1);
@@ -138,9 +147,12 @@ function fakeLayout() {
       return top;
     },
   });
+  // As in a browser: a scroll box's scrollHeight is never under its own
+  // height, so a body in a tall panel reports the panel, not the table.
   fake(Element.prototype, "scrollHeight", {
     get(this: Element) {
-      return isBody(this) ? BODY_PX : 0;
+      if (!isBody(this)) return 0;
+      return Math.max(BODY_PX, controlsPx(this) - CONTROLS_HEADER_PX);
     },
   });
   const rect = Element.prototype.getBoundingClientRect;
@@ -303,6 +315,17 @@ describe("container resize", () => {
     expect(p.sizes()).toEqual({ canvas: 600 - FIT_PX, controls: FIT_PX });
     // A resize is not a height the operator chose.
     expect(read().controlsHeight).toBeUndefined();
+  });
+
+  it("fits the table on restore after a reload into full and a resize", async () => {
+    setCanvasPrefs({ controls: "full" });
+    reloadCanvasPrefs();
+    const p = await page();
+    await resizeTo(1300);
+    expectFull(p, 1300);
+    await click(p.button("Restore controls"));
+    expect(p.state()).toBe("open");
+    expect(p.sizes()).toEqual({ canvas: 1300 - FIT_PX, controls: FIT_PX });
   });
 
   it("restores to the open height after resizing in full", async () => {

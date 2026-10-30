@@ -8,15 +8,15 @@ Distilled from `taste.jsonl`. The agent rewrites this file every ~5 rounds. Each
 
 ## Settled pages
 
-| Page    | Settled as                                                    | Rounds               |
-| ------- | ------------------------------------------------------------- | -------------------- |
-| Header  | Two tiers, round menu, icon-only page nav                     | round-001, round-002 |
-| Compare | No heading, full-width frame, one-row answer bar, no tags     | round-003, round-009 |
-| History | One dense table, richer row, tags as same-size pills          | round-004, round-007 |
-| Library | Two panes: tree, canvas with toolbar, Docs, Controls          | round-005, round-008 |
-| Theme   | Open: round-010 asks table, swatch grid, preview or workbench | round-010 (open)     |
+| Page    | Settled as                                                  | Rounds               |
+| ------- | ----------------------------------------------------------- | -------------------- |
+| Header  | Two tiers, round menu, icon-only page nav                   | round-001, round-002 |
+| Compare | No heading, full-width frame, one-row answer bar, no tags   | round-003, round-009 |
+| History | One dense table, richer row, tags as same-size pills        | round-004, round-007 |
+| Library | Two panes: tree, canvas with toolbar, Docs, Controls        | round-005, round-008 |
+| Theme   | One dense token table by role, filter, ignored parts on top | round-010 a          |
 
-The Compare, History and Library pages are built in `src/` from these picks. `app-header` is promoted to `library/app-header/`.
+The Compare, History, Library and Theme pages are built in `src/` from these picks. `app-header` is promoted to `library/app-header/`.
 
 ## Library
 
@@ -53,6 +53,11 @@ The operator's taste from `examples/demo` (its DESIGN.md) is the prior, not a ru
 
 - Two panes: a tree of entries, each with its examples, and a canvas for one example. round-005 c ("it gives me potentially preview functionality like a story book!"), round-008 c ("almost like storybook").
 - The canvas has a toolbar: Column 420 or Full width, canvas light or dark (canvas only), plain or muted background. A Docs tab holds the description, rules and provenance. A Controls panel under the canvas edits props live. round-008 c.
+
+### Theme
+
+- One dense table, one 36px row per token: name, light chip and value, dark chip and value, a source pill of one size. Group rows by role with counts, an All / theme.css / Stock filter, and the ignored parts of theme.css as a compact list on top. round-010 a ("only this one is readable"), picked over a swatch grid, a preview and a workbench.
+- Chips show real values in their own mode, set inline from the parsed tokens like the Library canvas, so light chips read in a dark lab. The built page drops the variant's dashed light chips. round-010 a.
 
 ### Everywhere
 
@@ -97,7 +102,7 @@ These are not tokens. They are fixed sizes the picks carry.
 - Closed: how much should one History answer show? One dense row with the variant label, round link, and theme and view icons. round-004 b, round-007 c.
 - Closed: list or detail for the Library? Two panes with a canvas, Docs and Controls. round-005 c, round-008 c.
 - Closed: do we need tags? Not in the answer bar. round-006 (none), round-009 a.
-- Open: the Theme page is the only page still on its first design. round-010 asks how it should show tokens: a dense table, a swatch grid by role, a preview first, or a workbench like the Library. A variant can paint dark tokens inside a light page (a `.dark` wrapper) but not light ones inside a dark page, so judge it with the lab in light. The built page sets values inline, as the Library canvas does.
+- Closed: how should the Theme page show tokens? One dense table grouped by role. round-010 a.
 - Open: the `lab` fixture has a `theme` part (32 tokens, 3 from theme.css, 3 sample ignored parts) for Theme rounds. Its values copy src/index.css and theme.css; update them when theme.css changes.
 - Open: round-009 a was picked with no reason and the tag "clean". Does the one-line reason get used when it is the only free-text field? Check the next answers for empty reasons.
 - Open: History has no filter or search. At about 30 answers the table may need one. Raise it when the log grows.

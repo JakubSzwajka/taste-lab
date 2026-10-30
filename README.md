@@ -80,7 +80,7 @@ The server's stderr goes to a log in a private folder in the OS temp dir (`taste
 5. Open History to see past answers, newest first, in one table. Each row has the date, the round (a link to it), a pick pill with the winning variant's label, tag pills (old answers only), the reason, and the theme and view as icons.
 6. Open Library to see the agreed components, laid out like Storybook and filling the screen under the header. The left sidebar lists entries and their examples; its trigger (or Ctrl/Cmd+B) hides it, and on a phone it slides in as a sheet. The Canvas tab shows one example live, with a toolbar for width (Column 420 or Full width), a light or dark canvas, and a plain or muted background. When the entry declares controls, a Controls panel at the bottom edits its props live. Drag its top edge to resize it, collapse it to its header bar, or expand it to fill the page. The sizes stay after a reload. The Docs tab has the description, rules and the rounds it came from (links to `#/round/<id>`).
 
-7. Open Theme to see every shadcn token as a swatch in light and dark. Values from `theme.css` are marked. The rest are stock. `--radius` shows as a sample box.
+7. Open Theme to see every shadcn token in one table, grouped by role, with its light and dark value and a chip of each. A pill marks values from `theme.css`; the rest are stock. Filter to theme.css or stock tokens. Ignored parts of `theme.css` are listed on top. `--radius` shows as a sample box.
 
 With no rounds in `.taste-lab/rounds/`, the app shows a "no rounds yet" screen.
 

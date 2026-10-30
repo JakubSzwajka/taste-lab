@@ -6,6 +6,7 @@
     "includes": [
       "**",
       "!src/components/ui",
+      "!src/hooks/use-mobile.ts",
       "!src/index.css",
       "!components.json",
       "!tests/fixtures/variant-scan/bad",

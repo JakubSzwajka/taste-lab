@@ -1,0 +1,29 @@
+{
+  "id": "round-008",
+  "level": "layout",
+  "component": "library-page",
+  "question": "Round-005 C stays: the entry list on the left, the entry on the right. You said \"C because it gives me potentially preview functionality like a story book!\" How should the right pane preview a component? App header is the real library component. The other entries are fixture data with stand-ins. Click entries and examples, and try the toolbar and controls.",
+  "fixture": "lab",
+  "basedOn": { "round": "round-005", "pick": "c" },
+  "preview": "flip",
+  "variants": [
+    {
+      "id": "a",
+      "file": "a.tsx",
+      "label": "Docs page",
+      "changes": "\"Preview functionality\" as one scrolling page: every example of the entry renders live, stacked, each with its title and width (column at 420px, or full). Rules and provenance follow. No toolbar."
+    },
+    {
+      "id": "b",
+      "file": "b.tsx",
+      "label": "Canvas",
+      "changes": "\"Like a story book\": the list becomes a tree, entry then its examples. One example shows on a large canvas with a toolbar: Column 420 or Full width, light or dark for the canvas only, plain or muted background. A Docs tab holds rules and provenance."
+    },
+    {
+      "id": "c",
+      "file": "c.tsx",
+      "label": "Canvas and controls",
+      "changes": "B, plus a Storybook controls panel under the canvas. For App header: page, current round, showRoundTier and an all answered switch. The canvas re-renders as you change them. An example sets the controls; clicking the header's own icons and arrows updates them."
+    }
+  ]
+}

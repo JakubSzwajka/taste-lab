@@ -236,7 +236,12 @@ function ControlsSplit({
         collapsible
         collapsedSize={CONTROLS_HEADER_PX}
         minSize={CONTROLS_MIN_PX}
-        groupResizeBehavior="preserve-pixel-size"
+        // Open and collapsed keep their px height when the window resizes.
+        // Full keeps its share (100%): with px, a taller window would hand
+        // the extra space to the shut, inert canvas.
+        groupResizeBehavior={
+          full ? "preserve-relative-size" : "preserve-pixel-size"
+        }
         defaultSize={
           full
             ? "100%"

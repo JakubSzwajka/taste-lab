@@ -70,7 +70,7 @@ Allowed imports, nothing else:
 | `lucide-react`             | icons                   |
 | `class-variance-authority` | `cva` variants          |
 
-Available primitives: `avatar`, `badge`, `breadcrumb`, `button`, `card`, `checkbox`, `dropdown-menu`, `progress`, `separator`, `table`, `textarea`, `toggle`, `toggle-group`, `tooltip`.
+Available primitives: `avatar`, `badge`, `breadcrumb`, `button`, `card`, `checkbox`, `dropdown-menu`, `input`, `progress`, `separator`, `table`, `tabs`, `textarea`, `toggle`, `toggle-group`, `tooltip`.
 
 `@/fixtures` resolves to `<dataDir>/fixtures/index.ts`. `@/library/<name>/<Name>` resolves to `<dataDir>/library/<name>/<Name>.tsx`. Nothing deeper or looser is allowed. `@/components/ui/*` and `@/lib/utils` resolve to the lab's own stock primitives. `react`, `lucide-react` and `class-variance-authority` come from the lab's `node_modules`, so a data dir needs no install.
 
@@ -205,7 +205,7 @@ Order of the layers: the lab's stock tokens, then `<dataDir>/theme.css`, then th
 
 - `view` is optional: `"columns"` or `"flip"`, the view in use when the operator answered. Lines written before it existed have no `view` and stay valid.
 - `pick` is a variant id from `shown`, `"none"` or `"mix"`. For `mix`, `reason` is required and says which parts.
-- Tags come from: airy, cramped, loud, quiet, dated, clean, playful, serious, too much, too little.
+- `tags` is optional in a `POST` and defaults to `[]`. The Compare page sends none: its answer bar has no tags (round-009 a). Old lines keep their tags. Tags that are sent come from: airy, cramped, loud, quiet, dated, clean, playful, serious, too much, too little.
 - Never edit or reorder existing lines. Only the app middleware appends.
 
 Endpoints, served by `taste-lab serve` and `pnpm preview` for the served data dir (loopback only, Host must be 127.0.0.1, localhost or ::1; `serve --lan` uses the LAN rules instead, see "LAN mode"). The app reads the log only here: Vite refuses to serve `taste.jsonl` as a file:
@@ -222,6 +222,17 @@ Endpoints, served by `taste-lab serve` and `pnpm preview` for the served data di
 5. Every ~5 rounds, distill the log into `<dataDir>/DESIGN.md`: Do, Don't, Tokens, Open questions. Cite round ids.
 6. Read tags and reasons. A "none" means all options missed. Change direction, not detail.
 
+## History page
+
+`#/history` is one dense table of the log, newest first (round-007 c). It does not render the winning variant. Each row has:
+
+- the date, and the round as a link to `#/round/<id>`
+- a pick pill, `<id> · <variant label>`, with the label from that round's `round.json`
+- tag pills, all one size, at most 2 plus `+n`. Old answers keep their tags. New answers have none, so the cell is empty.
+- the reason, then the theme and view as icons with tooltips
+
+A missing round shows the pick id only, with no link and no label. A broken round has a link but no label.
+
 ## Library
 
 The library holds the components the operator agreed on, with examples and where each came from. It is the source of truth for a component. The lab shows it on the Library page. Later steps copy entries into apps.
@@ -229,7 +240,7 @@ The library holds the components the operator agreed on, with examples and where
 ```
 <dataDir>/library/<name>/        name: kebab-case, e.g. task-card
   <Name>.tsx                     named export <Name> (PascalCase of name), plus `<name>Variants` (cva) when it has variants
-  examples.tsx                   named exports, each a no-props React component showing one example or state
+  examples.tsx                   named exports, each a React component with no required props, showing one example or state
   meta.json
 ```
 
@@ -246,7 +257,8 @@ The library holds the components the operator agreed on, with examples and where
     {
       "export": "ManyTags",
       "title": "More than 2 tags shows +n",
-      "width": "column"
+      "width": "column",
+      "args": { "tags": "api, docs, perf, ux" }
     }
   ],
   "provenance": [
@@ -256,7 +268,17 @@ The library holds the components the operator agreed on, with examples and where
       "note": "liked proportions; tags too much"
     }
   ],
-  "rules": ["Quiet over loud: tags as muted #text"]
+  "rules": ["Quiet over loud: tags as muted #text"],
+  "controls": [
+    {
+      "prop": "status",
+      "kind": "select",
+      "options": ["todo", "done"],
+      "label": "Status on every card"
+    },
+    { "prop": "tags", "kind": "text", "label": "Tags, comma-separated" },
+    { "prop": "count", "kind": "number", "default": 3 }
+  ]
 }
 ```
 
@@ -267,9 +289,43 @@ The library holds the components the operator agreed on, with examples and where
 - Files follow the variant rules: 100% shadcn, no raw colors, no `style` prop. Allowed imports are the variant allowlist plus sibling files by relative path without extension (`./TaskCard`). A sibling must be a regular `.ts` or `.tsx` file in the same folder. `check` rejects one that is missing, a folder (including a folder named `Helper.ts`), or that also exists as `.js`, `.jsx`, `.mjs`, `.mts` or `.json`, because the scanner reads only `.ts` and `.tsx`. A round variant may import `@/library/<name>/<Name>` only, where `<name>` is a kebab-case folder and `<Name>` its PascalCase.
 - Components take data through props. Only `examples.tsx` may import values from `@/fixtures`. `import type { Task } from "@/fixtures"` is fine anywhere.
 
-Pages: `#/library` lists entries (title, status, description, example count). `#/library/<name>` shows each example at its width in the current light or dark theme, the provenance as links to `#/round/<id>`, and the rules. A broken entry (bad `meta.json`, missing file, missing export) shows its errors in place and does not break the page. The header's book icon opens Library, next to Compare, Theme and History.
+### Controls and args
 
-`taste-lab check` validates `library/*`: folder name, `<Name>.tsx` and `examples.tsx` present, `meta.json` schema, `<Name>` exported by `<Name>.tsx` (a regular, readable file), every example `export` found in `examples.tsx` (a file with `export *` or a destructured export is a problem, since its names cannot be read: export each name directly), provenance rounds that exist, and the scanner with the library rules on every `.ts` and `.tsx`. `library/` missing or holding only `.gitkeep` is fine.
+Optional and additive. An entry without `controls` has no Controls panel and renders as before.
+
+- `controls` is an array of `{ "prop", "kind", "options"?, "default"?, "label"? }`. `prop` is an identifier, unique in the list, and not `key`, `ref` or `__proto__`. `kind` is `boolean`, `select`, `text` or `number`.
+- `options` is for `select` only, and `select` needs it: a non-empty list of distinct non-empty strings.
+- `default` must match the kind: `true` or `false`, one of the `options`, a string, or a finite number.
+- Each `examples[]` entry may have `args`: a JSON object of starting values for that example. Each key must be a declared `prop`. Each value must match that control's kind, like `default`.
+- An example starts from its `args`, then each control's `default`. A control with neither starts unset. The canvas renders `<Example {...values} />` with the set values only. Clearing a text or number field, or the pressed option of a select, unsets it. Reset goes back to the start values.
+- An example takes these as optional props and merges them over its own fixture data, so an unset prop keeps the fixture value. An example that ignores props still works. Name the props after what they change, such as `status` for every card's status.
+- Values are plain JSON. A control cannot pass a function, an element or a fixture object. Pass a key (`"round": "broken"`) and let the example look it up.
+
+```tsx
+export type TaskCardArgs = { status?: Task["status"]; count?: number };
+
+export function Default(args: TaskCardArgs) {
+  const shown = args.count === undefined ? tasks : tasks.slice(0, args.count);
+  return shown.map((t) => (
+    <TaskCard key={t.id} task={{ ...t, status: args.status ?? t.status }} />
+  ));
+}
+```
+
+### Library page
+
+`#/library` opens the first entry. `#/library/<name>` opens an entry on its first example, and `#/library/<name>/<example>` on that example. It works like Storybook (round-008 c):
+
+- Left: a tree of entries, each with its examples and their width. The chevron folds an entry.
+- Canvas tab: the live example under a toolbar. Width is Column 420 or Full width; it starts at the example's `width`. Theme is light or dark for the canvas only. Background is plain (`bg-background`) or muted (`bg-muted`). Theme and background stay set across entries and reloads. Until you pick a canvas theme it follows the lab.
+- A dark canvas is a `.dark` scope. A light canvas sets the light token values (stock `:root`, then `theme.css` `:root`) as inline custom properties, the way round tokens win over `.dark` on `<html>`. So both work in either lab theme.
+- Controls panel under the canvas, when the entry has `controls`: one row per prop, with a checkbox, toggles (a menu for more than 4 options), a text field or a number field, and the current value or "unset".
+- Docs tab: title, status, description, examples (each opens its canvas), the controls table, rules, and provenance with links to `#/round/<id>`. A round that no longer exists is marked "round not found".
+- A broken entry (bad `meta.json`, missing file, missing export) shows its errors in place and does not break the page. An example that throws shows its error in the canvas. The next control change tries again.
+
+The header's book icon opens Library, next to Compare, Theme and History.
+
+`taste-lab check` validates `library/*`: folder name, `<Name>.tsx` and `examples.tsx` present, `meta.json` schema (`controls` and `args` included), `<Name>` exported by `<Name>.tsx` (a regular, readable file), every example `export` found in `examples.tsx` (a file with `export *` or a destructured export is a problem, since its names cannot be read: export each name directly), provenance rounds that exist, and the scanner with the library rules on every `.ts` and `.tsx`. `library/` missing or holding only `.gitkeep` is fine.
 
 ### Promoting a winner
 
@@ -279,6 +335,7 @@ When the operator settles a direction, promote it. Do this yourself, then run `c
 2. Turn the fixture use into props: one item (or a list) plus an optional `className` merged with `cn()`. Remove the `@/fixtures` value import. A type import is fine.
 3. The axes that differed between rounds become `cva` variants (`<name>Variants`), only where they are natural. Do not invent axes.
 4. Write `examples.tsx` with named exports for the default case and for each state that matters. They import `@/fixtures` and the component.
+   Declare `controls` for the props worth trying live, give each example the `args` that make it that state, and let the examples take those props. See "Controls and args".
 5. Write `meta.json`. Put the winning round and pick in `provenance` with the operator's words as the note. Put settled rules in `rules`. Set `status` to `agreed` once the operator agrees.
 6. The winning `tokens` of a component round stay per variant and go in `DESIGN.md`. A winning token round goes into `theme.css`. See "Promoting a token round winner".
 
@@ -348,6 +405,7 @@ The repo root is a pi package (`pi` key in `package.json`): the `/taste` extensi
 ## Known limits
 
 - Overlay content (dropdown menus, tooltips) portals to `<body>`, outside the variant frame. It does not get the variant's `tokens` and uses the global theme. Generated `ui/*` is not hand-edited, so this stays. In token rounds, judge the in-frame surfaces, not the overlays.
+- The library canvas theme switches tokens only. Tailwind `dark:` classes in the generated `ui/*` follow `.dark` on `<html>`, so a light canvas in a dark lab still gets them (an outline button's dark fill, for one). Overlays from the canvas use the lab theme. Judge colors on a canvas that matches the lab theme.
 - `taste-lab check` and `pnpm test` parse each variant with the Vite parser. A file that does not parse is a violation. The scan is static: it cannot see colors built at runtime from strings.
 - Variant files in a data dir outside this repo get no type check. `check` validates rounds and scans files, and the browser shows import or render errors. Only `react`, `react-dom`, `lucide-react` and `class-variance-authority` resolve as bare imports, from the lab.
 - The taste log API accepts `POST` only with `Content-Type: application/json` and an `Origin` (if sent) equal to the serving origin. `ts` is set by the server. Tags outside the list are rejected with 400.

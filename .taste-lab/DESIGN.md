@@ -8,12 +8,13 @@ Distilled from `taste.jsonl`. The agent rewrites this file every ~5 rounds. Each
 
 ## Settled pages
 
-| Page    | Settled as                                                | Rounds               |
-| ------- | --------------------------------------------------------- | -------------------- |
-| Header  | Two tiers, round menu, icon-only page nav                 | round-001, round-002 |
-| Compare | No heading, full-width frame, one-row answer bar, no tags | round-003, round-009 |
-| History | One dense table, richer row, tags as same-size pills      | round-004, round-007 |
-| Library | Two panes: tree, canvas with toolbar, Docs, Controls      | round-005, round-008 |
+| Page    | Settled as                                                    | Rounds               |
+| ------- | ------------------------------------------------------------- | -------------------- |
+| Header  | Two tiers, round menu, icon-only page nav                     | round-001, round-002 |
+| Compare | No heading, full-width frame, one-row answer bar, no tags     | round-003, round-009 |
+| History | One dense table, richer row, tags as same-size pills          | round-004, round-007 |
+| Library | Two panes: tree, canvas with toolbar, Docs, Controls          | round-005, round-008 |
+| Theme   | Open: round-010 asks table, swatch grid, preview or workbench | round-010 (open)     |
 
 The Compare, History and Library pages are built in `src/` from these picks. `app-header` is promoted to `library/app-header/`.
 
@@ -96,7 +97,8 @@ These are not tokens. They are fixed sizes the picks carry.
 - Closed: how much should one History answer show? One dense row with the variant label, round link, and theme and view icons. round-004 b, round-007 c.
 - Closed: list or detail for the Library? Two panes with a canvas, Docs and Controls. round-005 c, round-008 c.
 - Closed: do we need tags? Not in the answer bar. round-006 (none), round-009 a.
-- Open: the Theme page has had no round. It is the only page still on its first design.
+- Open: the Theme page is the only page still on its first design. round-010 asks how it should show tokens: a dense table, a swatch grid by role, a preview first, or a workbench like the Library. A variant can paint dark tokens inside a light page (a `.dark` wrapper) but not light ones inside a dark page, so judge it with the lab in light. The built page sets values inline, as the Library canvas does.
+- Open: the `lab` fixture has a `theme` part (32 tokens, 3 from theme.css, 3 sample ignored parts) for Theme rounds. Its values copy src/index.css and theme.css; update them when theme.css changes.
 - Open: round-009 a was picked with no reason and the tag "clean". Does the one-line reason get used when it is the only free-text field? Check the next answers for empty reasons.
 - Open: History has no filter or search. At about 30 answers the table may need one. Raise it when the log grows.
 - Open: the History tags column holds two pills and a `+n`. The log no longer gets new tags, so the column will empty out. Decide whether to drop it once most rows are blank.

@@ -14,6 +14,12 @@ export type {
   SampleVariant,
   Tag,
   Theme,
+  ThemeProblem,
+  ThemeState,
+  ThemeToken,
+  TokenCell,
+  TokenGroup,
+  TokenSource,
   View,
 } from "./types";
 export { lab };

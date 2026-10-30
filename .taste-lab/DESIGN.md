@@ -4,7 +4,7 @@ This lab tunes taste-lab's own interface with taste-lab. Rounds compare designs 
 
 Serve it from the repo root with `node bin/taste-lab.mjs serve --dir .taste-lab`. A pick here becomes a change in `src/`, made after the round is answered.
 
-Distilled from `taste.jsonl`. The agent rewrites this file every ~5 rounds. Each rule cites the rounds that support it and quotes the operator where it helps. Distilled through round-009 (9 answers: 7 picks, 1 mix, 1 none. Two picks came with no reason).
+Distilled from `taste.jsonl`. The agent rewrites this file every ~5 rounds. Each rule cites the rounds that support it and quotes the operator where it helps. Distilled through round-009 (9 answers: 7 picks, 1 mix, 1 none. One pick, round-009 a, came with no reason).
 
 ## Settled pages
 

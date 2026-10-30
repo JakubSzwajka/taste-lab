@@ -13,7 +13,6 @@ import { checkDataDir } from "../cli/check";
 import { initDataDir } from "../cli/init";
 import { run } from "../cli/main";
 import { tasteLab } from "../server/vite-plugin";
-import { ThemeView } from "../src/components/ThemeView";
 import { VariantFrame } from "../src/components/VariantFrame";
 import { hrefFor, parseHash } from "../src/lib/route";
 import {
@@ -302,61 +301,8 @@ describe("loader order", () => {
   });
 });
 
+// The page itself is covered in tests/theme-view.test.tsx (happy-dom).
 describe("Theme page", () => {
-  const render = (themeCss: string) => {
-    const { theme, problems } = parseTheme(themeCss, allowed);
-    return renderToStaticMarkup(
-      <ThemeView stock={stock} theme={theme} problems={problems} />,
-    );
-  };
-
-  it("marks nothing when theme.css is empty", () => {
-    const html = render("");
-    expect(html).toContain("Every token is stock");
-    expect(html).not.toContain('data-source="theme"');
-    for (const n of [
-      "--background",
-      "--chart-5",
-      "--sidebar-ring",
-      "--radius",
-    ]) {
-      expect(html).toContain(n);
-    }
-  });
-
-  it("marks overridden tokens and lists problems", () => {
-    const html = render(
-      ":root { --primary: hotpink; }\n.dark { --ring: teal; }\n.x {}",
-    );
-    expect(html).toContain("2 of ");
-    expect(html.match(/data-source="theme"/g)).toHaveLength(2);
-    expect(html).toContain("theme.css (light)");
-    expect(html).toContain("theme.css (dark)");
-    expect(html).toContain("theme.css:3:");
-    expect(html).toContain("hotpink");
-  });
-
-  it("shows --radius as a sample box with that radius", () => {
-    const html = render(":root { --radius: 1rem; }");
-    expect(html).toContain("border-radius:1rem");
-  });
-
-  it("resolves each swatch column in its own mode", () => {
-    const html = render(
-      ":root { --primary: var(--destructive); }\n.dark { --primary: var(--destructive); }",
-    );
-    const row = /data-source="theme"[\s\S]*?<\/tr>/.exec(html)?.[0] ?? "";
-    const swatches = [...row.matchAll(/<span role="img"[^>]*style="([^"]*)"/g)];
-    expect(swatches).toHaveLength(2);
-    const [light, dark] = swatches.map((m) => m[1]);
-    const val = (style: string, name: string) =>
-      new RegExp(`${name}:([^;]+)`).exec(style)?.[1];
-    expect(light).toContain("background-color:var(--destructive)");
-    expect(val(light, "--destructive")).toBe(stock.light["--destructive"]);
-    expect(val(dark, "--destructive")).toBe(stock.dark["--destructive"]);
-    expect(val(light, "--destructive")).not.toBe(val(dark, "--destructive"));
-  });
-
   it("has a route", () => {
     expect(parseHash("#/theme")).toEqual({ page: "theme" });
     expect(hrefFor({ page: "theme" })).toBe("#/theme");

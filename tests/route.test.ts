@@ -26,6 +26,20 @@ describe("parseHash", () => {
     expect(hrefFor({ page: "library" })).toBe("#/library");
   });
 
+  it("parses a library example and round-trips it", () => {
+    expect(parseHash("#/library/task-card/ManyTags")).toEqual({
+      page: "library-entry",
+      name: "task-card",
+      example: "ManyTags",
+    });
+    const r = { page: "library-entry", name: "a/b", example: "c d" } as const;
+    expect(hrefFor(r)).toBe("#/library/a%2Fb/c%20d");
+    expect(parseHash(hrefFor(r))).toEqual(r);
+    expect(parseHash("#/library/task-card/")).toEqual({ page: "library" });
+    expect(parseHash("#/library/a/b/c")).toEqual({ page: "library" });
+    expect(parseHash("#/library/a/%")).toEqual({ page: "library" });
+  });
+
   it("decodes escaped ids and round-trips hrefFor", () => {
     const r = parseHash(hrefFor({ page: "round", id: "a b" }));
     expect(r).toEqual({ page: "round", id: "a b" });

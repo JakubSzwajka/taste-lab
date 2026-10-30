@@ -1,9 +1,13 @@
 import { CircleAlert } from "lucide-react";
 import { useMemo, useState } from "react";
-import { LibraryCanvas } from "@/components/library/LibraryCanvas";
-import { LibraryDocs, StatusBadge } from "@/components/library/LibraryDocs";
+import { StatusBadge } from "@/components/library/LibraryDocs";
 import { LibraryTree } from "@/components/library/LibraryTree";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  LibraryWorkbench,
+  PageBar,
+} from "@/components/library/LibraryWorkbench";
+import { setCanvasPrefs, useCanvasPrefs } from "@/components/library/prefs";
+import { SidebarProvider } from "@/components/ui/sidebar";
 import type { LibraryEntry } from "@/lib/library";
 import type { LoadedRound } from "@/lib/rounds";
 import { hrefFor } from "@/lib/route";
@@ -62,8 +66,9 @@ type LibraryPageProps = {
 };
 
 /**
- * The Library page, Storybook style (round-008 c): a tree of entries and their
- * examples, then a Canvas tab (toolbar, live example, Controls) and a Docs tab.
+ * The Library page, Storybook style (round-008 c), full-bleed under the app
+ * header: a sidebar of entries and their examples, then Canvas and Docs tabs
+ * over a resizable Controls panel.
  */
 export function LibraryPage({
   entries,
@@ -84,6 +89,7 @@ export function LibraryPage({
     setPicked({ name, example });
   }
   const [tab, setTab] = useState("canvas");
+  const { sidebar } = useCanvasPrefs();
   const known = useMemo(
     () => (rounds ? new Set(rounds.map((r) => r.id)) : undefined),
     [rounds],
@@ -91,7 +97,7 @@ export function LibraryPage({
 
   if (entries.length === 0) {
     return (
-      <div className="flex flex-col gap-2">
+      <div className="flex flex-col gap-2 px-4 py-6">
         <h1 className="text-2xl font-semibold tracking-tight">Library</h1>
         <p className="max-w-prose text-muted-foreground">
           No components yet. When a direction is settled, the agent promotes the
@@ -121,7 +127,12 @@ export function LibraryPage({
   };
 
   return (
-    <div className="flex h-[calc(100svh-6.5rem)] min-h-[32rem] overflow-hidden rounded-lg border bg-background">
+    <SidebarProvider
+      open={sidebar}
+      onOpenChange={(open) => setCanvasPrefs({ sidebar: open })}
+      // The sidebar is absolute in here, so it starts under the app header.
+      className="relative min-h-0 flex-1 overflow-hidden"
+    >
       <LibraryTree
         entries={entries}
         entryName={entry?.name}
@@ -131,44 +142,35 @@ export function LibraryPage({
           setTab("canvas");
         }}
       />
-      {!entry ? (
-        <p className="p-6 text-muted-foreground">
-          No library entry called {entryName}.
-        </p>
-      ) : !entry.ok ? (
-        <Errors name={entry.name} errors={entry.errors} />
-      ) : (
-        <Tabs
-          value={tab}
-          onValueChange={setTab}
-          className="min-w-0 flex-1 gap-0"
-        >
-          <div className="flex h-11 shrink-0 items-center gap-3 border-b px-4">
-            <TabsList variant="line">
-              <TabsTrigger value="canvas">Canvas</TabsTrigger>
-              <TabsTrigger value="docs">Docs</TabsTrigger>
-            </TabsList>
-            <p className="min-w-0 flex-1 truncate font-mono text-xs text-muted-foreground">
-              {entry.name}
-              {shown && ` / ${shown.export}`}
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col bg-background">
+        {!entry ? (
+          <>
+            <PageBar />
+            <p className="p-6 text-muted-foreground">
+              No library entry called {entryName}.
             </p>
-          </div>
-          <TabsContent value="canvas" className="min-h-0">
-            {shown && (
-              <LibraryCanvas
-                key={`${entry.name}/${shown.export}`}
-                entry={entry}
-                example={shown}
-                light={light}
-              />
-            )}
-          </TabsContent>
-          <TabsContent value="docs" className="min-h-0 overflow-y-auto">
-            <LibraryDocs entry={entry} rounds={known} onOpen={open} />
-          </TabsContent>
-        </Tabs>
-      )}
-    </div>
+          </>
+        ) : !entry.ok ? (
+          <>
+            <PageBar />
+            <Errors name={entry.name} errors={entry.errors} />
+          </>
+        ) : (
+          shown && (
+            <LibraryWorkbench
+              key={`${entry.name}/${shown.export}`}
+              entry={entry}
+              example={shown}
+              light={light}
+              tab={tab}
+              onTab={setTab}
+              rounds={known}
+              onOpen={open}
+            />
+          )
+        )}
+      </div>
+    </SidebarProvider>
   );
 }
 

@@ -70,7 +70,9 @@ Allowed imports, nothing else:
 | `lucide-react`             | icons                   |
 | `class-variance-authority` | `cva` variants          |
 
-Available primitives: `avatar`, `badge`, `breadcrumb`, `button`, `card`, `checkbox`, `dropdown-menu`, `input`, `progress`, `separator`, `table`, `tabs`, `textarea`, `toggle`, `toggle-group`, `tooltip`.
+Available primitives: `avatar`, `badge`, `breadcrumb`, `button`, `card`, `checkbox`, `dropdown-menu`, `input`, `progress`, `resizable`, `separator`, `sheet`, `sidebar`, `skeleton`, `table`, `tabs`, `textarea`, `toggle`, `toggle-group`, `tooltip`.
+
+`sidebar` needs a `SidebarProvider` and is `fixed` to the viewport by default. Inside a frame, give the provider `relative` and the `Sidebar` `className="absolute h-full"`, as the Library page does. `resizable` wraps `react-resizable-panels`.
 
 `@/fixtures` resolves to `<dataDir>/fixtures/index.ts`. `@/library/<name>/<Name>` resolves to `<dataDir>/library/<name>/<Name>.tsx`. Nothing deeper or looser is allowed. `@/components/ui/*` and `@/lib/utils` resolve to the lab's own stock primitives. `react`, `lucide-react` and `class-variance-authority` come from the lab's `node_modules`, so a data dir needs no install.
 
@@ -322,10 +324,12 @@ export function Default(args: TaskCardArgs) {
 
 `#/library` opens the first entry. `#/library/<name>` opens an entry on its first example, and `#/library/<name>/<example>` on that example. It works like Storybook (round-008 c):
 
-- Left: a tree of entries, each with its examples and their width. The chevron folds an entry.
+- The page is full-bleed under the app header, like Compare: the full width and the full height below the header, with no outer card or border.
+- Left: the stock shadcn `sidebar` with the entries, each with its status and its examples with their width. The chevron folds an entry. The trigger left of the tabs (or Ctrl/Cmd+B) collapses the sidebar. Under 768px it is the primitive's off-canvas sheet, which closes on a pick.
 - Canvas tab: the live example under a toolbar. Width is Column 420 or Full width; it starts at the example's `width`. Theme is light or dark for the canvas only. Background is plain (`bg-background`) or muted (`bg-muted`). Theme and background stay set across entries and reloads. Until you pick a canvas theme it follows the lab.
 - A dark canvas is a `.dark` scope. A light canvas sets the light token values (stock `:root`, then `theme.css` `:root`) as inline custom properties, the way round tokens win over `.dark` on `<html>`. So both work in either lab theme.
-- Controls panel under the canvas, when the entry has `controls`: one row per prop, with a checkbox, toggles (a menu for more than 4 options), a text field or a number field, and the current value or "unset".
+- Controls panel under the tabs, when the entry has `controls`: one row per prop, with a checkbox, toggles (a menu for more than 4 options), a text field or a number field, and the current value or "unset". It is the bottom of a vertical `resizable` split. Its header bar has Reset, collapse or expand, and expand to full or restore. Drag the handle, or focus it and use the arrow keys, to resize. Dragged below its minimum it collapses to the header bar. Full hides the canvas until you restore. It opens at a height that fits every control; it scrolls only when dragged smaller. An entry without controls has no panel.
+- The sidebar state, the panel state (open, collapsed or full) and the dragged height stay set across entries and reloads, with the canvas theme and background (`localStorage` key `taste-lab-canvas`).
 - Docs tab: title, status, description, examples (each opens its canvas), the controls table, rules, and provenance with links to `#/round/<id>`. A round that no longer exists is marked "round not found".
 - A broken entry (bad `meta.json`, missing file, missing export) shows its errors in place and does not break the page. An example that throws shows its error in the canvas. The next control change tries again.
 

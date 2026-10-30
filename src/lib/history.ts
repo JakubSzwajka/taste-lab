@@ -15,11 +15,21 @@ export type HistoryRow = {
   moreTags: number;
 };
 
-/** Newest first. Equal timestamps keep the later log line first. */
+/** The instant of a timestamp in ms. Unreadable ones sort as the oldest. */
+const instant = (ts: string) => {
+  const t = Date.parse(ts);
+  return Number.isNaN(t) ? Number.NEGATIVE_INFINITY : t;
+};
+
+/**
+ * Newest first by instant, not by string: the log accepts ISO offsets, so
+ * "10:00+02:00" is older than "09:00Z". Equal instants keep the later log line
+ * first.
+ */
 export function sortNewestFirst(entries: TasteEntry[]): TasteEntry[] {
   return entries
-    .map((e, i) => ({ e, i }))
-    .sort((a, b) => b.e.ts.localeCompare(a.e.ts) || b.i - a.i)
+    .map((e, i) => ({ e, i, t: instant(e.ts) }))
+    .sort((a, b) => (a.t === b.t ? b.i - a.i : b.t > a.t ? 1 : -1))
     .map((x) => x.e);
 }
 

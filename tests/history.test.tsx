@@ -85,6 +85,27 @@ describe("historyRows", () => {
       "old",
     ]);
   });
+  it("sorts by instant, not by string, across UTC offsets", () => {
+    // As strings "10:00+02:00" sorts after "09:00Z", but it is 08:00Z: older.
+    const older = entry({ ts: "2026-10-30T10:00:00+02:00", reason: "older" });
+    const newer = entry({ ts: "2026-10-30T09:00:00Z", reason: "newer" });
+    expect(sortNewestFirst([newer, older]).map((e) => e.reason)).toEqual([
+      "newer",
+      "older",
+    ]);
+    expect(sortNewestFirst([older, newer]).map((e) => e.reason)).toEqual([
+      "newer",
+      "older",
+    ]);
+  });
+  it("keeps the later line first when offsets name the same instant", () => {
+    const a = entry({ ts: "2026-10-30T10:00:00+02:00", reason: "line 1" });
+    const b = entry({ ts: "2026-10-30T08:00:00.000Z", reason: "line 2" });
+    expect(sortNewestFirst([a, b]).map((e) => e.reason)).toEqual([
+      "line 2",
+      "line 1",
+    ]);
+  });
   it("collapses tags past two into a count and keys duplicates apart", () => {
     const e = entry({ tags: ["clean", "airy", "quiet", "loud"] });
     const rows = historyRows([e, e], rounds);

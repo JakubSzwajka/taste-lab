@@ -8,12 +8,12 @@ Distilled from `taste.jsonl`. The agent rewrites this file every ~5 rounds. Each
 
 ## Settled pages
 
-| Page    | Settled as                                                | Rounds                |
-| ------- | --------------------------------------------------------- | --------------------- |
-| Header  | Two tiers, round menu, icon-only page nav                 | round-001, round-002  |
-| Compare | No heading, full-width frame, one-row answer bar, no tags | round-003, round-009  |
-| History | One dense table, richer row, tags as same-size pills      | round-004, round-007  |
-| Library | Two panes: tree, canvas with toolbar, Docs, Controls      | round-005, round-008  |
+| Page    | Settled as                                                | Rounds               |
+| ------- | --------------------------------------------------------- | -------------------- |
+| Header  | Two tiers, round menu, icon-only page nav                 | round-001, round-002 |
+| Compare | No heading, full-width frame, one-row answer bar, no tags | round-003, round-009 |
+| History | One dense table, richer row, tags as same-size pills      | round-004, round-007 |
+| Library | Two panes: tree, canvas with toolbar, Docs, Controls      | round-005, round-008 |
 
 The Compare, History and Library pages are built in `src/` from these picks. `app-header` is promoted to `library/app-header/`.
 
@@ -82,12 +82,12 @@ Copied from `examples/demo` round-007 a (one taste across repos). Judged in dark
 
 These are not tokens. They are fixed sizes the picks carry.
 
-| Part                 | Size                                         | Evidence             |
-| -------------------- | -------------------------------------------- | -------------------- |
-| Header page icons    | 20px in a 40px bar                           | round-002 b          |
-| Header round arrows  | 20px icons in 36px buttons                   | round-002 b          |
-| Library column width | about 420px (`column`), or `full`            | round-008 c          |
-| History pick pill    | one fixed width (192px), tag pills 80px      | round-004 b, round-007 c |
+| Part                 | Size                                    | Evidence                 |
+| -------------------- | --------------------------------------- | ------------------------ |
+| Header page icons    | 20px in a 40px bar                      | round-002 b              |
+| Header round arrows  | 20px icons in 36px buttons              | round-002 b              |
+| Library column width | about 420px (`column`), or `full`       | round-008 c              |
+| History pick pill    | one fixed width (192px), tag pills 80px | round-004 b, round-007 c |
 
 ## Open questions
 

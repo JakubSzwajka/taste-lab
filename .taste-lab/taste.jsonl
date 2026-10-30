@@ -5,3 +5,4 @@
 {"ts":"2026-10-29T22:45:54.266Z","round":"round-005","component":"library-page","level":"layout","shown":["a","b","c"],"pick":"c","tags":[],"reason":"C because it gives me potentially preview functionality like a story book!","theme":"dark","view":"flip"}
 {"ts":"2026-10-29T22:46:32.339Z","round":"round-006","component":"compare-page","level":"layout","shown":["a","b","c"],"pick":"none","tags":[],"reason":"do we even need those tags?","theme":"dark","view":"flip"}
 {"ts":"2026-10-30T08:34:04.253Z","round":"round-007","component":"history-page","level":"layout","shown":["a","b","c"],"pick":"c","tags":[],"reason":"all are quite equal yet C the best i think. tags can be pills ?","theme":"dark","view":"flip"}
+{"ts":"2026-10-30T09:14:49.587Z","round":"round-008","component":"library-page","level":"layout","shown":["a","b","c"],"pick":"c","tags":[],"reason":"C seems nice! almost like storybook","theme":"dark","view":"flip"}

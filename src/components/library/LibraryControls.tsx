@@ -26,10 +26,10 @@ import {
   type LibraryControl,
   parseNumber,
 } from "@/lib/library-controls";
+import { menuOptionId, menuOptionValue, UNSET_ID } from "./menu-options";
 
 /** Selects with more options than this use a menu instead of toggles. */
 const MAX_TOGGLES = 4;
-const UNSET = "\u0000unset";
 
 /** Storybook-style args table under the canvas. One row per declared control. */
 export function LibraryControls({
@@ -205,16 +205,21 @@ function SelectControl({
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start">
+        {/* Radio values are internal ids, so any option string is safe. */}
         <DropdownMenuRadioGroup
-          value={value ?? UNSET}
-          onValueChange={(v) => onChange(v === UNSET ? undefined : v)}
+          value={menuOptionId(options, value)}
+          onValueChange={(id) => onChange(menuOptionValue(options, id))}
         >
-          <DropdownMenuRadioItem value={UNSET} className="text-xs">
+          <DropdownMenuRadioItem value={UNSET_ID} className="text-xs">
             unset
           </DropdownMenuRadioItem>
           <DropdownMenuSeparator />
           {options.map((o) => (
-            <DropdownMenuRadioItem key={o} value={o} className="font-mono">
+            <DropdownMenuRadioItem
+              key={o}
+              value={menuOptionId(options, o)}
+              className="font-mono"
+            >
               {o}
             </DropdownMenuRadioItem>
           ))}

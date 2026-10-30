@@ -4,14 +4,32 @@
   "description": "Projects at full width, one line per cell: name, owner with avatar, status pill with a dot, progress bar, budget, last update. Compact 10px rows.",
   "status": "agreed",
   "examples": [
-    { "export": "Default", "title": "All projects", "width": "full" },
-    { "export": "FewRows", "title": "Few rows", "width": "full" },
+    {
+      "export": "Default",
+      "title": "All projects",
+      "width": "full"
+    },
+    {
+      "export": "FewRows",
+      "title": "Few rows",
+      "width": "full",
+      "args": {
+        "count": 3
+      }
+    },
     {
       "export": "AtRiskMixed",
       "title": "At risk among other statuses",
       "width": "full"
     },
-    { "export": "Empty", "title": "No projects", "width": "full" }
+    {
+      "export": "Empty",
+      "title": "No projects",
+      "width": "full",
+      "args": {
+        "count": 0
+      }
+    }
   ],
   "provenance": [
     {
@@ -35,5 +53,23 @@
     "Compact rows: 10px top and bottom (round-006).",
     "Status is a pill with a colored dot inside (round-006).",
     "Headers are small, normal weight and muted (round-004, round-006; weight not tested on its own)."
+  ],
+  "controls": [
+    {
+      "prop": "status",
+      "kind": "select",
+      "options": ["active", "paused", "at-risk", "done"],
+      "label": "Only rows with this status"
+    },
+    {
+      "prop": "count",
+      "kind": "number",
+      "label": "Rows shown (0 shows the empty state)"
+    },
+    {
+      "prop": "owner",
+      "kind": "text",
+      "label": "Owner name on every row (try a long one)"
+    }
   ]
 }

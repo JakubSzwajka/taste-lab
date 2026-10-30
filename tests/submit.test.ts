@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import type { LogResponse } from "../src/lib/api";
-import { submitEntry } from "../src/lib/submit";
-import type { TasteEntry } from "../src/lib/taste";
+import { answerEntry, canSubmit, submitEntry } from "../src/lib/submit";
+import { type TasteEntry, validateEntry } from "../src/lib/taste";
 
 const entry: TasteEntry = {
   ts: "2026-01-02T03:04:05.000Z",
@@ -98,5 +98,63 @@ describe("submitEntry", () => {
     ).rejects.toThrow("POST failed (400)");
     expect(refresh).not.toHaveBeenCalled();
     expect(h.onSaved).not.toHaveBeenCalled();
+  });
+});
+
+describe("canSubmit", () => {
+  it("needs a pick", () => {
+    expect(canSubmit("", "")).toBe(false);
+    expect(canSubmit("a", "")).toBe(true);
+    expect(canSubmit("none", "")).toBe(true);
+  });
+
+  it("Mix needs a non-blank reason", () => {
+    expect(canSubmit("mix", "")).toBe(false);
+    expect(canSubmit("mix", "   ")).toBe(false);
+    expect(canSubmit("mix", "a's header, b's rows")).toBe(true);
+  });
+
+  it("blocks while a save runs", () => {
+    expect(canSubmit("a", "ok", true)).toBe(false);
+  });
+});
+
+describe("answerEntry", () => {
+  const round = {
+    id: "round-009",
+    component: "compare-page",
+    level: "layout" as const,
+    variants: [{ id: "a" }, { id: "b" }, { id: "c" }],
+  };
+
+  it("builds the POST body with empty tags and a trimmed reason", () => {
+    expect(
+      answerEntry(
+        round,
+        { pick: "b", reason: "  less noise ", view: "flip" },
+        "dark",
+      ),
+    ).toEqual({
+      round: "round-009",
+      component: "compare-page",
+      level: "layout",
+      shown: ["a", "b", "c"],
+      pick: "b",
+      tags: [],
+      reason: "less noise",
+      theme: "dark",
+      view: "flip",
+    });
+  });
+
+  it("the body passes the log validator", () => {
+    const body = answerEntry(
+      round,
+      { pick: "mix", reason: "a + c", view: "columns" },
+      "light",
+    );
+    const v = validateEntry(body);
+    expect(v.ok).toBe(true);
+    if (v.ok) expect(v.entry.tags).toEqual([]);
   });
 });

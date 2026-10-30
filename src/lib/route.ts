@@ -6,7 +6,7 @@ export type Route =
   | { page: "history" }
   | { page: "theme" }
   | { page: "library" }
-  | { page: "library-entry"; name: string };
+  | { page: "library-entry"; name: string; example?: string };
 
 export function parseHash(hash: string): Route {
   const path = hash.replace(/^#\/?/, "");
@@ -14,8 +14,20 @@ export function parseHash(hash: string): Route {
   if (path === "theme") return { page: "theme" };
   if (path === "library") return { page: "library" };
   if (path.startsWith("library/") && path.length > 8) {
+    // `library/<name>` or `library/<name>/<example>`. Each part is encoded, so a
+    // raw "/" only ever separates them.
+    const [name, example, ...rest] = path.slice(8).split("/");
     try {
-      return { page: "library-entry", name: decodeURIComponent(path.slice(8)) };
+      if (rest.length > 0 || name === "" || example === "") {
+        return { page: "library" };
+      }
+      return example === undefined
+        ? { page: "library-entry", name: decodeURIComponent(name) }
+        : {
+            page: "library-entry",
+            name: decodeURIComponent(name),
+            example: decodeURIComponent(example),
+          };
     } catch {
       return { page: "library" };
     }
@@ -38,7 +50,9 @@ export const hrefFor = (r: Route) =>
       : r.page === "library"
         ? "#/library"
         : r.page === "library-entry"
-          ? `#/library/${encodeURIComponent(r.name)}`
+          ? `#/library/${encodeURIComponent(r.name)}${
+              r.example === undefined ? "" : `/${encodeURIComponent(r.example)}`
+            }`
           : r.page === "round"
             ? `#/round/${encodeURIComponent(r.id)}`
             : "#/";

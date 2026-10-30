@@ -1,12 +1,20 @@
 import { lab } from "./lab";
 
 export type {
+  HistoryEntry,
   LabRound,
   LabState,
   Level,
+  LibraryItem,
+  LibraryStatus,
   Page,
   RoundStatus,
+  Sample,
+  SampleTask,
+  SampleVariant,
   Tag,
+  Theme,
+  View,
 } from "./types";
 export { lab };
 

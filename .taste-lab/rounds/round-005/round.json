@@ -1,0 +1,29 @@
+{
+  "id": "round-005",
+  "level": "layout",
+  "component": "library-page",
+  "question": "Which Library page? Same 4 entries in each (2 agreed, 1 draft, 1 broken), under the agreed header. A is today's card grid. B makes the cards denser and shows where each came from. C puts the list and one entry's details side by side, so there is no separate detail page. Click entries in C.",
+  "fixture": "lab",
+  "basedOn": { "round": "round-002", "pick": "b" },
+  "preview": "flip",
+  "variants": [
+    {
+      "id": "a",
+      "file": "a.tsx",
+      "label": "Today (control)",
+      "changes": "Copy of today's LibraryView: a page heading, then up to 3 cards per row with title and status badge, description and example count. The broken entry is a red card with its errors."
+    },
+    {
+      "id": "b",
+      "file": "b.tsx",
+      "label": "Dense card grid",
+      "changes": "Up to 4 smaller cards per row. Status and example count as two same-size pills on top, then title, a 2-line description and the source rounds in a footer. Small page title with the entry count. Tests more entries per screen."
+    },
+    {
+      "id": "c",
+      "file": "c.tsx",
+      "label": "List and detail",
+      "changes": "A 288px entry list on the left (title, status pill, example count). The right pane shows the selected entry: description, examples, provenance and rules. Tests one page instead of list plus detail."
+    }
+  ]
+}

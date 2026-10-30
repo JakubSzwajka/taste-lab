@@ -1,6 +1,6 @@
 # taste-lab
 
-A local shadcn app for tuning UI taste. You compare 2 to 4 component variants side by side, pick one, tag it and say why. An agent reads that log and writes the next round. The app never calls an LLM.
+A local shadcn app for tuning UI taste. You compare 2 to 4 component variants side by side, pick one and say why. An agent reads that log and writes the next round. The app never calls an LLM.
 
 The taste data for an app lives in a `.taste-lab` folder in that app's repo. This lab serves any such folder.
 
@@ -73,11 +73,12 @@ The server's stderr goes to a log in a private folder in the OS temp dir (`taste
 1. Open the URL. The current round is the first one with no answer.
    The header has two rows. The top row shows `taste-lab / <name> / <round>`. Click the round to open a menu of every round with its status (pick, open or error). On the right are icon buttons for Compare, Library, Theme and History, then the light or dark switch. On Compare pages, a second row shows `<` and `>` to step through rounds, the round's question, its pick and "n of N answered".
 2. Toggle light or dark. All variants switch.
-3. Pick with keys `1` to `4`, `n` for none, `m` for mix. Add tags and a reason. Press Enter to submit. In the reason box, use Ctrl/Cmd+Enter. Enter on a focused button or link keeps its normal action (toggle, follow) and does not submit.
+3. Compare has no page heading: the header's round tier shows the question. One answer bar is pinned to the bottom: the picks (A to D, None, Mix), a one-line reason that fills the row, and Submit. There are no tags. Mix needs a reason.
+   Keys: `1` to `4` pick and show that variant, `n` picks None, `m` picks Mix and focuses the reason, `r` focuses the reason and `Esc` leaves it. Enter (or Ctrl/Cmd+Enter) in the reason submits. On the page, Enter submits unless a button, link or toggle has focus. Shift+Enter and Alt+Enter do nothing, and pasted line breaks become spaces.
    A view switch ("Side by side" or "Full width") sits above the variants. Full width shows one variant at full page width with A/B/C tabs. `←` and `→` flip between variants and wrap around. Number keys pick and also show that variant. Arrow keys do nothing while the reason box or a toggle, tab or menu has focus. Use full width for tables and layouts that need room.
 4. Each submit appends one line to `.taste-lab/taste.jsonl` in the served folder and moves to the next round.
-5. Open History to see past answers, newest first.
-6. Open Library to see the agreed components: each entry has examples at their width, the rounds it came from (links to `#/round/<id>`) and its rules.
+5. Open History to see past answers, newest first, in one table. Each row has the date, the round (a link to it), a pick pill with the winning variant's label, tag pills (old answers only), the reason, and the theme and view as icons.
+6. Open Library to see the agreed components, laid out like Storybook. The left pane is a tree of entries and their examples. The Canvas tab shows one example live, with a toolbar for width (Column 420 or Full width), a light or dark canvas, and a plain or muted background. When the entry declares controls, a Controls panel under the canvas edits its props live. The Docs tab has the description, rules and the rounds it came from (links to `#/round/<id>`).
 
 7. Open Theme to see every shadcn token as a swatch in light and dark. Values from `theme.css` are marked. The rest are stock. `--radius` shows as a sample box.
 
@@ -157,7 +158,9 @@ To promote a token round winner, copy the winning variant's `tokens` into `:root
 
 ## Library
 
-`library/<name>/` holds a component the operator agreed on, with examples and provenance. Names are kebab-case. The component is a named export `<Name>` in `<Name>.tsx`, takes its data through props and follows the variant rules (shadcn only, no raw colors, no `style` prop). `examples.tsx` holds named no-props components, one per example or state, and may import `@/fixtures`. `meta.json` has `name`, `title`, `description`, `status` (`draft` or `agreed`), `examples` (`export`, `title`, `width` of `column` or `full`), `provenance` (`round`, `pick`, `note`) and `rules`.
+`library/<name>/` holds a component the operator agreed on, with examples and provenance. Names are kebab-case. The component is a named export `<Name>` in `<Name>.tsx`, takes its data through props and follows the variant rules (shadcn only, no raw colors, no `style` prop). `examples.tsx` holds named components with no required props, one per example or state, and may import `@/fixtures`. `meta.json` has `name`, `title`, `description`, `status` (`draft` or `agreed`), `examples` (`export`, `title`, `width` of `column` or `full`, optional `args`), `provenance` (`round`, `pick`, `note`), `rules` and optional `controls`.
+
+`controls` lists the props the Controls panel edits: `{ "prop", "kind", "options"?, "default"?, "label"? }`, with `kind` one of `boolean`, `select`, `text` or `number`. Only `select` takes `options`, and it needs them. An example's `args` sets its starting values; each key must be a declared prop. The canvas renders `<Example {...values} />`, and the example merges those values over its fixture data. `check` validates both. The full rules are in [AGENTS.md](AGENTS.md).
 
 Round variants can import a library component as `@/library/<name>/<Name>`, to iterate on an agreed component. To promote a winner, copy the winning variant into `library/<name>/`, turn the fixture use into props, add examples and write `meta.json` with the rounds it came from. Details and the full contract are in [AGENTS.md](AGENTS.md). Variants may also import `class-variance-authority`, so a round can copy a library component that uses `cva`.
 

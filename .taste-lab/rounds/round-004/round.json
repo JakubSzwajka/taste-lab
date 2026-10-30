@@ -1,0 +1,29 @@
+{
+  "id": "round-004",
+  "level": "layout",
+  "component": "history-page",
+  "question": "Which History page? Same 12 answers in each, under the agreed header. A is today: one big card per answer with the winning variant rendered in it. B and C drop the rendered winner and test how much one answer needs: B a dense table, C a timeline by day with the reason as a quote. Scroll inside each screen.",
+  "fixture": "lab",
+  "basedOn": { "round": "round-002", "pick": "b" },
+  "preview": "flip",
+  "variants": [
+    {
+      "id": "a",
+      "file": "a.tsx",
+      "label": "Today (control)",
+      "changes": "Copy of today's HistoryView: a page heading, then one card per answer with round, component, pick, time and theme, tags as badges, the reason, and the winning variant in its frame (grey blocks stand in for it here)."
+    },
+    {
+      "id": "b",
+      "file": "b.tsx",
+      "label": "Dense table",
+      "changes": "One table, one row per answer: date, round, pick, tags, reason. Tags as quiet text, the pick as one fixed-width pill, long reasons cut to one line. Tests whether the log reads best as data."
+    },
+    {
+      "id": "c",
+      "file": "c.tsx",
+      "label": "Timeline by day",
+      "changes": "Answers grouped under a day heading on a thin line. Each answer is one line (time, round, pick, tags) with the reason as a quiet quote under it. Tests whether the reasons, not the picks, should lead."
+    }
+  ]
+}

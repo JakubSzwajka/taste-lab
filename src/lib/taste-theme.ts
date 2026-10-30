@@ -373,3 +373,14 @@ export function themeToCss(stock: TokenBlocks, theme: TokenBlocks): string {
   const out = `${block(":root", root)}${block(".dark", Object.entries(dark))}`;
   return out === "" ? "" : `/* taste theme (theme.css) */\n${out}`;
 }
+
+/**
+ * Every token's light value: theme.css `:root` over stock `:root`. The library
+ * canvas sets these inline to force a light canvas while the lab is dark, the
+ * same way round tokens win over `.dark` on <html>.
+ */
+export function lightTokens(stock: TokenBlocks, theme: TokenBlocks): TokenMap {
+  return Object.fromEntries(
+    resolveTokens(stock, theme).map((r) => [r.name, r.light.value]),
+  );
+}

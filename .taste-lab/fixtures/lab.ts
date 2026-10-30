@@ -5,11 +5,143 @@ import type {
   LibraryItem,
   Page,
   Sample,
+  SampleVariant,
   Tag,
 } from "./types";
 
+/**
+ * round.json `variants` (label, changes) for each answered round, so a
+ * History row can name the winner. Merged into `rounds` below.
+ */
+const variantsByRound: Record<string, SampleVariant[]> = {
+  "round-001": [
+    {
+      id: "a",
+      label: "Dense outline",
+      changes: "1px border, 12px padding, meta inline with the title.",
+    },
+    {
+      id: "b",
+      label: "Soft surface",
+      changes: "No border, muted fill, status as a dot.",
+    },
+    {
+      id: "c",
+      label: "Airy stack",
+      changes: "More padding, title first, tags and owner in a footer.",
+    },
+    {
+      id: "d",
+      label: "Compact row",
+      changes: "One line per task, meta right-aligned.",
+    },
+  ],
+  "round-002": [
+    {
+      id: "a",
+      label: "Plain rows",
+      changes: "Name, owner, status, amount. No progress column.",
+    },
+    {
+      id: "b",
+      label: "Progress bars",
+      changes: "Adds a progress bar column and last update.",
+    },
+    {
+      id: "c",
+      label: "Grouped by status",
+      changes: "One table section per status with a count.",
+    },
+  ],
+  "round-003": [
+    {
+      id: "a",
+      label: "Tags in status row",
+      changes: "Tags sit next to status and priority.",
+    },
+    {
+      id: "b",
+      label: "Tag row below title",
+      changes: "Tags get their own row under the title.",
+    },
+    {
+      id: "c",
+      label: "Two tags, then +n",
+      changes: "At most 2 tags in the status row, the rest as +n.",
+    },
+  ],
+  "round-004": [
+    {
+      id: "a",
+      label: "Full-width columns",
+      changes: "Every field in its own column at any width.",
+    },
+    {
+      id: "b",
+      label: "Stacked cells",
+      changes: "Owner and status stack under the name.",
+    },
+  ],
+  "round-005": [
+    {
+      id: "a",
+      label: "Quiet text tags",
+      changes: "Tags as muted #text, pills at natural width.",
+    },
+    {
+      id: "b",
+      label: "Quiet tags, even pills",
+      changes: "Tags as muted #text, all pills one height and width.",
+    },
+    {
+      id: "c",
+      label: "Outline badges",
+      changes: "Tags as outline badges.",
+    },
+  ],
+  "round-006": [
+    { id: "a", label: "Roomy rows", changes: "48px rows, 16px cell padding." },
+    { id: "b", label: "Medium rows", changes: "40px rows, 12px cell padding." },
+    { id: "c", label: "Compact rows", changes: "32px rows, 8px cell padding." },
+  ],
+  "round-007": [
+    { id: "a", label: "Calm blue", changes: "--primary a mid blue." },
+    { id: "b", label: "Warm amber", changes: "--primary an amber." },
+    { id: "c", label: "Neutral ink", changes: "--primary near black." },
+  ],
+  "round-009": [
+    {
+      id: "a",
+      label: "Fixed-width pills",
+      changes: "Every status pill the same width.",
+    },
+    {
+      id: "b",
+      label: "Natural width",
+      changes: "Pills as wide as their label.",
+    },
+  ],
+  "round-012": [
+    {
+      id: "a",
+      label: "Tabs",
+      changes: "Details, comments and history as tabs.",
+    },
+    {
+      id: "b",
+      label: "Side panel",
+      changes: "Meta in a right column, comments below.",
+    },
+    {
+      id: "c",
+      label: "One long form",
+      changes: "Every section stacked in one scroll.",
+    },
+  ],
+};
+
 /** A sample lab mid-way: 9 answered, 3 open, 2 broken. */
-const rounds: LabRound[] = [
+const baseRounds: LabRound[] = [
   {
     id: "round-001",
     component: "card",
@@ -129,6 +261,10 @@ const rounds: LabRound[] = [
     status: "open",
   },
 ];
+
+const rounds: LabRound[] = baseRounds.map((r) =>
+  variantsByRound[r.id] ? { ...r, variants: variantsByRound[r.id] } : r,
+);
 
 const pages: Page[] = ["Compare", "Library", "Theme", "History"];
 

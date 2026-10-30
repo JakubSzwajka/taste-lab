@@ -20,6 +20,8 @@ type RoundBase = {
   level: Level;
   /** Short form of the round question. */
   question: string;
+  /** round.json `variants`: label and changes per id. Absent when unknown. */
+  variants?: SampleVariant[];
 };
 
 /** One round as the header sees it: answered, still open, or broken. */

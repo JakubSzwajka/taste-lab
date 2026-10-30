@@ -94,6 +94,9 @@ export default function App({
   // Compare owns the rest of the page: its frame grows to fill the viewport
   // and its answer bar runs edge to edge at the bottom.
   const comparing = loaded && !!shown?.ok;
+  // Library is a full-bleed workbench: exactly the viewport under the header,
+  // with its own sidebar and panels. Nothing on it scrolls the page.
+  const fullBleed = comparing || onLibrary;
 
   async function submit(a: Answer) {
     if (!shown?.ok || inFlight.current) return; // state lags, the ref does not
@@ -131,7 +134,14 @@ export default function App({
 
   return (
     <TooltipProvider>
-      <div className="flex min-h-svh flex-col bg-background text-foreground">
+      <div
+        data-layout={onLibrary ? "library" : comparing ? "compare" : "page"}
+        className={
+          onLibrary
+            ? "flex h-svh flex-col overflow-hidden bg-background text-foreground"
+            : "flex min-h-svh flex-col bg-background text-foreground"
+        }
+      >
         <AppHeader
           labName={labConfig.name}
           route={route}
@@ -144,12 +154,14 @@ export default function App({
 
         <main
           className={
-            comparing
-              ? "flex flex-1 flex-col"
-              : "mx-auto flex w-full max-w-[120rem] flex-col gap-6 px-4 py-6"
+            onLibrary
+              ? "flex min-h-0 flex-1 flex-col"
+              : comparing
+                ? "flex flex-1 flex-col"
+                : "mx-auto flex w-full max-w-[120rem] flex-col gap-6 px-4 py-6"
           }
         >
-          <Notices padded={comparing}>
+          <Notices padded={fullBleed}>
             {logError && (
               <p role="alert" className="text-sm text-destructive">
                 {logError === UNAUTHORIZED_MESSAGE
@@ -227,14 +239,14 @@ export default function App({
             <EmptyState hasRounds={rounds.some((r) => r.ok)} />
           )}
         </main>
-        {!comparing && <Separator />}
+        {!fullBleed && <Separator />}
       </div>
     </TooltipProvider>
   );
 }
 
 /**
- * Log and round notices. On Compare, main has no padding (the bar is
+ * Log and round notices. On Compare and Library, main has no padding (they are
  * full-bleed), so the notices get their own padded box.
  */
 function Notices({

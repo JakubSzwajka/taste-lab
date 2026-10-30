@@ -15,15 +15,9 @@ import {
   moduleProblems,
   ownExport,
 } from "@/lib/library";
-import {
-  type ControlValue,
-  type ControlValues,
-  initialValues,
-  withValue,
-} from "@/lib/library-controls";
+import type { ControlValues } from "@/lib/library-controls";
 import type { TokenMap } from "@/lib/taste-theme";
 import { cn } from "@/lib/utils";
-import { LibraryControls } from "./LibraryControls";
 import {
   type CanvasMode,
   type CanvasSurface,
@@ -65,23 +59,22 @@ function useModules(entry: OkEntry): Loaded {
 }
 
 /**
- * Canvas tab for one example: toolbar, the live example and, when the entry
- * declares `controls`, the Controls panel. Mount it with a key per example, so
- * width and control values start fresh from the example's `width` and `args`.
+ * Canvas tab for one example: toolbar and the live example. Mount it with a key
+ * per example, so the width starts fresh from the example's `width`. The
+ * control values come from the workbench, which owns the Controls panel.
  */
 export function LibraryCanvas({
   entry,
   example,
   light,
+  values,
 }: {
   entry: OkEntry;
   example: LibraryExample;
   /** Light token values (stock plus theme.css :root), for a light canvas in a dark lab. */
   light: TokenMap;
+  values: ControlValues;
 }) {
-  const { controls } = entry.meta;
-  const start = () => initialValues(controls, example.args);
-  const [values, setValues] = useState<ControlValues>(start);
   const [width, setWidth] = useState<ExampleWidth>(example.width);
   const prefs = useCanvasPrefs();
   const labMode = useLabMode();
@@ -131,16 +124,6 @@ export function LibraryCanvas({
           <p className="text-xs text-muted-foreground">{example.title}</p>
         </div>
       </div>
-      {controls && controls.length > 0 && (
-        <LibraryControls
-          controls={controls}
-          values={values}
-          onChange={(prop: string, v: ControlValue | undefined) =>
-            setValues((cur) => withValue(cur, prop, v))
-          }
-          onReset={() => setValues(start())}
-        />
-      )}
     </div>
   );
 }

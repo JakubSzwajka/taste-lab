@@ -1,5 +1,5 @@
 import { ChevronDown, RotateCcw } from "lucide-react";
-import { useState } from "react";
+import { type ReactNode, type Ref, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -31,34 +31,52 @@ import { menuOptionId, menuOptionValue, UNSET_ID } from "./menu-options";
 /** Selects with more options than this use a menu instead of toggles. */
 const MAX_TOGGLES = 4;
 
-/** Storybook-style args table under the canvas. One row per declared control. */
+/** Height of the header bar in px (`h-9`): all a collapsed panel shows. */
+export const CONTROLS_HEADER_PX = 36;
+
+/**
+ * Storybook-style args table under the canvas. One row per declared control.
+ * The header bar holds the title, Reset and any `actions` (the panel buttons).
+ */
 export function LibraryControls({
   controls,
   values,
   onChange,
   onReset,
+  actions,
+  bodyRef,
+  collapsed = false,
 }: {
   controls: LibraryControl[];
   values: ControlValues;
   onChange: (prop: string, value: ControlValue | undefined) => void;
   onReset: () => void;
+  actions?: ReactNode;
+  /** The scrolling body, so the panel can measure the table's full height. */
+  bodyRef?: Ref<HTMLDivElement>;
+  /** Only the header bar shows: the table stays out of tab order. */
+  collapsed?: boolean;
 }) {
   return (
-    <section
-      aria-label="Controls"
-      className="flex max-h-72 shrink-0 flex-col border-t"
-    >
+    <section aria-label="Controls" className="flex h-full min-h-0 flex-col">
       <div className="flex h-9 shrink-0 items-center gap-2 border-b px-4">
         <h2 className="text-xs font-medium">Controls</h2>
-        <p className="text-xs text-muted-foreground">
+        <p className="hidden min-w-0 truncate text-xs text-muted-foreground sm:block">
           Unset props keep the example's own value.
         </p>
-        <Button size="xs" variant="ghost" className="ml-auto" onClick={onReset}>
-          <RotateCcw />
-          Reset
-        </Button>
+        <div className="ml-auto flex items-center gap-1">
+          <Button size="xs" variant="ghost" onClick={onReset}>
+            <RotateCcw />
+            Reset
+          </Button>
+          {actions}
+        </div>
       </div>
-      <div className="min-h-0 flex-1 overflow-y-auto">
+      <div
+        ref={bodyRef}
+        inert={collapsed}
+        className="min-h-0 flex-1 overflow-y-auto"
+      >
         <Table>
           <TableHeader>
             <TableRow className="hover:bg-transparent">

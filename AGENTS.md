@@ -177,7 +177,9 @@ Order of the layers: the lab's stock tokens, then `<dataDir>/theme.css`, then th
 - Order: stock, then `theme.css`, then each variant's `round.json` `tokens`. A round override still wins.
 - The server loads `theme.css` as its own stylesheet, after `src/index.css`. Creating, editing or deleting it while the server runs updates the app without a restart.
 - No `light-dark()` in `theme.css`: the app root has no `color-scheme`. Write both values.
-- The Theme page (`#/theme`, the palette icon in the header) shows each token as a swatch in light and dark. A value from `theme.css` is marked "theme.css". Everything else is stock. `--radius` is a sample box.
+- The Theme page (`#/theme`, the palette icon in the header) is one dense table (round-010 a). The title line says how many tokens come from `theme.css`. An All / theme.css / Stock toggle group filters the rows. Ignored parts of `theme.css` sit on top as a compact list with line numbers, only when there are any.
+- One row per token, grouped by role (Surfaces, Brand, States, Charts, Sidebar, Shape) with a count per group: the name, a light chip and value, a dark chip and value, and a source pill of one size ("theme.css" or "stock"). A value from `theme.css` shows in the foreground color. Everything else is stock. `--radius` is a sample box.
+- Each chip sits on a backdrop that holds every token of its mode as inline custom properties, and the chip's color is its real value. So light chips read in a dark lab and dark chips in a light lab, and a `var()` value resolves in its own mode. These token values are the page's only inline styles, as with the Library canvas.
 
 ### Promoting a token round winner
 

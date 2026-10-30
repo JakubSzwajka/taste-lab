@@ -110,6 +110,57 @@ export type Sample = {
   tasks: SampleTask[];
 };
 
+/** Where a token's value comes from in one mode. */
+export type TokenSource = "theme" | "stock";
+
+/** A token's value in one mode, after stock and theme.css are merged. */
+export type TokenCell = { value: string; source: TokenSource };
+
+/** The role a token plays, for grouping on the Theme page. */
+export type TokenGroup =
+  | "Surfaces"
+  | "Brand"
+  | "States"
+  | "Charts"
+  | "Sidebar"
+  | "Shape";
+
+/** One shadcn token as the Theme page reads it. */
+export type ThemeToken = {
+  /** The variable, e.g. "--primary". */
+  name: string;
+  group: TokenGroup;
+  light: TokenCell;
+  dark: TokenCell;
+  /**
+   * A semantic class that paints the live token: "bg-primary", or
+   * "rounded-lg" for --radius. Inside a `.dark` wrapper it paints the dark
+   * value.
+   */
+  swatch: string;
+  /** For a surface with a -foreground pair: both classes, for an "Aa" chip. */
+  sample?: string;
+};
+
+/** A part of theme.css the lab dropped, as `taste-lab check` reports it. */
+export type ThemeProblem = {
+  /** 1-based line in theme.css, 0 when the problem has no line. */
+  line: number;
+  message: string;
+  /** The rejected text from theme.css. */
+  excerpt: string;
+};
+
+/** What the Theme page shows: every token, plus rejected theme.css parts. */
+export type ThemeState = {
+  /** Path of the theme file, relative to the repo. */
+  file: string;
+  groups: { name: TokenGroup; hint: string }[];
+  tokens: ThemeToken[];
+  /** Sample problems. The real .taste-lab/theme.css has none today. */
+  problems: ThemeProblem[];
+};
+
 export type LabState = {
   /** The served data dir's name, from config.json. */
   name: string;
@@ -124,4 +175,5 @@ export type LabState = {
   history: HistoryEntry[];
   library: LibraryItem[];
   sample: Sample;
+  theme: ThemeState;
 };

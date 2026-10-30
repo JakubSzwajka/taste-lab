@@ -1,3 +1,4 @@
+import { theme } from "./theme";
 import type {
   HistoryEntry,
   LabRound,
@@ -579,4 +580,5 @@ export const lab: LabState = {
   history,
   library,
   sample,
+  theme,
 };

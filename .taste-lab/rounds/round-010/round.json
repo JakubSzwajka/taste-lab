@@ -1,0 +1,35 @@
+{
+  "id": "round-010",
+  "level": "layout",
+  "component": "theme-page",
+  "question": "The Theme page is the last page on its first design. How should it show the tokens? All four show the same 32 tokens, which come from theme.css and which are stock, light and dark values, --radius and the ignored theme.css parts (sample data: the real file is clean). Judge with the lab in light: a variant can paint dark tokens inside a light page, not light ones inside a dark page.",
+  "fixture": "lab",
+  "basedOn": null,
+  "preview": "flip",
+  "variants": [
+    {
+      "id": "a",
+      "file": "a.tsx",
+      "label": "Dense token table",
+      "changes": "Today's table made dense, like History (round-007 c): one 36px row per token with name, light chip and value, dark chip and value, and a source pill. Group rows by role with counts, a filter for theme.css or stock, ignored parts in a compact list on top. basedOn null: no Theme round yet. Limit: in a dark lab the light chips are dashed outlines."
+    },
+    {
+      "id": "b",
+      "file": "b.tsx",
+      "label": "Swatch grid by role",
+      "changes": "Sections per role (surfaces, brand, states, charts, sidebar, shape), each a grid of tiles. A tile is a chip split light | dark with \"Aa\" in the foreground pair, the name, a source pill and both values. theme.css tiles get a primary border. Limit: in a dark lab the light half is blank."
+    },
+    {
+      "id": "c",
+      "file": "c.tsx",
+      "label": "Preview first",
+      "changes": "A sample UI from the stock primitives (card, badges, progress, focused input, buttons, tabs, sidebar, chart bars, popover) fills the page in light and dark side by side. A compact token list on the right: chips, values, theme.css pills, ignored parts on top. Limit: in a dark lab the light preview is a note."
+    },
+    {
+      "id": "d",
+      "file": "d.tsx",
+      "label": "Workbench",
+      "changes": "Like the Library page (round-008 c): role groups in the stock sidebar with theme.css counts, ignored parts as their own entry. The picked group shows a token table, then big swatches and the tokens at work in primitives, in both modes or one (toolbar). Limit: in a dark lab the light pane is a note."
+    }
+  ]
+}

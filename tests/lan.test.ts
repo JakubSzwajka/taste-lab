@@ -14,7 +14,6 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { parseCli, UsageError } from "../cli/args";
 import { initDataDir } from "../cli/init";
 import { run } from "../cli/main";
-import { RESERVED_PORTS } from "../cli/port";
 import {
   checkLanRequest,
   cookieName,
@@ -39,7 +38,7 @@ import {
 } from "../server/lan-gate";
 import { loopbackDecision } from "../server/lan-loopback";
 import { createTasteMiddleware } from "../server/taste-log";
-import { freePort } from "./free-port";
+import { freePort, listenOnFreePort } from "./free-port";
 
 type Reply = { status: number; headers: IncomingHttpHeaders; body: string };
 
@@ -1061,10 +1060,9 @@ describe("serve --lan, two listeners on one port", () => {
     const { PortBusyError, serve } = await import("../cli/serve");
     const dir = join(tmp, ".taste-lab");
     initDataDir(dir);
-    const port = await freePort();
-    // Something else holds the port on 127.0.0.1 only.
-    const squat = createServer();
-    await new Promise<void>((r) => squat.listen(port, "127.0.0.1", r));
+    // Something else holds the port on 127.0.0.1 only. Bound at port 0 and
+    // kept, so no other run can take it between the pick and the bind.
+    const { server: squat, port } = await listenOnFreePort();
     try {
       const err = await serve(dir, port, { host: "127.0.0.2" }).catch((e) => e);
       expect(err).toBeInstanceOf(PortBusyError);
@@ -1099,29 +1097,22 @@ describe("serve --lan, two listeners on one port", () => {
     const { serve } = await import("../cli/serve");
     const dir = join(tmp, ".taste-lab");
     initDataDir(dir);
-    // Squat the first free port the picker would try. Bind directly instead of
-    // pickPort then listen: parallel test runs scan the same range, and a
-    // check-then-bind pair let two of them take one port.
-    let first = 0;
-    const squat = createServer();
-    for (let p = 5300; ; p++) {
-      if (RESERVED_PORTS.includes(p)) continue;
-      const ok = await new Promise<boolean>((r) => {
-        squat.once("error", () => r(false));
-        squat.listen(p, "127.0.0.1", () => r(true));
-      });
-      if (ok) {
-        first = p;
-        break;
-      }
-    }
+    // Start the picker on a high port the test owns, never on 5300, so it
+    // cannot contend with the operator's server. Hold that port on 127.0.0.1
+    // only: the picker must skip it, because 127.0.0.2 alone looks free.
+    const { server: squat, port: first } = await listenOnFreePort();
     try {
       // Another run's auto-pick can take the port serve picked a moment ago.
       // Production reports that as an error, so retry here.
       const start = async () => {
         for (let i = 0; ; i++) {
           try {
-            return await serve(dir, undefined, { host: "127.0.0.2" });
+            return await serve(
+              dir,
+              undefined,
+              { host: "127.0.0.2" },
+              { pickStart: first },
+            );
           } catch (e) {
             // Vite's strictPort error has no code, only "Port N is already in use".
             const busy = /in use/i.test((e as Error).message);

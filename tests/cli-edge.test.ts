@@ -3,7 +3,6 @@ import {
   chmodSync,
   mkdirSync,
   mkdtempSync,
-  rmdirSync,
   rmSync,
   symlinkSync,
   writeFileSync,
@@ -21,6 +20,7 @@ import {
   unsafeDirReason,
 } from "../server/lab-dir";
 import { freePort } from "./free-port";
+import { makePublicChild, PUBLIC_DIR } from "./public-dir";
 
 let tmp: string;
 beforeEach(() => {
@@ -188,20 +188,16 @@ describe("tailwind @source paths", () => {
 });
 
 describe("data dir inside the lab's public/ folder", () => {
-  const pub = join(import.meta.dirname, "..", "public");
-  // The lab has no public/ folder today, and another test process may make one
-  // at the same time. Own a unique child, and remove public/ only when empty.
-  const own = join(pub, `x-${process.pid}`);
+  const pub = PUBLIC_DIR;
+  // Exclusive child. A public/ that already exists is never removed.
+  let own = "";
+  let release: (() => void) | undefined;
   beforeEach(() => {
-    mkdirSync(own, { recursive: true });
+    ({ own, release } = makePublicChild("x-"));
   });
   afterEach(() => {
-    rmSync(own, { recursive: true, force: true });
-    try {
-      rmdirSync(pub);
-    } catch {
-      // not empty: another process is using it
-    }
+    release?.();
+    release = undefined;
   });
 
   it("init, check and serve reject it, symlinks followed", async () => {
@@ -226,20 +222,16 @@ describe("data dir inside the lab's public/ folder", () => {
 });
 
 describe("public serving is off", () => {
-  const pub = join(import.meta.dirname, "..", "public");
-  // The lab has no public/ folder today, and another test process may make one
-  // at the same time. Own a unique child, and remove public/ only when empty.
-  const own = join(pub, `..data-${process.pid}`);
+  // Exclusive child. A public/ that already exists is never removed.
+  let own = "";
+  let release: (() => void) | undefined;
   beforeEach(() => {
-    mkdirSync(own, { recursive: true });
+    // `..data-` starts with two dots but is a child of public/.
+    ({ own, release } = makePublicChild("..data-"));
   });
   afterEach(() => {
-    rmSync(own, { recursive: true, force: true });
-    try {
-      rmdirSync(pub);
-    } catch {
-      // not empty: another process is using it
-    }
+    release?.();
+    release = undefined;
   });
 
   it("never serves taste.jsonl from a data dir under public/ or behind a symlink there", async () => {

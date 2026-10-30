@@ -1,5 +1,12 @@
 /** The library contract: `<dataDir>/library/<name>/{<Name>.tsx, examples.tsx, meta.json}`. */
 
+import {
+  type ControlValues,
+  type LibraryControl,
+  validateArgs,
+  validateControls,
+} from "./library-controls.ts";
+
 export const STATUSES = ["draft", "agreed"] as const;
 export type LibraryStatus = (typeof STATUSES)[number];
 export const WIDTHS = ["column", "full"] as const;
@@ -9,6 +16,8 @@ export type LibraryExample = {
   export: string;
   title: string;
   width: ExampleWidth;
+  /** Starting control values for this example. Keys are declared control props. */
+  args?: ControlValues;
 };
 export type Provenance = { round: string; pick: string; note: string };
 export type LibraryMeta = {
@@ -19,6 +28,8 @@ export type LibraryMeta = {
   examples: LibraryExample[];
   provenance: Provenance[];
   rules: string[];
+  /** Props the Controls panel edits live. Without it there is no panel. */
+  controls?: LibraryControl[];
 };
 
 export type ModuleExports = Record<string, unknown>;
@@ -116,6 +127,9 @@ export function validateMeta(
     errors.push(`status must be one of ${STATUSES.join(", ")}`);
   }
 
+  const controls = validateControls(data.controls);
+  errors.push(...controls.errors);
+
   const knownExamples = ctx.exports?.["examples.tsx"];
   if (!Array.isArray(data.examples) || data.examples.length === 0) {
     errors.push("examples must be an array with at least one entry");
@@ -149,6 +163,7 @@ export function validateMeta(
       ) {
         errors.push(`${at}.width must be one of ${WIDTHS.join(", ")}`);
       }
+      errors.push(...validateArgs(ex.args, controls, at));
     });
   }
 

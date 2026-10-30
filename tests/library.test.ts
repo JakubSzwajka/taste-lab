@@ -15,7 +15,6 @@ import { checkDataDir } from "../cli/check";
 import { valueExports } from "../cli/check-library";
 import { initDataDir } from "../cli/init";
 import { run } from "../cli/main";
-import { pickPort } from "../cli/port";
 import { importAllowed, scanVariants } from "../cli/scan-variants";
 import {
   type LibraryGlob,
@@ -25,6 +24,7 @@ import {
   pascalCase,
   validateMeta,
 } from "../src/lib/library";
+import { freePort } from "./free-port";
 
 const sample = resolve(import.meta.dirname, "fixtures/library/task-chip");
 const meta = () => JSON.parse(readFileSync(join(sample, "meta.json"), "utf8"));
@@ -724,7 +724,7 @@ describe("@/library alias", () => {
   it("resolves @/library/<name>/<Name> to the data dir, also with $& in the path", async () => {
     const { serve } = await import("../cli/serve");
     const dir = dirWithEntry("tl app$&");
-    const port = await pickPort({ start: 5380 });
+    const port = await freePort();
     const before = process.env.TASTE_LAB_DIR;
     const { server, url } = await serve(dir, port);
     try {

@@ -18,6 +18,7 @@ import { checkDataDir } from "../cli/check";
 import { InitError, initDataDir } from "../cli/init";
 import { run } from "../cli/main";
 import { isPortFree, pickPort, RESERVED_PORTS } from "../cli/port";
+import { freePort } from "./free-port";
 
 const repo = resolve(import.meta.dirname, "..");
 const demo = join(repo, "examples/demo/.taste-lab");
@@ -336,7 +337,7 @@ describe("serve", () => {
     const dir = join(tmp, "outside", ".taste-lab");
     initDataDir(dir);
     addRound(dir, "round-001", roundJson("round-001"), ["a.tsx", "b.tsx"]);
-    const port = await pickPort({ start: 5350 });
+    const port = await freePort();
     const before = process.env.TASTE_LAB_DIR;
     const { server, url } = await serve(dir, port);
     try {

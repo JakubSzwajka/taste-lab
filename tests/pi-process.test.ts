@@ -12,9 +12,9 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { initDataDir } from "../cli/init";
-import { pickPort } from "../cli/port";
 import type { ReadyEvent } from "../pi/lib/events";
 import { type LabExit, LabProcess, type SpawnFn } from "../pi/lib/lab-process";
+import { freePort } from "./free-port";
 
 const bin = resolve(import.meta.dirname, "../bin/taste-lab.mjs");
 const posix = process.platform !== "win32";
@@ -109,8 +109,7 @@ function startLab(opts: {
 
 describe.skipIf(!posix)("LabProcess process tree", () => {
   it("stop() kills a grandchild that ignores SIGTERM before it resolves", async () => {
-    // Other suites pick from 5300 to 5499. Stay clear of them.
-    const port = await pickPort({ start: 5580 });
+    const port = await freePort();
     // The "server" spawns a grandchild that holds the port and ignores SIGTERM.
     const fake = join(tmp, "fake-serve.mjs");
     const grandchild = `const s=require("net").createServer().listen(${port},"127.0.0.1");process.on("SIGTERM",()=>{});setInterval(()=>{},1e3);`;
@@ -146,7 +145,7 @@ describe.skipIf(!posix)("LabProcess process tree", () => {
   it("a real `serve --events` leaves nothing listening after stop()", async () => {
     const dataDir = join(tmp, ".taste-lab");
     initDataDir(dataDir);
-    const port = await pickPort({ start: 5560 });
+    const port = await freePort();
     const run = startLab({ bin, dataDir, killAfterMs: 3000, port });
     const ready = await run.ready;
     expect(ready.port).toBe(port);

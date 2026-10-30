@@ -27,6 +27,11 @@ export type ServeOptions = {
   onAppend?: (entry: TasteEntry) => void;
   /** Send Vite's log to stderr, so stdout holds only what the caller writes. */
   logToStderr?: boolean;
+  /**
+   * Internal test seam, not a flag. Where the auto-pick starts scanning, so a
+   * test can leave the operator's 5300+ range alone. Unset means START_PORT.
+   */
+  pickStart?: number;
 };
 
 export type LanOptions = {
@@ -137,6 +142,7 @@ export async function serve(
   let chosen: number;
   if (port === undefined) {
     chosen = await pickPort({
+      start: opts.pickStart,
       isFree: async (p) => (await busyOn(p, hosts)).length === 0,
     });
   } else {

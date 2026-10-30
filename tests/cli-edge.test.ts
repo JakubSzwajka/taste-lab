@@ -8,18 +8,19 @@ import {
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { basename, join } from "node:path";
 import { compile } from "tailwindcss";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { checkDataDir } from "../cli/check";
 import { InitError, initDataDir } from "../cli/init";
 import { run } from "../cli/main";
-import { pickPort } from "../cli/port";
 import {
   publicDirReason,
   tailwindSource,
   unsafeDirReason,
 } from "../server/lab-dir";
+import { freePort } from "./free-port";
+import { makePublicChild, PUBLIC_DIR } from "./public-dir";
 
 let tmp: string;
 beforeEach(() => {
@@ -187,19 +188,21 @@ describe("tailwind @source paths", () => {
 });
 
 describe("data dir inside the lab's public/ folder", () => {
-  const pub = join(import.meta.dirname, "..", "public");
-  // The lab has no public/ folder today. Make one for the test, remove it only if we made it.
-  let made: string | undefined;
+  const pub = PUBLIC_DIR;
+  // Exclusive child. A public/ that already exists is never removed.
+  let own = "";
+  let release: (() => void) | undefined;
   beforeEach(() => {
-    made = mkdirSync(pub, { recursive: true });
+    ({ own, release } = makePublicChild("x-"));
   });
   afterEach(() => {
-    if (made) rmSync(pub, { recursive: true, force: true });
+    release?.();
+    release = undefined;
   });
 
   it("init, check and serve reject it, symlinks followed", async () => {
     const { serve } = await import("../cli/serve");
-    const direct = join(pub, "x", ".taste-lab");
+    const direct = join(own, ".taste-lab");
     const link = join(tmp, "link");
     symlinkSync(pub, link);
     for (const dir of [direct, join(link, "y", ".taste-lab"), pub]) {
@@ -219,33 +222,42 @@ describe("data dir inside the lab's public/ folder", () => {
 });
 
 describe("public serving is off", () => {
-  const pub = join(import.meta.dirname, "..", "public");
-  let made: string | undefined;
+  // Exclusive child. A public/ that already exists is never removed.
+  let own = "";
+  let release: (() => void) | undefined;
   beforeEach(() => {
-    made = mkdirSync(pub, { recursive: true });
+    // `..data-` starts with two dots but is a child of public/.
+    ({ own, release } = makePublicChild("..data-"));
   });
   afterEach(() => {
-    if (made) rmSync(pub, { recursive: true, force: true });
+    release?.();
+    release = undefined;
   });
 
   it("never serves taste.jsonl from a data dir under public/ or behind a symlink there", async () => {
     const { serve } = await import("../cli/serve");
     const secret = "PUBLIC-DIR-SECRET-LOG-LINE";
     // `..data` starts with two dots but is a child of public/. The link points elsewhere.
-    const dotted = join(pub, "..data", ".taste-lab");
+    const dotted = join(own, ".taste-lab");
     initDataDir(dotted);
     writeFileSync(join(dotted, "taste.jsonl"), `${secret}\n`);
     const target = join(tmp, "target", ".taste-lab");
     initDataDir(target);
     writeFileSync(join(target, "taste.jsonl"), `${secret}\n`);
-    symlinkSync(target, join(pub, "link"));
+    symlinkSync(target, join(own, "link"));
 
     const cases = [
-      { dir: dotted, paths: ["/..data/.taste-lab/taste.jsonl"] },
-      { dir: join(pub, "link"), paths: ["/link/taste.jsonl"] },
+      {
+        dir: dotted,
+        paths: [`/${basename(own)}/.taste-lab/taste.jsonl`],
+      },
+      {
+        dir: join(own, "link"),
+        paths: [`/${basename(own)}/link/taste.jsonl`],
+      },
     ];
     for (const { dir, paths } of cases) {
-      const port = await pickPort({ start: 5380 });
+      const port = await freePort();
       const { server, url } = await serve(dir, port);
       try {
         for (const p of paths) {
@@ -268,7 +280,7 @@ describe("serve with $ in the path", () => {
     const dir = join(tmp, "tl app$&", ".taste-lab");
     initDataDir(dir);
     addRound(dir);
-    const port = await pickPort({ start: 5360 });
+    const port = await freePort();
     const before = process.env.TASTE_LAB_DIR;
     const { server, url } = await serve(dir, port);
     try {

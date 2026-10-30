@@ -205,7 +205,7 @@ Order of the layers: the lab's stock tokens, then `<dataDir>/theme.css`, then th
 
 - `view` is optional: `"columns"` or `"flip"`, the view in use when the operator answered. Lines written before it existed have no `view` and stay valid.
 - `pick` is a variant id from `shown`, `"none"` or `"mix"`. For `mix`, `reason` is required and says which parts.
-- `tags` is optional in a `POST` and defaults to `[]`. The Compare page sends none: its answer bar has no tags (round-009 a). Old lines keep their tags. Tags that are sent come from: airy, cramped, loud, quiet, dated, clean, playful, serious, too much, too little.
+- `tags` is optional in a `POST` and defaults to `[]`. The Compare page has no tags (round-009 a), so new lines carry `tags: []`. Old lines keep theirs. Tags that are sent come from: airy, cramped, loud, quiet, dated, clean, playful, serious, too much, too little.
 - Never edit or reorder existing lines. Only the app middleware appends.
 
 Endpoints, served by `taste-lab serve` and `pnpm preview` for the served data dir (loopback only, Host must be 127.0.0.1, localhost or ::1; `serve --lan` uses the LAN rules instead, see "LAN mode"). The app reads the log only here: Vite refuses to serve `taste.jsonl` as a file:
@@ -221,6 +221,12 @@ Endpoints, served by `taste-lab serve` and `pnpm preview` for the served data di
 4. Tell the operator to refresh the app and answer. The running server picks up new rounds and their Tailwind classes without a restart.
 5. Every ~5 rounds, distill the log into `<dataDir>/DESIGN.md`: Do, Don't, Tokens, Open questions. Cite round ids.
 6. Read tags and reasons. A "none" means all options missed. Change direction, not detail.
+
+## Compare page
+
+Compare has no page heading: the header's round tier shows the question (round-003 c). The frame fills the width. One answer bar is pinned to the bottom (round-009 a, `AnswerBar` in `src/components/AnswerPanel.tsx`): the picks (A to D, None, Mix), a one-line reason that fills the row, and Submit. There are no tags in the UI. Mix needs a reason.
+
+Keys: `1` to `4` pick and show that variant. `n` picks None. `m` picks Mix and focuses the reason. `r` focuses the reason and `Esc` leaves it. Enter (or Ctrl/Cmd+Enter) in the reason submits. On the page, Enter submits unless a button, link or toggle has focus. Shift+Enter and Alt+Enter do nothing, and pasted line breaks become spaces. In full width, `←` and `→` flip variants.
 
 ## History page
 

@@ -5,8 +5,8 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { initDataDir } from "../cli/init";
-import { pickPort } from "../cli/port";
 import { cookieName } from "../server/lan";
+import { freePort } from "./free-port";
 
 const bin = resolve(import.meta.dirname, "../bin/taste-lab.mjs");
 
@@ -146,7 +146,7 @@ afterEach(async () => {
 
 describe("serve --lan --events", () => {
   it("ready, one answer per POST from either listener, JSON-only stdout, token only in ready.lan", async () => {
-    const port = await pickPort({ start: 5480 });
+    const port = await freePort();
     // Every Vite debug channel on: the token must still appear only in ready.lan.
     const run = start(
       [
@@ -276,7 +276,7 @@ describe("serve --lan --events", () => {
 
 describe("serve --events without --lan", () => {
   it("ready has lan: null, answers still stream", async () => {
-    const port = await pickPort({ start: 5490 });
+    const port = await freePort();
     const run = start(["--dir", dir, "--port", String(port), "--events"]);
     runs.push(run);
     const ready = await run.event((e) => e.event === "ready");
@@ -306,7 +306,7 @@ describe("serve --events without --lan", () => {
 
 describe("serve --events errors", () => {
   it("a busy explicit --port: one error event and exit 2", async () => {
-    const port = await pickPort({ start: 5495 });
+    const port = await freePort();
     const squat = createServer();
     await new Promise<void>((r) => squat.listen(port, "127.0.0.1", r));
     try {

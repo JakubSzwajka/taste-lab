@@ -1,19 +1,30 @@
 import { useEffect, useRef, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { enterAction, MENU_SELECTOR, pickShortcutAllowed } from "@/lib/keys";
-import { TAGS } from "@/lib/taste";
+import {
+  enterAction,
+  MENU_SELECTOR,
+  oneLine,
+  pickKey,
+  pickShortcutAllowed,
+  reasonKeyAction,
+} from "@/lib/keys";
+import { canSubmit as answerReady } from "@/lib/submit";
 
-export type Answer = { pick: string; tags: string[]; reason: string };
+export type BarAnswer = { pick: string; reason: string };
 
 /**
- * Pick, tags, reason, submit.
- * Keys: 1-4 pick variant, n none, m mix. Enter submits unless a button or link has focus.
- * In the textarea, Ctrl/Cmd+Enter submits.
+ * The answer bar from .taste-lab round-009 a (round-003 c without tags): one
+ * row pinned to the bottom with pick, a one-line reason that fills the row,
+ * and Submit.
+ * Keys: 1-4 pick and show a variant, n none, m mix (focuses the reason),
+ * r focus the reason, Esc leave it. Enter submits from the reason, and from
+ * the page unless a button, link or toggle has focus.
  */
-export function AnswerPanel({
+export function AnswerBar({
   variantIds,
   pick,
   onPick,
@@ -26,65 +37,54 @@ export function AnswerPanel({
   onPick: (pick: string) => void;
   submitting: boolean;
   error: string | null;
-  onSubmit: (a: Answer) => void;
+  onSubmit: (a: BarAnswer) => void;
 }) {
-  const [tags, setTags] = useState<string[]>([]);
   const [reason, setReason] = useState("");
   const reasonRef = useRef<HTMLTextAreaElement>(null);
+  const mixNeedsReason = pick === "mix" && reason.trim() === "";
+  const ready = answerReady(pick, reason, submitting);
 
-  const needsReason = pick === "mix" && reason.trim() === "";
-  const canSubmit = pick !== "" && !needsReason && !submitting;
-
-  const latest = useRef({
-    canSubmit,
-    pick,
-    tags,
-    reason,
-    onSubmit,
-    variantIds,
-    onPick,
-  });
-  latest.current = {
-    canSubmit,
-    pick,
-    tags,
-    reason,
-    onSubmit,
-    variantIds,
-    onPick,
+  const latest = useRef({ ready, pick, reason, onSubmit, variantIds, onPick });
+  latest.current = { ready, pick, reason, onSubmit, variantIds, onPick };
+  const submit = () => {
+    const s = latest.current;
+    if (s.ready) s.onSubmit({ pick: s.pick, reason: s.reason });
   };
+
+  function choose(id: string) {
+    onPick(id);
+    // Mix needs a reason, so take the cursor there.
+    if (id === "mix") reasonRef.current?.focus();
+  }
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
+      // The reason handled this key itself (Enter, Esc).
+      if (e.defaultPrevented) return;
       const s = latest.current;
       const target = e.target as HTMLElement | null;
-      const inMenu = target?.closest?.(MENU_SELECTOR) != null;
       if (e.key === "Enter") {
         // Focused buttons, links and toggles keep their own Enter.
-        const action = enterAction(e, target);
-        if (action !== "submit") return;
+        if (enterAction(e, target) !== "submit") return;
         e.preventDefault();
-        if (s.canSubmit)
-          s.onSubmit({ pick: s.pick, tags: s.tags, reason: s.reason });
+        if (s.ready) s.onSubmit({ pick: s.pick, reason: s.reason });
         return;
       }
-      if (
-        !pickShortcutAllowed(
-          e,
-          target && {
-            tagName: target.tagName,
-            isContentEditable: target.isContentEditable,
-          },
-          inMenu,
-        )
-      )
-        return;
-      const n = Number(e.key);
-      if (n >= 1 && n <= 4 && s.variantIds[n - 1]) {
-        s.onPick(s.variantIds[n - 1] as string);
-      } else if (e.key === "n") s.onPick("none");
-      else if (e.key === "m") {
-        s.onPick("mix");
+      const inMenu = target?.closest?.(MENU_SELECTOR) != null;
+      const allowed = pickShortcutAllowed(
+        e,
+        target && {
+          tagName: target.tagName,
+          isContentEditable: target.isContentEditable,
+        },
+        inMenu,
+      );
+      if (!allowed) return;
+      const act = pickKey(e.key, s.variantIds);
+      if (!act) return;
+      if ("pick" in act) s.onPick(act.pick);
+      if (act.focusReason) {
+        // Keep the letter out of the reason.
         e.preventDefault();
         reasonRef.current?.focus();
       }
@@ -95,21 +95,20 @@ export function AnswerPanel({
 
   return (
     <form
-      className="flex flex-col gap-4 rounded-lg border bg-card p-4 text-card-foreground"
+      aria-label="Answer"
+      className="sticky bottom-0 z-10 shrink-0 border-t bg-card text-card-foreground"
       onSubmit={(e) => {
         e.preventDefault();
-        if (canSubmit) onSubmit({ pick, tags, reason });
+        submit();
       }}
     >
-      <div className="flex flex-col gap-2">
-        <span className="text-sm font-medium">Your pick</span>
+      <div className="mx-auto flex max-w-[120rem] flex-wrap items-center gap-3 px-4 py-3">
         <ToggleGroup
           type="single"
           variant="outline"
           value={pick}
-          onValueChange={(v) => v && onPick(v)}
+          onValueChange={(v) => v && choose(v)}
           aria-label="Pick a variant"
-          className="flex-wrap"
         >
           {variantIds.map((id, i) => (
             <ToggleGroupItem key={id} value={id} aria-label={`Variant ${id}`}>
@@ -132,60 +131,56 @@ export function AnswerPanel({
             </Badge>
           </ToggleGroupItem>
         </ToggleGroup>
-      </div>
 
-      <div className="flex flex-col gap-2">
-        <span className="text-sm font-medium">Tags</span>
-        <ToggleGroup
-          type="multiple"
-          variant="outline"
-          size="sm"
-          value={tags}
-          onValueChange={setTags}
-          aria-label="Tags"
-          className="flex-wrap"
-        >
-          {TAGS.map((t) => (
-            <ToggleGroupItem key={t} value={t}>
-              {t}
-            </ToggleGroupItem>
-          ))}
-        </ToggleGroup>
-      </div>
-
-      <div className="flex flex-col gap-2">
-        <label htmlFor="reason" className="text-sm font-medium">
-          Reason
-          {pick === "mix" && (
-            <span className="ml-2 text-xs font-normal text-muted-foreground">
-              required: say which parts to mix
-            </span>
-          )}
-        </label>
-        <Textarea
-          id="reason"
-          ref={reasonRef}
-          value={reason}
-          onChange={(e) => setReason(e.target.value)}
-          placeholder="Why? A few words is enough."
-          rows={3}
+        <Separator
+          orientation="vertical"
+          className="data-vertical:h-6 data-vertical:self-center"
         />
-      </div>
 
-      {error && (
-        <p role="alert" className="text-sm text-destructive">
-          {error}
-        </p>
-      )}
+        <Textarea
+          ref={reasonRef}
+          aria-label="Reason"
+          aria-required={pick === "mix"}
+          aria-keyshortcuts="r"
+          value={reason}
+          onChange={(e) => setReason(oneLine(e.target.value))}
+          onKeyDown={(e) => {
+            const act = reasonKeyAction({
+              key: e.key,
+              ctrlKey: e.ctrlKey,
+              metaKey: e.metaKey,
+              altKey: e.altKey,
+              shiftKey: e.shiftKey,
+              isComposing: e.nativeEvent.isComposing,
+            });
+            if (act === "ignore") return;
+            e.preventDefault();
+            if (act === "submit") submit();
+            else if (act === "leave") e.currentTarget.blur();
+          }}
+          placeholder={
+            pick === "mix"
+              ? "Required: say which parts to mix"
+              : "Why? A few words is enough."
+          }
+          rows={1}
+          className="field-sizing-fixed h-8 min-h-8 min-w-48 flex-1 resize-none overflow-hidden py-1.5 whitespace-nowrap"
+        />
 
-      <div className="flex items-center gap-3">
-        <Button type="submit" data-submit="true" disabled={!canSubmit}>
+        {error && (
+          <p role="alert" className="text-sm text-destructive">
+            {error}
+          </p>
+        )}
+
+        <Button
+          type="submit"
+          data-submit="true"
+          disabled={!ready}
+          title={mixNeedsReason ? "Mix needs a reason" : undefined}
+        >
           {submitting ? "Saving..." : "Submit"}
         </Button>
-        <span className="text-xs text-muted-foreground">
-          Enter submits (not while a button has focus). Ctrl/Cmd+Enter inside
-          the text box.
-        </span>
       </div>
     </form>
   );

@@ -98,8 +98,52 @@ export function arrowAction(
 export const MENU_SELECTOR =
   "[role=menu],[role=menuitem],[role=menuitemcheckbox],[role=menuitemradio],[role=listbox],[role=option],[role=combobox]";
 
+export type ReasonKeyEvent = EnterEvent & {
+  key: string;
+  isComposing?: boolean;
+};
+
 /**
- * Whether a plain key (1-4, n, m) may act as a pick shortcut. Never in text
+ * What a key does inside the one-line reason (round-009 a).
+ * - "submit": Enter, with or without Ctrl/Cmd, sends the answer.
+ * - "swallow": Shift/Alt+Enter. The reason stays one line, so no line break.
+ * - "leave": Escape hands focus back to the page, so pick keys work again.
+ * - "ignore": anything else, or Enter while an IME is composing.
+ * The caller calls preventDefault for all but "ignore"; the global handler
+ * skips defaultPrevented events, so one Enter never submits twice.
+ */
+export function reasonKeyAction(
+  e: ReasonKeyEvent,
+): "submit" | "swallow" | "leave" | "ignore" {
+  if (e.isComposing) return "ignore";
+  if (e.key === "Escape") return "leave";
+  if (e.key !== "Enter") return "ignore";
+  return e.shiftKey || e.altKey ? "swallow" : "submit";
+}
+
+/** The reason is one line: pasted or typed line breaks become spaces. */
+export const oneLine = (s: string) => s.replace(/\r\n|\r|\n/g, " ");
+
+/**
+ * What a plain answer-bar key does, or null: 1-4 pick a variant by position,
+ * n none, m mix (and focus the reason, which mix needs), r focus the reason.
+ */
+export function pickKey(
+  key: string,
+  ids: readonly string[],
+): { pick: string; focusReason: boolean } | { focusReason: true } | null {
+  const n = Number(key);
+  if (Number.isInteger(n) && n >= 1 && n <= 4 && ids[n - 1]) {
+    return { pick: ids[n - 1] as string, focusReason: false };
+  }
+  if (key === "n") return { pick: "none", focusReason: false };
+  if (key === "m") return { pick: "mix", focusReason: true };
+  if (key === "r") return { focusReason: true };
+  return null;
+}
+
+/**
+ * Whether a plain key (1-4, n, m, r) may act as a pick shortcut. Never in text
  * fields, with modifiers, or inside a menu or listbox: those own digits and
  * letters (typeahead) and portal outside the variant frame. `inMenu` is true
  * when the target sits inside such a widget (checked by the caller via the DOM).

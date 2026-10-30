@@ -3,7 +3,10 @@ import {
   arrowAction,
   enterAction,
   MENU_SELECTOR,
+  oneLine,
+  pickKey,
   pickShortcutAllowed,
+  reasonKeyAction,
 } from "../src/lib/keys";
 
 const plain = {
@@ -131,5 +134,69 @@ describe("pickShortcutAllowed", () => {
 
   it("Enter on a focused menu container is native, not a submit", () => {
     expect(enterAction(plain, { tagName: "DIV", role: "menu" })).toBe("native");
+  });
+});
+
+describe("reasonKeyAction (one-line reason, round-009 a)", () => {
+  const key = (k: string, extra: Partial<typeof plain> = {}) => ({
+    ...plain,
+    ...extra,
+    key: k,
+  });
+
+  it("Enter submits, with or without Ctrl/Cmd", () => {
+    expect(reasonKeyAction(key("Enter"))).toBe("submit");
+    expect(reasonKeyAction(key("Enter", { ctrlKey: true }))).toBe("submit");
+    expect(reasonKeyAction(key("Enter", { metaKey: true }))).toBe("submit");
+  });
+
+  it("Shift/Alt+Enter never add a line break", () => {
+    expect(reasonKeyAction(key("Enter", { shiftKey: true }))).toBe("swallow");
+    expect(reasonKeyAction(key("Enter", { altKey: true }))).toBe("swallow");
+  });
+
+  it("Escape leaves the reason", () => {
+    expect(reasonKeyAction(key("Escape"))).toBe("leave");
+  });
+
+  it("lets an IME finish composing and leaves other keys alone", () => {
+    expect(reasonKeyAction({ ...key("Enter"), isComposing: true })).toBe(
+      "ignore",
+    );
+    for (const k of ["a", "1", "m", "ArrowLeft", " "]) {
+      expect(reasonKeyAction(key(k))).toBe("ignore");
+    }
+  });
+
+  it("oneLine turns pasted line breaks into spaces", () => {
+    expect(oneLine("a\nb\r\nc\rd")).toBe("a b c d");
+    expect(oneLine("plain")).toBe("plain");
+  });
+});
+
+describe("pickKey", () => {
+  const ids = ["a", "b", "c"];
+
+  it("1-4 pick a variant by position, only if it exists", () => {
+    expect(pickKey("1", ids)).toEqual({ pick: "a", focusReason: false });
+    expect(pickKey("3", ids)).toEqual({ pick: "c", focusReason: false });
+    expect(pickKey("4", ids)).toBeNull();
+    expect(pickKey("0", ids)).toBeNull();
+    expect(pickKey("5", ["a", "b", "c", "d", "e"])).toBeNull();
+  });
+
+  it("n picks none, m picks mix and focuses the reason", () => {
+    expect(pickKey("n", ids)).toEqual({ pick: "none", focusReason: false });
+    expect(pickKey("m", ids)).toEqual({ pick: "mix", focusReason: true });
+  });
+
+  it("r focuses the reason without picking", () => {
+    expect(pickKey("r", ids)).toEqual({ focusReason: true });
+  });
+
+  it("ignores other keys, including the old tag-era keys", () => {
+    for (const k of [" ", "", "x", "Enter", "t", "N", "1.5"]) {
+      expect(pickKey(k, ids)).toBeNull();
+    }
   });
 });

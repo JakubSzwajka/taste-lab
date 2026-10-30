@@ -1,6 +1,13 @@
 import labConfig from "virtual:taste-lab/config";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { Answer } from "@/components/AnswerPanel";
+import {
+  Children,
+  type ReactNode,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { AppHeader } from "@/components/AppHeader";
 import { CompareScreen } from "@/components/CompareScreen";
 import { HistoryView } from "@/components/HistoryView";
@@ -15,12 +22,11 @@ import {
   postEntry,
   UNAUTHORIZED_MESSAGE,
 } from "@/lib/api";
-import type { PreviewMode } from "@/lib/flip";
 import type { LibraryEntry } from "@/lib/library";
 import { library as defaultLibrary } from "@/lib/library-entries";
 import type { LoadedRound } from "@/lib/rounds";
 import { hrefFor, useRoute } from "@/lib/route";
-import { submitEntry } from "@/lib/submit";
+import { type Answer, answerEntry, submitEntry } from "@/lib/submit";
 import type { TasteEntry } from "@/lib/taste";
 import { useTheme } from "@/lib/theme";
 import { useThemeData } from "@/lib/theme-data";
@@ -85,7 +91,11 @@ export default function App({
         ? nextOpen
         : undefined;
 
-  async function submit(a: Answer & { view: PreviewMode }) {
+  // Compare owns the rest of the page: its frame grows to fill the viewport
+  // and its answer bar runs edge to edge at the bottom.
+  const comparing = loaded && !!shown?.ok;
+
+  async function submit(a: Answer) {
     if (!shown?.ok || inFlight.current) return; // state lags, the ref does not
     inFlight.current = true;
     setSubmitting(true);
@@ -93,18 +103,7 @@ export default function App({
     let seqForSubmit = 0;
     try {
       await submitEntry(
-        () =>
-          postEntry({
-            round: shown.id,
-            component: shown.spec.component,
-            level: shown.spec.level,
-            shown: shown.spec.variants.map((v) => v.id),
-            pick: a.pick,
-            tags: a.tags,
-            reason: a.reason.trim(),
-            theme,
-            view: a.view,
-          }),
+        () => postEntry(answerEntry(shown.spec, a, theme)),
         fetchLog,
         {
           // Saved. Mark the round answered and move on before the GET returns.
@@ -132,7 +131,7 @@ export default function App({
 
   return (
     <TooltipProvider>
-      <div className="min-h-svh bg-background text-foreground">
+      <div className="flex min-h-svh flex-col bg-background text-foreground">
         <AppHeader
           labName={labConfig.name}
           route={route}
@@ -143,67 +142,71 @@ export default function App({
           onToggleTheme={toggleTheme}
         />
 
-        <main className="mx-auto flex max-w-[120rem] flex-col gap-6 px-4 py-6">
-          {logError && (
-            <p role="alert" className="text-sm text-destructive">
-              {logError === UNAUTHORIZED_MESSAGE
-                ? `The taste log needs a link token. ${logError}.`
-                : `Could not reach the taste log: ${logError}. Run the app with pnpm dev or pnpm preview.`}
-            </p>
-          )}
-
-          {refreshError && (
-            <p role="status" className="text-sm text-muted-foreground">
-              Your answer was saved, but the log could not be reloaded:{" "}
-              {refreshError}. History may be out of date until you reload.
-            </p>
-          )}
-
-          {broken.length > 0 &&
-            route.page !== "history" &&
-            route.page !== "theme" &&
-            !onLibrary && (
-              <div
-                role="alert"
-                className="flex flex-col gap-2 rounded-lg border border-destructive p-4"
-              >
-                <p className="text-sm font-medium text-destructive">
-                  {broken.length} round(s) could not be loaded. Other rounds
-                  still work.
-                </p>
-                {broken.map((r) =>
-                  r.ok ? null : (
-                    <div key={r.id} className="text-sm">
-                      <span className="font-medium">{r.id}</span>
-                      <ul className="list-disc pl-5 text-muted-foreground">
-                        {r.errors.map((m) => (
-                          <li key={m}>{m}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  ),
-                )}
-              </div>
+        <main
+          className={
+            comparing
+              ? "flex flex-1 flex-col"
+              : "mx-auto flex w-full max-w-[120rem] flex-col gap-6 px-4 py-6"
+          }
+        >
+          <Notices padded={comparing}>
+            {logError && (
+              <p role="alert" className="text-sm text-destructive">
+                {logError === UNAUTHORIZED_MESSAGE
+                  ? `The taste log needs a link token. ${logError}.`
+                  : `Could not reach the taste log: ${logError}. Run the app with pnpm dev or pnpm preview.`}
+              </p>
             )}
+
+            {refreshError && (
+              <p role="status" className="text-sm text-muted-foreground">
+                Your answer was saved, but the log could not be reloaded:{" "}
+                {refreshError}. History may be out of date until you reload.
+              </p>
+            )}
+
+            {broken.length > 0 &&
+              route.page !== "history" &&
+              route.page !== "theme" &&
+              !onLibrary && (
+                <div
+                  role="alert"
+                  className="flex flex-col gap-2 rounded-lg border border-destructive p-4"
+                >
+                  <p className="text-sm font-medium text-destructive">
+                    {broken.length} round(s) could not be loaded. Other rounds
+                    still work.
+                  </p>
+                  {broken.map((r) =>
+                    r.ok ? null : (
+                      <div key={r.id} className="text-sm">
+                        <span className="font-medium">{r.id}</span>
+                        <ul className="list-disc pl-5 text-muted-foreground">
+                          {r.errors.map((m) => (
+                            <li key={m}>{m}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    ),
+                  )}
+                </div>
+              )}
+          </Notices>
 
           {route.page === "theme" ? (
             <ThemeView {...themeData} />
           ) : route.page === "library" ? (
-            <LibraryView entries={library} />
+            <LibraryView entries={library} rounds={rounds} />
           ) : route.page === "library-entry" ? (
             <LibraryEntryView
               key={route.name}
               name={route.name}
+              example={route.example}
               entries={library}
               rounds={rounds}
             />
           ) : route.page === "history" ? (
-            <HistoryView
-              entries={entries}
-              skipped={skipped}
-              rounds={rounds}
-              theme={theme}
-            />
+            <HistoryView entries={entries} skipped={skipped} rounds={rounds} />
           ) : !loaded ? (
             <p className="text-muted-foreground">Loading...</p>
           ) : route.page === "round" && !shown ? (
@@ -224,10 +227,30 @@ export default function App({
             <EmptyState hasRounds={rounds.some((r) => r.ok)} />
           )}
         </main>
-        <Separator />
+        {!comparing && <Separator />}
       </div>
     </TooltipProvider>
   );
+}
+
+/**
+ * Log and round notices. On Compare, main has no padding (the bar is
+ * full-bleed), so the notices get their own padded box.
+ */
+function Notices({
+  padded,
+  children,
+}: {
+  padded: boolean;
+  children: ReactNode;
+}) {
+  if (!padded) return children;
+  const shown = Children.toArray(children).length > 0;
+  return shown ? (
+    <div className="mx-auto flex w-full max-w-[120rem] flex-col gap-4 px-4 pt-6">
+      {children}
+    </div>
+  ) : null;
 }
 
 function EmptyState({ hasRounds }: { hasRounds: boolean }) {

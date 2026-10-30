@@ -32,7 +32,9 @@ export function VariantFrame({
     <section
       aria-label={`Variant ${spec.id}: ${spec.label}`}
       className={cn(
-        "flex min-w-0 flex-col overflow-hidden rounded-lg border bg-muted/30",
+        // grow: on Compare the frame fills the height above the answer bar.
+        // Not flex-1: with overflow-hidden its basis 0 would clip the variant.
+        "flex min-w-0 grow flex-col overflow-hidden rounded-lg border bg-muted/30",
         selected && "ring-2 ring-primary",
       )}
     >

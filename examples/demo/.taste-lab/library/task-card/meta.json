@@ -4,19 +4,42 @@
   "description": "One task in a list: id, status and priority pills, up to 2 quiet #tags with \"+n\", title, 2-line description, owner footer with due date and comments.",
   "status": "agreed",
   "examples": [
-    { "export": "Default", "title": "Typical tasks", "width": "column" },
+    {
+      "export": "Default",
+      "title": "Typical tasks",
+      "width": "column"
+    },
     {
       "export": "ManyTags",
       "title": "More than 2 tags shows +n",
-      "width": "column"
+      "width": "column",
+      "args": {
+        "tags": "api, docs, perf, ux, infra"
+      }
     },
-    { "export": "Done", "title": "Done, low priority", "width": "column" },
+    {
+      "export": "Done",
+      "title": "Done, low priority",
+      "width": "column",
+      "args": {
+        "status": "done",
+        "priority": "low"
+      }
+    },
     {
       "export": "BlockedUrgent",
       "title": "Blocked and urgent",
-      "width": "column"
+      "width": "column",
+      "args": {
+        "status": "blocked",
+        "priority": "urgent"
+      }
     },
-    { "export": "NoTags", "title": "No tags", "width": "column" }
+    {
+      "export": "NoTags",
+      "title": "No tags",
+      "width": "column"
+    }
   ],
   "provenance": [
     {
@@ -41,5 +64,34 @@
     "All pills in the status row share one height and one padding (round-005).",
     "Keep the round-001 C proportions: title, 2-line description, owner footer (round-001, round-003).",
     "Status color is a dot inside the pill; the label carries the meaning (round-005, round-006)."
+  ],
+  "controls": [
+    {
+      "prop": "status",
+      "kind": "select",
+      "options": ["todo", "in-progress", "in-review", "blocked", "done"],
+      "label": "Status on every card"
+    },
+    {
+      "prop": "priority",
+      "kind": "select",
+      "options": ["low", "medium", "high", "urgent"],
+      "label": "Priority on every card"
+    },
+    {
+      "prop": "tags",
+      "kind": "text",
+      "label": "Tags, comma-separated (more than 2 shows +n)"
+    },
+    {
+      "prop": "title",
+      "kind": "text",
+      "label": "Title on every card (try a long one)"
+    },
+    {
+      "prop": "count",
+      "kind": "number",
+      "label": "Cards shown"
+    }
   ]
 }

@@ -7,22 +7,39 @@
     {
       "export": "Compare",
       "title": "Compare page, current round",
-      "width": "full"
+      "width": "full",
+      "args": {
+        "page": "Compare",
+        "round": "current"
+      }
     },
     {
       "export": "LibraryPage",
       "title": "Library page: page crumb, no round tier",
-      "width": "full"
+      "width": "full",
+      "args": {
+        "page": "Library",
+        "round": "current"
+      }
     },
     {
       "export": "AllAnswered",
       "title": "All rounds answered",
-      "width": "full"
+      "width": "full",
+      "args": {
+        "page": "Compare",
+        "round": "none",
+        "allAnswered": true
+      }
     },
     {
       "export": "BrokenRound",
       "title": "A round that could not be loaded",
-      "width": "full"
+      "width": "full",
+      "args": {
+        "page": "Compare",
+        "round": "broken"
+      }
     }
   ],
   "provenance": [
@@ -45,5 +62,34 @@
     "Off Compare, the breadcrumb names the page and the round tier is hidden (round-002 b).",
     "Never list every round as a button in the header (round-001 a).",
     "Don't shrink page icons to fit (round-001 d)."
+  ],
+  "controls": [
+    {
+      "prop": "page",
+      "kind": "select",
+      "options": ["Compare", "Library", "Theme", "History"],
+      "label": "Active page"
+    },
+    {
+      "prop": "round",
+      "kind": "select",
+      "options": ["current", "broken", "none"],
+      "label": "Shown round (fixture)"
+    },
+    {
+      "prop": "showRoundTier",
+      "kind": "boolean",
+      "label": "Round tier (unset: Compare only)"
+    },
+    {
+      "prop": "allAnswered",
+      "kind": "boolean",
+      "label": "Every round answered (fixture)"
+    },
+    {
+      "prop": "labName",
+      "kind": "text",
+      "label": "Lab name (try a long one)"
+    }
   ]
 }

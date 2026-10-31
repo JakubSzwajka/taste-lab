@@ -1,8 +1,35 @@
-# taste-lab
+# taste.lab
 
-A local shadcn app for tuning UI taste. You compare 2 to 4 component variants side by side, pick one and say why. An agent reads that log and writes the next round. The app never calls an LLM.
+A local shadcn lab for tuning UI taste with an agent. You compare 2 to 4 component variants side by side, pick one and say why. The agent reads that log and writes the next round. The app never calls an LLM.
 
-The taste data for an app lives in a `.taste-lab` folder in that app's repo. This lab serves any such folder.
+The taste data for an app lives in a `.taste-lab` folder in that app's repo, committed with the app. One lab serves any such folder. Agreed components go into a library inside that folder, ready for another session to build into the app.
+
+![Compare: three variants of a chat system line side by side, with the answer bar at the bottom](docs/screenshots/compare.png)
+
+| Library                                                                                               | History                                                                         |
+| ----------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| ![Library: agreed components with examples, a live canvas and controls](docs/screenshots/library.png) | ![History: every answer with its pick and reason](docs/screenshots/history.png) |
+
+Screenshots: the lab serving the `.taste-lab` folder of a real app, in dark mode.
+
+## Install
+
+You need Node 23.6 or newer (it runs the TypeScript sources directly) and pnpm.
+
+As a [pi](https://pi.dev) package, which gives you the `/taste` command and the `taste` skill:
+
+```sh
+pi install git:github.com/JakubSzwajka/taste-lab
+```
+
+Or from a clone, which also gives you the `taste-lab` CLI:
+
+```sh
+git clone https://github.com/JakubSzwajka/taste-lab
+cd taste-lab
+pnpm install
+pi install .   # optional: the pi package from this clone
+```
 
 ## Run
 
@@ -29,8 +56,8 @@ node <taste-lab>/bin/taste-lab.mjs serve --dir ../my-app/.taste-lab [--port N] [
 
 ```sh
 node <taste-lab>/bin/taste-lab.mjs serve --dir ../my-app/.taste-lab --lan
-#   LAN address 192.168.1.23 (wlp10s0). The link token changes on every run.
-#   http://192.168.1.23:5301/?k=<token>
+#   LAN address 192.168.1.50 (wlan0). The link token changes on every run.
+#   http://192.168.1.50:5301/?k=<token>
 ```
 
 - The address is the interface that carries the default route (read from `/proc/net/route`, Linux only). Without a default route, it is the first private IPv4 that is not on a docker, bridge, veth, libvirt or tunnel interface. The output names other candidates.
@@ -48,11 +75,7 @@ Node version is pinned in `.node-version`. pnpm version is in `package.json`.
 
 ### Use it from pi
 
-This repo is a [pi](https://pi.dev) package with a `/taste` command and a `taste` skill. Install it once from the local checkout. It uses this repo's own `node_modules`, so run `pnpm install` first.
-
-```sh
-pi install ~/DEV/priv/taste-lab
-```
+This repo is a [pi](https://pi.dev) package with a `/taste` command and a `taste` skill. Install it once, see "Install". A local clone needs `pnpm install` first, because the package uses the clone's own `node_modules`.
 
 Then, in a pi session in any repo:
 
@@ -74,7 +97,7 @@ The server's stderr goes to a log in a private folder in the OS temp dir (`taste
 ## Use
 
 1. Open the URL. The current round is the first one with no answer.
-   The header has two rows. The top row shows `taste-lab / <name> / <round>`. Click the round to open a menu of every round with its status (pick, open or error). On the right are icon buttons for Compare, Library, Theme and History, then the light or dark switch. On Compare pages, a second row shows `<` and `>` to step through rounds, the round's question, its pick and "n of N answered".
+   The header has two rows. The top row shows the taste.lab logo, then `<name> / <round>`. Click the round to open a menu of every round with its status (pick, open or error). On the right are icon buttons for Compare, Library, Theme and History, then the light or dark switch. On Compare pages, a second row shows `<` and `>` to step through rounds, the round's question, its pick and "n of N answered".
 2. Toggle light or dark. All variants switch.
 3. Compare has no page heading: the header's round tier shows the question. One answer bar is pinned to the bottom: the picks (A to D, None, Mix), a one-line reason that fills the row, and Submit. There are no tags. Mix needs a reason.
    Keys: `1` to `4` pick and show that variant, `n` picks None, `m` picks Mix and focuses the reason, `r` focuses the reason and `Esc` leaves it. Enter (or Ctrl/Cmd+Enter) in the reason submits. On the page, Enter submits unless a button, link or toggle has focus. Shift+Enter and Alt+Enter do nothing, and pasted line breaks become spaces.
@@ -168,3 +191,7 @@ To promote a token round winner, copy the winning variant's `tokens` into `:root
 Round variants can import a library component as `@/library/<name>/<Name>`, to iterate on an agreed component. To promote a winner, copy the winning variant into `library/<name>/`, turn the fixture use into props, add examples and write `meta.json` with the rounds it came from. Details and the full contract are in [AGENTS.md](AGENTS.md). Variants may also import `class-variance-authority`, so a round can copy a library component that uses `cva`.
 
 Rules for variants, the round and log contracts, and the agent loop are in [AGENTS.md](AGENTS.md).
+
+## License
+
+MIT. See [LICENSE](LICENSE).

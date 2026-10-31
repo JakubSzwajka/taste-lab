@@ -160,6 +160,14 @@ describe("HistoryView", () => {
     expect(out).toContain("Answered in flip view");
     expect(out).toContain("1 answer<");
   });
+  it("flattens multiline reasons in the row but preserves the full title", () => {
+    const reason = "header of a\nbody of b\r\nfooter of c\rlast";
+    const out = html([entry({ reason })]);
+    expect(out).toContain(`title="${reason}"`);
+    expect(out).toMatch(/>header of a body of b footer of c last<\/td>/);
+    expect(out).toContain("truncate");
+  });
+
   it("shows old tags as same-size pills and leaves the cell empty without tags", () => {
     const tagged = html([entry({ tags: ["clean", "airy", "quiet"] })]);
     expect(tagged).toContain(">clean<");

@@ -2,6 +2,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { AnswerBar } from "../src/components/AnswerPanel";
 import { CompareScreen } from "../src/components/CompareScreen";
+import { TooltipProvider } from "../src/components/ui/tooltip";
 import type { LoadedRound } from "../src/lib/rounds";
 import type { TasteEntry } from "../src/lib/taste";
 
@@ -47,14 +48,16 @@ function render(
   extra: { previous?: TasteEntry; error?: string | null } = {},
 ) {
   return renderToStaticMarkup(
-    <CompareScreen
-      round={round(preview)}
-      theme="dark"
-      previous={extra.previous}
-      submitting={false}
-      error={extra.error ?? null}
-      onSubmit={() => {}}
-    />,
+    <TooltipProvider>
+      <CompareScreen
+        round={round(preview)}
+        theme="dark"
+        previous={extra.previous}
+        submitting={false}
+        error={extra.error ?? null}
+        onSubmit={() => {}}
+      />
+    </TooltipProvider>,
   );
 }
 
@@ -95,10 +98,16 @@ describe("CompareScreen (round-003 c + round-009 a)", () => {
     }
   });
 
-  it("has no page heading: the header's round tier carries the question", () => {
+  it("has no page heading and puts the full question in the answer bar", () => {
     const html = render("flip");
     expect(html).not.toMatch(/<h1[\s>]/);
-    expect(html).not.toContain("Which reason input feels right?");
+    const form = answerForm(html);
+    expect(form).toContain("Which reason input feels right?");
+    expect(form).toContain("text-base leading-snug font-medium text-pretty");
+    expect(form).toContain("text-muted-foreground uppercase");
+    expect(form.indexOf("Which reason")).toBeLessThan(
+      form.indexOf("<textarea"),
+    );
   });
 
   it("fills the page: the frame box and frames grow", () => {
@@ -109,7 +118,7 @@ describe("CompareScreen (round-003 c + round-009 a)", () => {
     );
   });
 
-  it("pins a one-row answer bar to the bottom, after the frames", () => {
+  it("pins the question and composer to the bottom, after the frames", () => {
     const html = render("flip");
     const form = answerForm(html);
     expect(html.indexOf("Variant c: Label c")).toBeLessThan(html.indexOf(form));
@@ -123,12 +132,17 @@ describe("CompareScreen (round-003 c + round-009 a)", () => {
     }
     expect(form).toContain("None");
     expect(form).toContain("Mix");
-    // A single-line reason that fills the row, then Submit.
-    expect(form).toMatch(/<textarea[^>]*aria-label="Reason"[^>]*rows="1"/);
-    expect(form).toMatch(
-      /<textarea[^>]*class="[^"]*flex-1[^"]*whitespace-nowrap/,
+    expect(form).toMatch(/<textarea[^>]*aria-label="Reason"[^>]*rows="2"/);
+    expect(form).toContain("min-w-48 flex-1 rounded-lg border border-input");
+    expect(form).toContain("max-h-[calc(8lh+1rem)]");
+    expect(form).toContain("overflow-y-auto");
+    expect(form.match(/<textarea[^>]*>/)?.[0]).not.toContain(
+      "whitespace-nowrap",
     );
-    expect(form.indexOf("<textarea")).toBeLessThan(form.indexOf(">Submit<"));
+    expect(form).toContain("justify-end gap-2 px-2 pb-2");
+    expect(submitTag(form)).toContain('aria-label="Submit"');
+    expect(form).not.toContain(">Submit<");
+    expect(form).toContain("Ctrl↵");
   });
 
   it("has no tags in the UI", () => {
@@ -175,14 +189,17 @@ describe("CompareScreen (round-003 c + round-009 a)", () => {
 describe("AnswerBar", () => {
   const bar = (pick: string, submitting = false) =>
     renderToStaticMarkup(
-      <AnswerBar
-        variantIds={["a", "b"]}
-        pick={pick}
-        onPick={() => {}}
-        submitting={submitting}
-        error={null}
-        onSubmit={() => {}}
-      />,
+      <TooltipProvider>
+        <AnswerBar
+          question="Which is right?"
+          variantIds={["a", "b"]}
+          pick={pick}
+          onPick={() => {}}
+          submitting={submitting}
+          error={null}
+          onSubmit={() => {}}
+        />
+      </TooltipProvider>,
     );
 
   it("enables Submit once picked", () => {
@@ -197,9 +214,9 @@ describe("AnswerBar", () => {
     expect(html).toContain('title="Mix needs a reason"');
   });
 
-  it("shows Saving... while a save runs", () => {
+  it("marks the icon busy while a save runs", () => {
     const html = bar("a", true);
-    expect(html).toContain("Saving...");
+    expect(submitTag(html)).toContain('aria-busy="true"');
     expect(submitTag(html)).toContain('disabled=""');
   });
 });

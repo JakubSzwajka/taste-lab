@@ -287,7 +287,7 @@ function RoundMenu({
 const statusText = (s: RoundStatus) =>
   s.kind === "answered" ? `pick ${s.pick}` : s.kind;
 
-/** round-001 c's second tier: arrows, the question, the answered count. */
+/** Round-019 d: arrows, round id and component, status and answered count. */
 function RoundTier({
   route,
   items,
@@ -303,7 +303,7 @@ function RoundTier({
   const answered = answeredCount(items);
   // The full text for the title, since the line truncates when narrow.
   const tierText = shown?.ok
-    ? `${shown.spec.component}: ${shown.spec.question}`
+    ? `${shown.id} · ${shown.spec.component}`
     : undefined;
   return (
     <div className="border-b bg-muted/40">
@@ -332,10 +332,11 @@ function RoundTier({
         <p className="min-w-0 flex-1 truncate text-sm" title={tierText}>
           {shown?.ok ? (
             <>
+              <span className="font-mono">{shown.id}</span>
               <span className="text-muted-foreground">
-                {shown.spec.component}:{" "}
+                {" "}
+                · {shown.spec.component}
               </span>
-              {shown.spec.question}
             </>
           ) : shown ? (
             <span className="text-muted-foreground">

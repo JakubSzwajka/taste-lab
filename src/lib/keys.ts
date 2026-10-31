@@ -104,9 +104,8 @@ export type ReasonKeyEvent = EnterEvent & {
 };
 
 /**
- * What a key does inside the one-line reason (round-009 a).
- * - "submit": Enter, with or without Ctrl/Cmd, sends the answer.
- * - "swallow": Shift/Alt+Enter. The reason stays one line, so no line break.
+ * What a key does inside the multiline reason.
+ * - "submit": Ctrl/Cmd+Enter sends the answer.
  * - "leave": Escape hands focus back to the page, so pick keys work again.
  * - "ignore": anything else, or Enter while an IME is composing.
  * The caller calls preventDefault for all but "ignore"; the global handler
@@ -114,15 +113,13 @@ export type ReasonKeyEvent = EnterEvent & {
  */
 export function reasonKeyAction(
   e: ReasonKeyEvent,
-): "submit" | "swallow" | "leave" | "ignore" {
+): "submit" | "leave" | "ignore" {
   if (e.isComposing) return "ignore";
   if (e.key === "Escape") return "leave";
   if (e.key !== "Enter") return "ignore";
-  return e.shiftKey || e.altKey ? "swallow" : "submit";
+  if (e.shiftKey || e.altKey) return "ignore";
+  return e.ctrlKey || e.metaKey ? "submit" : "ignore";
 }
-
-/** The reason is one line: pasted or typed line breaks become spaces. */
-export const oneLine = (s: string) => s.replace(/\r\n|\r|\n/g, " ");
 
 /**
  * What a plain answer-bar key does, or null: 1-4 pick a variant by position,

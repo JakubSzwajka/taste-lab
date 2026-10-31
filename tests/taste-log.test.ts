@@ -54,6 +54,15 @@ describe("validateEntry", () => {
     ).toBe(true);
   });
 
+  it("keeps multiline reasons and rejects whitespace-only multiline Mix", () => {
+    const reason = "header of a\nbody of b\r\nfooter of c";
+    const result = validateEntry({ ...valid, pick: "mix", reason });
+    expect(result.ok && result.entry.reason).toBe(reason);
+    expect(
+      validateEntry({ ...valid, pick: "mix", reason: "\n \r\n\t" }).ok,
+    ).toBe(false);
+  });
+
   it("accepts view columns or flip and keeps it", () => {
     for (const view of ["columns", "flip"]) {
       const r = validateEntry({ ...valid, view });
@@ -118,6 +127,19 @@ describe("append and read", () => {
       "round-001",
       "round-002",
     ]);
+  });
+
+  it("roundtrips multiline reasons as one physical JSONL line each", () => {
+    const reason = "header of a\n\nbody of b\r\nfooter of c\rlast";
+    const result = validateEntry({ ...valid, pick: "mix", reason });
+    if (!result.ok) throw new Error(result.error);
+    appendEntry(file, result.entry);
+    appendEntry(file, result.entry);
+    expect(readFileSync(file, "utf8").split("\n")).toHaveLength(3);
+    expect(readLog(file)).toEqual({
+      entries: [result.entry, result.entry],
+      skipped: 0,
+    });
   });
 
   it("starts a new line when the file lacks a trailing newline", () => {

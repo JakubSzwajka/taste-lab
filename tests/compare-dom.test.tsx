@@ -7,6 +7,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "../src/components/ui/dropdown-menu";
+import { TooltipProvider } from "../src/components/ui/tooltip";
 import type { LoadedRound } from "../src/lib/rounds";
 import type { Answer } from "../src/lib/submit";
 import { click, mount, one, press, settle, type, unmountAll } from "./dom";
@@ -40,7 +41,7 @@ const round: OkRound = {
 async function setup(withMenu = false) {
   const onSubmit = vi.fn<(a: Answer) => void>();
   const host = await mount(
-    <>
+    <TooltipProvider>
       {withMenu && (
         <DropdownMenu defaultOpen modal={false}>
           <DropdownMenuTrigger>Rounds</DropdownMenuTrigger>
@@ -58,7 +59,7 @@ async function setup(withMenu = false) {
         error={null}
         onSubmit={onSubmit}
       />
-    </>,
+    </TooltipProvider>,
   );
   const bar = one(host, 'form[aria-label="Answer"]');
   const reason = one<HTMLTextAreaElement>(bar, 'textarea[aria-label="Reason"]');
@@ -103,14 +104,16 @@ describe("Compare answer bar, mounted", () => {
       ),
     };
     const host = await mount(
-      <CompareScreen
-        round={rendered}
-        theme="dark"
-        previous={undefined}
-        submitting={false}
-        error={null}
-        onSubmit={() => {}}
-      />,
+      <TooltipProvider>
+        <CompareScreen
+          round={rendered}
+          theme="dark"
+          previous={undefined}
+          submitting={false}
+          error={null}
+          onSubmit={() => {}}
+        />
+      </TooltipProvider>,
     );
     await settle();
     const frame = one(host, 'section[aria-label="Variant a: Label a"]');
@@ -126,12 +129,32 @@ describe("Compare answer bar, mounted", () => {
     ).toBe("Fixture b");
   });
 
-  it("submits exactly once for one Enter in the reason", async () => {
+  it("keeps Enter and Shift+Enter native and preserves pasted newlines", async () => {
+    const { onSubmit, reason } = await setup();
+    await press(document.body, "2");
+    reason.focus();
+    for (const modifiers of [{}, { shiftKey: true }]) {
+      const e = await press(reason, "Enter", modifiers);
+      expect(e.defaultPrevented).toBe(false);
+    }
+    // happy-dom has no default text insertion; a browser verifies real typing.
+    await type(reason, "less noise\nmore air\n");
+    expect(reason.value).toBe("less noise\nmore air\n");
+    expect(onSubmit).not.toHaveBeenCalled();
+    await press(reason, "Enter", { ctrlKey: true });
+    expect(onSubmit).toHaveBeenCalledExactlyOnceWith({
+      pick: "b",
+      reason: "less noise\nmore air\n",
+      view: "flip",
+    });
+  });
+
+  it("submits exactly once for one Cmd+Enter in the reason", async () => {
     const { onSubmit, reason } = await setup();
     await press(document.body, "2");
     reason.focus();
     await type(reason, "less noise");
-    const e = await press(reason, "Enter");
+    const e = await press(reason, "Enter", { metaKey: true });
     expect(e.defaultPrevented).toBe(true);
     expect(onSubmit).toHaveBeenCalledTimes(1);
     expect(onSubmit).toHaveBeenCalledWith({
@@ -147,6 +170,39 @@ describe("Compare answer bar, mounted", () => {
     reason.focus();
     await press(reason, "Enter", { ctrlKey: true });
     expect(onSubmit).toHaveBeenCalledTimes(1);
+  });
+
+  it("leaves the reason with Escape and restores page shortcuts", async () => {
+    const { reason, picked } = await setup();
+    await press(document.body, "r");
+    expect(document.activeElement).toBe(reason);
+    await press(reason, "Escape");
+    expect(document.activeElement).not.toBe(reason);
+    await press(document.body, "3");
+    expect(picked()).toEqual(["c"]);
+  });
+
+  it("does not submit during IME composition", async () => {
+    const { reason, onSubmit } = await setup();
+    await press(document.body, "1");
+    reason.focus();
+    const e = await press(reason, "Enter", {
+      ctrlKey: true,
+      isComposing: true,
+    });
+    expect(e.defaultPrevented).toBe(false);
+    expect(onSubmit).not.toHaveBeenCalled();
+  });
+
+  it("shows the Mac shortcut hint on Mac", async () => {
+    vi.spyOn(navigator, "platform", "get").mockReturnValue("MacIntel");
+    try {
+      const { bar, reason } = await setup();
+      expect(bar.textContent).toContain("⌘↵");
+      expect(reason.getAttribute("aria-keyshortcuts")).toBe("Meta+Enter");
+    } finally {
+      vi.restoreAllMocks();
+    }
   });
 
   it("submits once for Enter on the page", async () => {
@@ -196,7 +252,7 @@ describe("Compare answer bar, mounted", () => {
     await press(document.body, "m");
     expect(document.activeElement).toBe(reason);
     await press(reason, "Enter");
-    await type(reason, "   ");
+    await type(reason, " \n\n  ");
     await press(reason, "Enter");
     await press(document.body, "Enter");
     const submit = one<HTMLButtonElement>(bar, 'button[type="submit"]');
@@ -205,7 +261,7 @@ describe("Compare answer bar, mounted", () => {
     expect(onSubmit).not.toHaveBeenCalled();
 
     await type(reason, "header of b, rows of c");
-    await press(reason, "Enter");
+    await press(reason, "Enter", { ctrlKey: true });
     expect(onSubmit).toHaveBeenCalledTimes(1);
     expect(onSubmit.mock.calls[0]?.[0]).toMatchObject({
       pick: "mix",

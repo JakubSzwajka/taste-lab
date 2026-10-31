@@ -70,7 +70,7 @@ function Preview({
   );
 }
 
-/** Compare page on the current round: crumb menu, tier with question and count. */
+/** Compare: crumb menu, round id and component, count. Question lives in the answer bar (round-019 d). */
 export function Compare(args: AppHeaderArgs) {
   return <Preview base={{ page: "Compare", round: "current" }} args={args} />;
 }

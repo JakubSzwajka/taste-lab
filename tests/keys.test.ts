@@ -3,7 +3,6 @@ import {
   arrowAction,
   enterAction,
   MENU_SELECTOR,
-  oneLine,
   pickKey,
   pickShortcutAllowed,
   reasonKeyAction,
@@ -137,22 +136,28 @@ describe("pickShortcutAllowed", () => {
   });
 });
 
-describe("reasonKeyAction (one-line reason, round-009 a)", () => {
+describe("reasonKeyAction (multiline composer)", () => {
   const key = (k: string, extra: Partial<typeof plain> = {}) => ({
     ...plain,
     ...extra,
     key: k,
   });
 
-  it("Enter submits, with or without Ctrl/Cmd", () => {
-    expect(reasonKeyAction(key("Enter"))).toBe("submit");
+  it("only Ctrl/Cmd+Enter submits", () => {
+    expect(reasonKeyAction(key("Enter"))).toBe("ignore");
     expect(reasonKeyAction(key("Enter", { ctrlKey: true }))).toBe("submit");
     expect(reasonKeyAction(key("Enter", { metaKey: true }))).toBe("submit");
   });
 
-  it("Shift/Alt+Enter never add a line break", () => {
-    expect(reasonKeyAction(key("Enter", { shiftKey: true }))).toBe("swallow");
-    expect(reasonKeyAction(key("Enter", { altKey: true }))).toBe("swallow");
+  it("leaves newline keys and other modifier combinations native", () => {
+    for (const modifiers of [
+      { shiftKey: true },
+      { altKey: true },
+      { ctrlKey: true, shiftKey: true },
+      { metaKey: true, altKey: true },
+    ]) {
+      expect(reasonKeyAction(key("Enter", modifiers))).toBe("ignore");
+    }
   });
 
   it("Escape leaves the reason", () => {
@@ -166,11 +171,6 @@ describe("reasonKeyAction (one-line reason, round-009 a)", () => {
     for (const k of ["a", "1", "m", "ArrowLeft", " "]) {
       expect(reasonKeyAction(key(k))).toBe("ignore");
     }
-  });
-
-  it("oneLine turns pasted line breaks into spaces", () => {
-    expect(oneLine("a\nb\r\nc\rd")).toBe("a b c d");
-    expect(oneLine("plain")).toBe("plain");
   });
 });
 

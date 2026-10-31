@@ -1,5 +1,12 @@
-import { ChevronDown, ChevronRight, CircleAlert } from "lucide-react";
-import { useState } from "react";
+import {
+  ChevronDown,
+  ChevronRight,
+  ChevronsDownUp,
+  ChevronsUpDown,
+  CircleAlert,
+} from "lucide-react";
+import { type ReactNode, useState } from "react";
+import { Button } from "@/components/ui/button";
 import {
   Sidebar,
   SidebarContent,
@@ -15,6 +22,12 @@ import {
   SidebarMenuSubItem,
   useSidebar,
 } from "@/components/ui/sidebar";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import type { LibraryEntry } from "@/lib/library";
 import { hrefFor } from "@/lib/route";
 import { StatusBadge } from "./LibraryDocs";
@@ -46,6 +59,17 @@ export function LibraryTree({
     else collapsed.add(name);
     rerender((n) => n + 1);
   };
+  const foldable = entries.filter((e) => e.ok).map((e) => e.name);
+  const anyOpen = foldable.some((n) => !collapsed.has(n));
+  const anyClosed = foldable.some((n) => collapsed.has(n));
+  const foldAll = (fold: boolean) => {
+    for (const n of foldable) {
+      if (fold) collapsed.add(n);
+      else collapsed.delete(n);
+    }
+    rerender((n) => n + 1);
+  };
+  const drafts = entries.filter((e) => e.ok && e.meta.status === "draft");
   // The sheet covers the page on a phone: close it once something is picked.
   const picked = () => {
     if (isMobile) setOpenMobile(false);
@@ -55,9 +79,30 @@ export function LibraryTree({
       <SidebarContent>
         <nav aria-label="Library entries and examples">
           <SidebarGroup className="gap-3 p-4">
-            <SidebarGroupLabel>
-              {entries.length} {entries.length === 1 ? "entry" : "entries"}
-            </SidebarGroupLabel>
+            <div className="flex items-center gap-1 pr-1">
+              <SidebarGroupLabel className="flex-1">
+                {entries.length} {entries.length === 1 ? "entry" : "entries"}
+                {drafts.length > 0 &&
+                  `, ${drafts.length} ${drafts.length === 1 ? "draft" : "drafts"}`}
+              </SidebarGroupLabel>
+              {/* Own provider: the Library page also mounts outside App. */}
+              <TooltipProvider>
+                <FoldButton
+                  label="Collapse all"
+                  disabled={!anyOpen}
+                  onClick={() => foldAll(true)}
+                >
+                  <ChevronsDownUp />
+                </FoldButton>
+                <FoldButton
+                  label="Expand all"
+                  disabled={!anyClosed}
+                  onClick={() => foldAll(false)}
+                >
+                  <ChevronsUpDown />
+                </FoldButton>
+              </TooltipProvider>
+            </div>
             <SidebarGroupContent>
               <SidebarMenu>
                 {entries.map((e) => {
@@ -90,9 +135,14 @@ export function LibraryTree({
                           <span className="min-w-0 flex-1 truncate font-medium">
                             {e.ok ? e.meta.title : e.name}
                           </span>
-                          <StatusBadge
-                            status={e.ok ? e.meta.status : "error"}
-                          />
+                          {/* Agreed is the normal case: only a draft or a
+                              broken entry gets a pill (operator, after the
+                              sidebar showed "agreed" 17 times). */}
+                          {!(e.ok && e.meta.status === "agreed") && (
+                            <StatusBadge
+                              status={e.ok ? e.meta.status : "error"}
+                            />
+                          )}
                         </a>
                       </SidebarMenuButton>
                       {e.ok && (
@@ -147,5 +197,35 @@ export function LibraryTree({
         </nav>
       </SidebarContent>
     </Sidebar>
+  );
+}
+
+function FoldButton({
+  label,
+  disabled,
+  onClick,
+  children,
+}: {
+  label: string;
+  disabled: boolean;
+  onClick: () => void;
+  children: ReactNode;
+}) {
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          aria-label={label}
+          disabled={disabled}
+          onClick={onClick}
+          className="text-muted-foreground [&_svg]:size-4"
+        >
+          {children}
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent>{label}</TooltipContent>
+    </Tooltip>
   );
 }

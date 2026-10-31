@@ -15,6 +15,7 @@ Distilled from `taste.jsonl`. The agent rewrites this file every ~5 rounds. Each
 | History | One dense table, richer row, tags as same-size pills        | round-004, round-007 |
 | Library | Two panes: tree, canvas with toolbar, Docs, Controls        | round-005, round-008 |
 | Theme   | One dense token table by role, filter, ignored parts on top | round-010 a          |
+| Lab look | Slate surfaces, teal primary, coral second color, soft layers, roomy spacing (icons open) | round-011 to round-015 |
 
 The Compare, History, Library and Theme pages are built in `src/` from these picks. `app-header` is promoted to `library/app-header/`.
 
@@ -59,6 +60,15 @@ The operator's taste from `examples/demo` (its DESIGN.md) is the prior, not a ru
 - One dense table, one 36px row per token: name, light chip and value, dark chip and value, a source pill of one size. Group rows by role with counts, an All / theme.css / Stock filter, and the ignored parts of theme.css as a compact list on top. round-010 a ("only this one is readable"), picked over a swatch grid, a preview and a workbench.
 - Chips show real values in their own mode, set inline from the parsed tokens like the Library canvas, so light chips read in a dark lab. The built page drops the variant's dashed light chips. round-010 a.
 
+### Lab look (round-011 to round-015)
+
+- Slate surfaces with a faint blue tint over flat grey. round-011 b ("B but please make some more adjustments then just colours").
+- Soft layers: large radius (0.875rem), the frame a raised card with a shadow on a muted canvas, a floating answer bar. round-012 b ("better but still kind of sad?").
+- Color at work: status badges and avatars from the chart tokens, a soft primary wash on the canvas and frame header, accent badge pills. Coral as second color. round-013 b.
+- Teal primary over blue. round-014 c ("pic teal but whatever": lukewarm).
+- Roomy spacing: 64px header, 32px page padding, taller rows. Icons from the C set (gallery, library, brush, scroll, circled arrows, send). round-015 mix ("I like it roomy with icons from C"). Treatment open in round-016.
+- These are round picks. The real `src/` pages do not have soft layers, colored statuses, roomy spacing or the new icons yet. Only the tokens are live.
+
 ### Everywhere
 
 - Quiet over loud, dense over roomy, pills of one size. round-004 b, round-007 c, `examples/demo`.
@@ -83,6 +93,11 @@ Copied from `examples/demo` round-007 a (one taste across repos). Judged in dark
 | `--primary`            | `oklch(0.5 0.19 262)`  | `oklch(0.72 0.14 262)` | `examples/demo round-007 a` |
 | `--primary-foreground` | `oklch(0.985 0 0)`     | `oklch(0.2 0.04 262)`  | `examples/demo round-007 a` |
 | `--ring`               | `oklch(0.55 0.17 262)` | `oklch(0.65 0.14 262)` | `examples/demo round-007 a` |
+| Surfaces, text, borders (`--background` to `--input`) | cool slate, hue 255, low chroma | deep slate, hue 255 | round-011 b ("B but please make some more adjustments then just colours") |
+| `--sidebar*` | slate, same values | slate, same values | extends round-011 b; the round did not show a sidebar |
+| `--radius` | `0.875rem` | same | round-012 b (soft layers: "better but still kind of sad?") |
+| `--primary`, `--accent(-foreground)`, `--chart-1` to `--chart-5` | blue 262 primary, coral 35 accent, coral/blue/teal/amber/pink charts | same hues, lighter | round-013 b ("lets also challange a bit this blue": primary under test in round-014) |
+| `--primary`, `--primary-foreground`, `--ring`, `--chart-2`, `--chart-3` | teal 190 primary, green 145 chart-3 | teal 185, lighter | round-014 c ("pic teal but whatever": lukewarm, revisit if it still feels flat) |
 
 ### Sizes settled in layout rounds
 

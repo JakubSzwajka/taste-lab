@@ -1,0 +1,32 @@
+{
+  "id": "round-012",
+  "level": "component",
+  "component": "lab-theme",
+  "question": "Slate colors are in (round-011 b, now live in theme.css). Beyond color, what character should the lab have? Same Compare page and colors in all three; radius, depth, type and spacing differ. Logo comes after this.",
+  "fixture": "lab",
+  "basedOn": { "round": "round-011", "pick": "b" },
+  "preview": "flip",
+  "variants": [
+    {
+      "id": "a",
+      "file": "a.tsx",
+      "label": "Crisp tool",
+      "changes": "Like an IDE: small radius (0.25rem), tight spacing, flat surfaces with no shadows, mono uppercase labels, one-line frame header, slim answer bar.",
+      "tokens": { "--radius": "0.25rem" }
+    },
+    {
+      "id": "b",
+      "file": "b.tsx",
+      "label": "Soft layers",
+      "changes": "Like a calm app: large radius (0.875rem), the frame a raised card with a shadow on a muted canvas, roomier padding, bigger label, pill badges, a floating answer bar.",
+      "tokens": { "--radius": "0.875rem" }
+    },
+    {
+      "id": "c",
+      "file": "c.tsx",
+      "label": "Editorial",
+      "changes": "Like a print page: medium radius (0.5rem), no frame box, a strong rule above each section, a large label, small uppercase meta and table heads, generous whitespace.",
+      "tokens": { "--radius": "0.5rem" }
+    }
+  ]
+}

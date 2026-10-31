@@ -40,7 +40,7 @@ The operator's taste from `examples/demo` (its DESIGN.md) is the prior, not a ru
 
 - No page heading. The full question sits at the top of the floating answer bar at 16px medium, wrapping without truncation, with a small muted uppercase "Question" label. The round tier keeps the round id and component, navigation, status and count. round-019 d, updating round-003 c and round-009.
 - The frame at full width, filling the viewport. round-003 c ("i want to see it full width. C is the closest one yet").
-- One answer bar pinned at the bottom, without tags (round-003 c, round-009 a). Below the question: pick buttons (A, B, C, None, Mix), a multiline reason that grows from about 2 to 8 rows, then scrolls, and an icon-only Submit inside its bottom-right corner. The composer is an operator request after round-019 d. Mix needs a reason.
+- One answer bar pinned at the bottom, without tags (round-003 c, round-009 a). Below the question, one box holds the whole answer: a multiline reason that grows from about 2 to 8 rows, then scrolls, and a bottom row with the picks (A, B, C, None, Mix, 36px, the picked one solid primary) and a round 40px Submit at the right. Operator requests after round-019 d ("the buttons seem too small"). Mix needs a reason.
 - Keep answering to the keyboard. Enter and Shift+Enter add newlines in the reason, Ctrl/Cmd+Enter submits, Esc leaves it. Pasted line breaks stay. Page shortcuts stay unchanged.
 
 ### History

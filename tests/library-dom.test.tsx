@@ -195,3 +195,52 @@ describe("select menu option ids", () => {
     expect(seen).toEqual([undefined, "\u0000unset", "unset"]);
   });
 });
+
+describe("Library sidebar, mounted", () => {
+  function two(status: "agreed" | "draft") {
+    const base = entries()[0];
+    if (!base?.ok) throw new Error("fixture entry should load");
+    const other = {
+      ...base,
+      name: "other-chip",
+      meta: { ...base.meta, name: "other-chip", title: "Other chip", status },
+    };
+    return [base, other];
+  }
+  const tree = (host: HTMLElement) =>
+    one(host, 'nav[aria-label="Library entries and examples"]');
+  const examples = (host: HTMLElement) =>
+    tree(host).querySelectorAll('[data-sidebar="menu-sub"]').length;
+
+  it("collapses and expands every entry at once", async () => {
+    const host = await mount(
+      <LibraryPage entries={two("agreed")} light={{}} />,
+    );
+    await settle();
+    expect(examples(host)).toBe(2);
+    const collapse = one<HTMLButtonElement>(
+      host,
+      'button[aria-label="Collapse all"]',
+    );
+    const expand = one<HTMLButtonElement>(
+      host,
+      'button[aria-label="Expand all"]',
+    );
+    expect(expand.disabled).toBe(true);
+    await click(collapse);
+    expect(examples(host)).toBe(0);
+    expect(collapse.disabled).toBe(true);
+    await click(expand);
+    expect(examples(host)).toBe(2);
+    expect(expand.disabled).toBe(true);
+  });
+
+  it("shows a status pill for drafts only, and counts them", async () => {
+    const host = await mount(<LibraryPage entries={two("draft")} light={{}} />);
+    await settle();
+    const nav = tree(host);
+    expect(nav.textContent).toContain("2 entries, 1 draft");
+    expect(nav.textContent).toContain("draft");
+    expect(nav.textContent).not.toContain("agreed");
+  });
+});

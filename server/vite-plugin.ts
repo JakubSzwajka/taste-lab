@@ -30,9 +30,9 @@ const inside = (dir: string, file: string) => {
  * - `/api/taste` reads and appends `<dataDir>/taste.jsonl` (dev and preview).
  * - `virtual:taste-lab/config` exposes config.json (the app name).
  * - Adds `@source "<dataDir>"` to the lab stylesheet so Tailwind scans the data dir.
- * - `virtual:taste-lab/theme.css` is `<dataDir>/theme.css`. main.tsx imports it after
- *   index.css, so it follows the stock tokens. Only the accepted `:root` and `.dark`
- *   values are emitted, so a broken file cannot break the stylesheet. Round
+ * - `virtual:taste-lab/theme.css` resets prototype scopes to shadcn stock plus
+ *   accepted `<dataDir>/theme.css` values. It never targets page chrome. Explicit
+ *   light/dark scopes support either canvas mode in either lab mode. Round
  *   `tokens` are inline styles and still win.
  * - `virtual:taste-lab/theme` exposes stock and theme tokens to the Theme page.
  * - Watches the data dir. A new file there regenerates the stylesheet: Tailwind

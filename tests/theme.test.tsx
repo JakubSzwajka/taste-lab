@@ -161,7 +161,7 @@ describe("theme.css validator", () => {
       expect(r.theme.light["--primary"], css).toBeUndefined();
       expect(r.theme.dark["--input"], css).toBe("blue");
       const out = themeToCss(stock, r.theme);
-      expect(out).not.toContain("0.2");
+      expect(out).not.toContain("oklch(0.5 0.2 255");
       expect(out).not.toContain("px");
       expect(out.split("(").length).toBe(out.split(")").length);
     }
@@ -220,14 +220,22 @@ describe("loader order", () => {
     expect(row("--background")?.light.source).toBe("stock");
   });
 
-  it("emits css that keeps stock .dark values after a theme :root value", () => {
+  it("emits full stock plus theme resets only on prototype scopes", () => {
     const css = themeToCss(stock, theme);
-    expect(css).toContain(":root {\n  --primary: oklch(0.5 0.2 255);");
-    // the repeated stock dark value, else :root (later in the file) would win
-    expect(css).toMatch(/\.dark \{[^}]*--primary: oklch\(0\.922 0 0\);/);
-    expect(css).toMatch(/\.dark \{[^}]*--ring: oklch\(0\.8 0\.1 255\);/);
-    expect(css).not.toMatch(/\.dark \{[^}]*--radius/);
-    expect(themeToCss(stock, { light: {}, dark: {} })).toBe("");
+    expect(css).not.toMatch(/:root|\.dark/);
+    const light = css.split('[data-taste-scope="light"] {')[1].split("}")[0];
+    const dark = css.split('[data-taste-scope="dark"] {')[1].split("}")[0];
+    expect(light).toContain("--primary: oklch(0.5 0.2 255);");
+    expect(dark).toContain("--primary: oklch(0.922 0 0);");
+    expect(dark).toContain("--ring: oklch(0.8 0.1 255);");
+    expect(dark).toContain("--radius: 0.25rem;");
+    for (const name of allowed) {
+      expect(light).toContain(`${name}:`);
+      expect(dark).toContain(`${name}:`);
+    }
+    const empty = themeToCss(stock, { light: {}, dark: {} });
+    expect(empty).toContain("--primary: oklch(0.205 0 0);");
+    expect(empty).toContain("--primary: oklch(0.922 0 0);");
   });
 
   // The plugin hooks, as Vite calls them.
@@ -252,7 +260,11 @@ describe("loader order", () => {
     const imports = [...main.matchAll(/^import "([^"]+\.css)";/gm)].map(
       (m) => m[1],
     );
-    expect(imports).toEqual(["./index.css", "virtual:taste-lab/theme.css"]);
+    expect(imports).toEqual([
+      "./index.css",
+      "./lab-theme.css",
+      "virtual:taste-lab/theme.css",
+    ]);
 
     const dir = join(tmp, ".taste-lab");
     mkdirSync(dir);
@@ -264,7 +276,7 @@ describe("loader order", () => {
     expect(h.themeCss()).toContain("--primary: teal;");
     expect(h.themeData()).toContain('"--primary":"teal"');
     rmSync(join(dir, "theme.css"));
-    expect(h.themeCss()).toBe("");
+    expect(h.themeCss()).toBe(themeToCss(stock, { light: {}, dark: {} }));
   });
 
   it("drops rejected parts so a broken file cannot break the stylesheet", () => {
@@ -296,7 +308,8 @@ describe("loader order", () => {
         theme="light"
       />,
     );
-    // An inline custom property on the frame beats :root, .dark and theme.css.
+    // Inline overrides belong to prototype content and beat scoped theme.css.
+    expect(html).toContain('data-taste-scope="light"');
     expect(html).toMatch(/style="[^"]*--primary:oklch\(0\.6 0\.2 30\)/);
   });
 });

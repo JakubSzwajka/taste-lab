@@ -219,6 +219,7 @@ describe("Theme page", () => {
     for (const mode of ["light", "dark"] as const) {
       const b = backdrop(mode);
       expect(b.className).toContain("bg-background");
+      expect(b.getAttribute("data-taste-scope")).toBe(mode);
       expect(styleOf(b, "--background")).toBe(stock[mode]["--background"]);
       expect(styleOf(b, "--destructive")).toBe(stock[mode]["--destructive"]);
     }

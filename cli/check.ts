@@ -7,7 +7,7 @@ import { checkLibrary } from "./check-library.ts";
 import { errMsg, kindOf, readText } from "./fs-util.ts";
 import { scanVariants } from "./scan-variants.ts";
 
-/** The lab's stock tokens: theme.css may set exactly the variables defined here. */
+/** Shadcn stock tokens, not chrome: theme.css may set these variables only. */
 const STOCK_CSS = join(import.meta.dirname, "../src/index.css");
 
 /**

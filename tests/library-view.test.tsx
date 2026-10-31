@@ -108,7 +108,9 @@ describe("Library page", () => {
   it("sets the light tokens inline on a light canvas", () => {
     setCanvasPrefs({ mode: "light" });
     const html = page();
-    expect(html).toMatch(/data-mode="light" style="[^"]*--background:/);
+    expect(html).toMatch(
+      /data-mode="light" data-taste-scope="light" style="[^"]*--background:/,
+    );
     expect(html).toContain("--primary:oklch(0.5 0.19 262)");
     expect(html).toContain("color-scheme:light");
   });
@@ -117,7 +119,7 @@ describe("Library page", () => {
     setCanvasPrefs({ mode: "dark", surface: "muted" });
     const html = page();
     expect(html).toMatch(
-      /data-mode="dark" style="color-scheme:dark" class="[^"]*\bdark\b/,
+      /data-mode="dark" data-taste-scope="dark" style="color-scheme:dark" class="[^"]*\bdark\b/,
     );
     expect(html).not.toContain("--background:");
     expect(html).toContain("bg-muted");

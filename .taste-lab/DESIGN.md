@@ -67,7 +67,7 @@ The operator's taste from `examples/demo` (its DESIGN.md) is the prior, not a ru
 - Color at work: status badges and avatars from the chart tokens, a soft primary wash on the canvas and frame header, accent badge pills. Coral as second color. round-013 b.
 - Teal primary over blue. round-014 c ("pic teal but whatever": lukewarm).
 - Roomy spacing: 64px header, 32px page padding, taller rows. Icons from the C set (gallery, library, brush, scroll, circled arrows, send). round-015 mix ("I like it roomy with icons from C"). Plain 20px icons at stroke 1.75, without tiles, won round-016 b (no reason given).
-- Built in `src/`: the soft-layer Compare canvas, raised variant frames and floating answer bar (round-012 b), accent metadata and chart-colored History pick pills (round-013 b), roomy spacing (round-015 mix) and plain 20px icons at stroke 1.75 (round-016 b). The Library keeps its full-bleed workbench. The promoted app header mirrors the real header. Tokens live in `theme.css`; round-017 has not changed the wordmark.
+- Built in `src/`: the soft-layer Compare canvas, raised variant frames and floating answer bar (round-012 b), accent metadata and chart-colored History pick pills (round-013 b), roomy spacing (round-015 mix) and plain 20px icons at stroke 1.75 (round-016 b). The Library keeps its full-bleed workbench. The promoted app header mirrors the real header. Chrome tokens live in `src/lab-theme.css`, copied from meta rounds 011-014. `theme.css` keeps the same values for meta prototypes. Other data dirs theme only their prototypes. Round-017 has not changed the wordmark.
 
 ### Logo (round-017, round-018)
 
@@ -89,9 +89,9 @@ The operator's taste from `examples/demo` (its DESIGN.md) is the prior, not a ru
 
 ## Tokens
 
-### Settled in theme.css
+### Settled in src/lab-theme.css and meta theme.css
 
-Copied from `examples/demo` round-007 a (one taste across repos). Judged in dark and light there. No lab round has been a token round, so nothing here was decided by the operator in this lab.
+The starting blue tokens came from `examples/demo` round-007 a. Meta rounds 011-014 changed the surfaces, shape and colors. Later rows below supersede earlier values. The current values live in `src/lab-theme.css` for chrome and `theme.css` for meta prototypes.
 
 | Token                                                                   | Light                                                                | Dark                   | Evidence                                                                             |
 | ----------------------------------------------------------------------- | -------------------------------------------------------------------- | ---------------------- | ------------------------------------------------------------------------------------ |

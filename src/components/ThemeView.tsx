@@ -59,6 +59,7 @@ function TokenChip({
     <div className="flex items-center gap-2" data-source={cell.source}>
       <span
         data-backdrop={mode}
+        data-taste-scope={mode}
         style={scope}
         className="flex shrink-0 rounded-sm bg-background p-0.5"
       >

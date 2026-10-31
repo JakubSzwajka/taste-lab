@@ -1,8 +1,9 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
   <title>taste.lab</title>
-  <!-- The taste.lab mark (round-017 a): the lucide flask-conical on a primary
-       tile. A browser tab cannot read theme tokens, so the colors copy
-       .taste-lab/theme.css --primary and --primary-foreground (round-014 c). -->
+  <!-- The taste.lab mark (round-017 a): the lucide flask-conical on a
+       primary tile. A browser tab cannot read theme tokens, so the colors
+       copy the primary and primary-foreground tokens in .taste-lab/theme.css
+       (round-014 c). XML comments cannot hold a double hyphen. -->
   <style>
     .tile { fill: oklch(0.52 0.1 190); }
     .flask { stroke: oklch(0.985 0 0); }

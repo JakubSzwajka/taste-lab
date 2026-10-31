@@ -1,4 +1,4 @@
-// Reads `<dataDir>/theme.css` against the lab's stock stylesheet. Node only.
+// Reads `<dataDir>/theme.css` against shadcn stock in src/index.css. Node only.
 import { readFileSync } from "node:fs";
 import { kindOf, readText } from "../cli/fs-util.ts";
 import {
@@ -17,7 +17,8 @@ export type ThemeData = {
 };
 
 /**
- * Stock tokens from the lab stylesheet plus the accepted values of `theme.css`.
+ * Shadcn stock tokens plus the accepted prototype values of `theme.css`.
+ * Chrome tokens in src/lab-theme.css are never part of this data.
  * A missing file is fine. Trouble reading it becomes a problem (line 0), never a throw.
  */
 export function loadTheme(dataDir: string, stockCssFile: string): ThemeData {

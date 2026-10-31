@@ -6,8 +6,8 @@ import type { Theme } from "@/lib/theme";
 import { cn } from "@/lib/utils";
 
 /**
- * Renders one variant. Token overrides are inline CSS vars on the frame element.
- * They sit below `.dark` on <html> in the cascade, so they win in both themes.
+ * Renders one variant. Only its content gets prototype tokens, not the header.
+ * Inline round overrides beat the scoped stock and theme.css values in both modes.
  * `color-scheme` follows the theme so `light-dark()` values in tokens work.
  */
 export function VariantFrame({
@@ -54,6 +54,7 @@ export function VariantFrame({
         </header>
       )}
       <div
+        data-taste-scope={theme}
         style={style}
         className="min-w-0 flex-1 bg-background px-7 pt-4 pb-7 text-foreground"
       >

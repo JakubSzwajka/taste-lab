@@ -1,5 +1,5 @@
-// The taste theme: parse and validate `<dataDir>/theme.css`, merge it over the lab's
-// stock tokens. Pure functions, no Node and no DOM, so the server, the CLI and the
+// The prototype theme: parse and validate `<dataDir>/theme.css`, merge it over
+// shadcn stock tokens. Pure functions, no Node and no DOM, so the server, the CLI and the
 // Theme page share them.
 
 export type TokenMap = Record<string, string>;
@@ -174,7 +174,7 @@ const modeOf = (selector: string) =>
   selector === ":root" ? "light" : selector === ".dark" ? "dark" : null;
 
 /**
- * Token names and values of the lab's stock stylesheet: the `:root` and `.dark`
+ * Token names and values of the shadcn stock stylesheet: the `:root` and `.dark`
  * blocks, nothing else. Lenient: it skips every other rule.
  */
 export function parseStock(css: string): TokenBlocks {
@@ -353,25 +353,16 @@ export function resolveTokens(
 }
 
 /**
- * The CSS appended after the stock tokens. Values come from `parseTheme`, so they
- * are safe. A theme `:root` value would beat the stock `.dark` value (same
- * specificity, later in the file), so each stock dark value that the theme does
- * not override is repeated in `.dark` to keep it.
+ * Each prototype root gets every stock token, then accepted theme.css values.
+ * Explicit modes let a Library canvas differ from the lab mode. No selector
+ * targets the page, so data dir tokens cannot change chrome. Round tokens set
+ * inline on the same root still win. Values from `parseTheme` are safe to emit.
  */
 export function themeToCss(stock: TokenBlocks, theme: TokenBlocks): string {
-  const root = Object.entries(theme.light);
-  const dark: TokenMap = { ...theme.dark };
-  for (const name of Object.keys(theme.light)) {
-    if (!(name in theme.dark) && name in stock.dark) {
-      dark[name] = stock.dark[name];
-    }
-  }
-  const block = (selector: string, entries: [string, string][]) =>
-    entries.length === 0
-      ? ""
-      : `${selector} {\n${entries.map(([k, v]) => `  ${k}: ${v};`).join("\n")}\n}\n`;
-  const out = `${block(":root", root)}${block(".dark", Object.entries(dark))}`;
-  return out === "" ? "" : `/* taste theme (theme.css) */\n${out}`;
+  const rows = resolveTokens(stock, theme);
+  const block = (mode: "light" | "dark") =>
+    `[data-taste-scope="${mode}"] {\n${rows.map((r) => `  ${r.name}: ${r[mode].value};`).join("\n")}\n}\n`;
+  return `/* Prototype tokens: shadcn stock, then theme.css. */\n${block("light")}${block("dark")}`;
 }
 
 /**

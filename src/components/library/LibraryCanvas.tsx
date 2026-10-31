@@ -81,8 +81,8 @@ export function LibraryCanvas({
   const mode = prefs.mode ?? labMode;
   const loaded = useModules(entry);
 
-  // Dark: a `.dark` scope picks the dark tokens. Light: the light values inline,
-  // so they win over `.dark` on <html>, like round tokens in a variant frame.
+  // The prototype scope picks stock plus theme.css for this mode, independent
+  // of the lab. Light values remain inline for a light canvas in a dark lab.
   const style = {
     ...(mode === "light" ? light : {}),
     colorScheme: mode,
@@ -99,6 +99,7 @@ export function LibraryCanvas({
       <div
         data-testid="library-canvas"
         data-mode={mode}
+        data-taste-scope={mode}
         style={style}
         className={cn(
           "min-h-0 flex-1 overflow-auto",

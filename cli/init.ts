@@ -51,7 +51,8 @@ export const fixtureKeys = Object.keys(fixtures) as FixtureKey[];
 `;
 
 const THEME = `/* Taste theme for this app: shadcn tokens only, in :root (light) and .dark.
- * Missing tokens fall back to the lab's stock theme. Order: stock, then this
+ * Prototype tokens only. Lab chrome keeps its own theme.
+ * Missing tokens fall back to shadcn stock. Order: stock, then this
  * file, then each variant's round.json tokens (those still win).
  * Allowed: the shadcn variables (--primary, --radius, ...) and comments.
  * Not allowed: other selectors, at-rules, @import, url(), other properties.

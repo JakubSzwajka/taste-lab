@@ -42,6 +42,7 @@ import {
 } from "@/components/ui/tooltip";
 import type { LabRound, Page } from "@/fixtures";
 import { cn } from "@/lib/utils";
+import { Logo } from "@/library/logo/Logo";
 
 const PAGES: Page[] = ["Compare", "Library", "Theme", "History"];
 
@@ -110,8 +111,8 @@ export function AppHeader({
       <div className="flex h-16 items-center gap-4 border-b px-8">
         <Breadcrumb className="min-w-0">
           <BreadcrumbList className="flex-nowrap">
-            <BreadcrumbItem className="font-semibold text-foreground">
-              taste-lab
+            <BreadcrumbItem>
+              <Logo />
             </BreadcrumbItem>
             <BreadcrumbSeparator>/</BreadcrumbSeparator>
             <BreadcrumbItem className="min-w-0">

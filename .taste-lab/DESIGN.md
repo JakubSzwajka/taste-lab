@@ -69,7 +69,13 @@ The operator's taste from `examples/demo` (its DESIGN.md) is the prior, not a ru
 - Roomy spacing: 64px header, 32px page padding, taller rows. Icons from the C set (gallery, library, brush, scroll, circled arrows, send). round-015 mix ("I like it roomy with icons from C"). Plain 20px icons at stroke 1.75, without tiles, won round-016 b (no reason given).
 - Built in `src/`: the soft-layer Compare canvas, raised variant frames and floating answer bar (round-012 b), accent metadata and chart-colored History pick pills (round-013 b), roomy spacing (round-015 mix) and plain 20px icons at stroke 1.75 (round-016 b). The Library keeps its full-bleed workbench. The promoted app header mirrors the real header. Tokens live in `theme.css`; round-017 has not changed the wordmark.
 
-### Everywhere
+### Logo (round-017, round-018)
+
+- The display name is taste.lab, not taste-lab. The CLI, package and data dir keep taste-lab. round-017 a ("lets try taste.lab instead of taste-lab").
+- Mark: the lucide flask on a primary tile, picked over a split dot, a type-only wordmark and a drawn two-tone flask. round-017 a.
+- Name: one semibold weight with the dot in coral (`--chart-1`). round-018 b, no reason given.
+- Built as `src/components/Logo.tsx`, promoted to `library/logo/`, and the first crumb of the header.
+
 
 - Keep pills one size and the information in one table (round-004 b, round-007 c). Later rounds chose roomier spacing for the lab chrome (round-015 mix).
 

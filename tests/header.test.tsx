@@ -187,7 +187,10 @@ describe("AppHeader markup", () => {
     ]) {
       expect(html).toContain(`lucide-${name}`);
     }
-    const icons = html.match(/<svg[^>]*>/g) ?? [];
+    // The logo mark has its own stroke and size (round-017 a).
+    const icons = (html.match(/<svg[^>]*>/g) ?? []).filter(
+      (svg) => !svg.includes("lucide-flask"),
+    );
     expect(icons.length).toBeGreaterThan(6);
     for (const icon of icons) {
       expect(icon).toContain('stroke-width="1.75"');
@@ -197,7 +200,8 @@ describe("AppHeader markup", () => {
 
   it("shows the round crumb, question and answered count on Compare", () => {
     const html = render({ page: "current" }, rounds[1]);
-    expect(html).toContain(">taste-lab<");
+    expect(html).toContain('data-slot="logo"');
+    expect(html).toMatch(/taste<span[^>]*>\.<\/span>lab/);
     expect(html).toContain(">acme<");
     expect(html).toMatch(/aria-haspopup="menu"[^>]*><span[^>]*>round-002/);
     expect(html).toContain("Question round-002?");

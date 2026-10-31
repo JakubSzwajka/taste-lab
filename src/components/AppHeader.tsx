@@ -13,6 +13,7 @@ import {
   ScrollText,
   Sun,
 } from "lucide-react";
+import { Logo } from "@/components/Logo";
 import { Badge } from "@/components/ui/badge";
 import {
   Breadcrumb,
@@ -101,8 +102,8 @@ export function AppHeader({
           {/* Below sm the lab crumbs hide, so the page crumb keeps the room. */}
           <Breadcrumb className="min-w-0">
             <BreadcrumbList className="flex-nowrap">
-              <BreadcrumbItem className="hidden font-semibold text-foreground sm:inline-flex">
-                taste-lab
+              <BreadcrumbItem className="hidden sm:inline-flex">
+                <Logo />
               </BreadcrumbItem>
               <BreadcrumbSeparator className="hidden sm:block">
                 /

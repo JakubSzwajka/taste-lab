@@ -134,7 +134,7 @@ export function CompareScreen({
   // left, and a one-row answer bar is pinned to the bottom.
   return (
     <div className="flex flex-1 flex-col">
-      <div className="mx-auto flex w-full max-w-[120rem] flex-1 flex-col gap-4 px-4 pt-6 pb-4">
+      <div className="flex w-full flex-1 flex-col gap-4 px-4 pt-6 pb-4">
         <div className="flex flex-wrap items-center gap-2">
           <Badge variant="secondary">{spec.id}</Badge>
           <Badge variant="outline">{spec.level}</Badge>

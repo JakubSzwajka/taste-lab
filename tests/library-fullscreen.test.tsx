@@ -96,12 +96,12 @@ describe("full-bleed routing", () => {
     });
   }
 
-  it("keeps the centred, padded layout on other pages", async () => {
+  it("keeps the full-width, padded layout on other pages", async () => {
     for (const hash of ["#/history", "#/theme"]) {
       const { root, main } = await app(hash);
       expect(root.dataset.layout).toBe("page");
       expect(root.className).toContain("min-h-svh");
-      expect(main.className).toContain("max-w-[120rem]");
+      expect(main.className).not.toContain("max-w-");
       expect(main.className).toContain("px-4");
       await unmountAll();
     }

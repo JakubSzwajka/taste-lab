@@ -102,7 +102,7 @@ export function AnswerBar({
         submit();
       }}
     >
-      <div className="mx-auto flex max-w-[120rem] flex-wrap items-center gap-3 px-4 py-3">
+      <div className="flex flex-wrap items-center gap-3 px-4 py-3">
         <ToggleGroup
           type="single"
           variant="outline"

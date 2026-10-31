@@ -98,7 +98,7 @@ export function AppHeader({
   return (
     <header>
       <div className="border-b">
-        <div className="mx-auto flex h-14 max-w-[120rem] items-center gap-3 px-4">
+        <div className="flex h-14 items-center gap-3 px-4">
           {/* Below sm the lab crumbs hide, so the page crumb keeps the room. */}
           <Breadcrumb className="min-w-0">
             <BreadcrumbList className="flex-nowrap">
@@ -304,7 +304,7 @@ function RoundTier({
     : undefined;
   return (
     <div className="border-b bg-muted/40">
-      <div className="mx-auto flex h-11 max-w-[120rem] items-center gap-3 px-4">
+      <div className="flex h-11 items-center gap-3 px-4">
         <div className="flex items-center gap-1">
           <Button
             size="icon-lg"

@@ -6,10 +6,11 @@ export type TasteCommand =
   | { action: "start"; lan: boolean; dir: string }
   | { action: "status" }
   | { action: "stop" }
+  | { action: "qr" }
   | { action: "error"; message: string };
 
 export const TASTE_USAGE =
-  "Usage: /taste [local] [--dir <path>] | /taste status | /taste stop";
+  "Usage: /taste [local] [--dir <path>] | /taste status | /taste qr | /taste stop";
 
 /** Splits on whitespace. Single or double quotes keep spaces in one word. */
 export function splitWords(input: string): string[] | null {
@@ -48,7 +49,10 @@ function expandHome(p: string): string {
 export function parseTasteArgs(input: string, cwd: string): TasteCommand {
   const words = splitWords(input);
   if (words === null) return { action: "error", message: "unclosed quote" };
-  if (words.length === 1 && (words[0] === "status" || words[0] === "stop")) {
+  if (
+    words.length === 1 &&
+    (words[0] === "status" || words[0] === "stop" || words[0] === "qr")
+  ) {
     return { action: words[0] };
   }
   let lan = true;
@@ -83,6 +87,7 @@ export function completeTasteArgs(prefix: string) {
     },
     { value: "status", label: "status", description: "Show the links again" },
     { value: "stop", label: "stop", description: "Stop the lab server" },
+    { value: "qr", label: "qr", description: "Scan the LAN link with a phone" },
     {
       value: "--dir ",
       label: "--dir",

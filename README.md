@@ -62,9 +62,12 @@ Then, in a pi session in any repo:
 | `/taste local`        | Same, without the LAN listener and link.                                                                      |
 | `/taste --dir <path>` | Serves another data dir. Combines with `local`.                                                               |
 | `/taste status`       | Shows the links again, or "starting…" while the server is still starting.                                     |
+| `/taste qr`           | Shows a private LAN QR code in pi's terminal UI for your phone. No code in local-only mode.                   |
 | `/taste stop`         | Stops the server. Quitting pi stops it too.                                                                   |
 
-The links, including the LAN token, show only in pi's UI: a notification, a widget below the editor and a status item. The agent never sees them. Each answer you log wakes the agent with one line (`answered round-NNN (...): pick b; tags ...; reason ...`). The `taste` skill then has it write the next round, run `check` and ask you to refresh. If the agent is busy, the answer waits until its current run ends.
+taste.lab uses pi's active theme. A compact widget below the editor shows the app name, links and round progress, updated on each answer. The status item shows the port and whether LAN is on. Links and QR codes stay in pi's UI only, never in model messages or session files. Keep the LAN link and QR code private.
+
+The transcript shows compact started and answer lines, including the pick's variant label and your reason. Each answer you log wakes the agent with the same safe text as before (`answered round-NNN (...): pick b; tags ...; reason ...`). The `taste` skill then has it write the next round, run `check` and ask you to refresh. If the agent is busy, the answer waits until its current run ends.
 
 The server's stderr goes to a log in a private folder in the OS temp dir (`taste-lab-pi-XXXXXX/`, mode 0700, file mode 0600). If the server dies, pi says so and names that log.
 

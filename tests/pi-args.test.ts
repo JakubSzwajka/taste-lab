@@ -48,7 +48,9 @@ describe("/taste arguments", () => {
     });
   });
 
-  it("status and stop stand alone", () => {
+  it("status, qr and stop stand alone", () => {
+    expect(parseTasteArgs("qr", cwd)).toEqual({ action: "qr" });
+    expect(parseTasteArgs("qr local", cwd)).toMatchObject({ action: "error" });
     expect(parseTasteArgs("status", cwd)).toEqual({ action: "status" });
     expect(parseTasteArgs(" stop ", cwd)).toEqual({ action: "stop" });
     expect(parseTasteArgs("stop now", cwd)).toMatchObject({ action: "error" });
@@ -80,6 +82,7 @@ describe("/taste arguments", () => {
       "status",
       "stop",
     ]);
+    expect(completeTasteArgs("q")?.map((i) => i.value)).toEqual(["qr"]);
     expect(completeTasteArgs("zzz")).toBeNull();
   });
 });

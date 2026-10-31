@@ -169,9 +169,39 @@ describe("AppHeader markup", () => {
     html.match(new RegExp(`<button[^>]*aria-label="${label}"[^>]*>`))?.[0] ??
     "";
 
+  it("uses roomy tiers and plain medium icons from round-016 b", () => {
+    const html = render({ page: "current" }, rounds[1]);
+    expect(html).toContain("h-16 items-center gap-4 px-8");
+    expect(html).toContain("h-12 items-center gap-4 px-8");
+    for (const label of ["Compare", "Library", "Theme", "History"]) {
+      expect(button(html, label)).toContain("h-11 min-w-12");
+    }
+    for (const name of [
+      "gallery-horizontal",
+      "library",
+      "paintbrush",
+      "scroll-text",
+      "circle-arrow-left",
+      "circle-arrow-right",
+      "sun",
+    ]) {
+      expect(html).toContain(`lucide-${name}`);
+    }
+    // The logo mark has its own stroke and size (round-017 a).
+    const icons = (html.match(/<svg[^>]*>/g) ?? []).filter(
+      (svg) => !svg.includes("lucide-flask"),
+    );
+    expect(icons.length).toBeGreaterThan(6);
+    for (const icon of icons) {
+      expect(icon).toContain('stroke-width="1.75"');
+      expect(icon).toContain("size-5");
+    }
+  });
+
   it("shows the round crumb, question and answered count on Compare", () => {
     const html = render({ page: "current" }, rounds[1]);
-    expect(html).toContain(">taste-lab<");
+    expect(html).toContain('data-slot="logo"');
+    expect(html).toMatch(/taste<span[^>]*>\.<\/span>lab/);
     expect(html).toContain(">acme<");
     expect(html).toMatch(/aria-haspopup="menu"[^>]*><span[^>]*>round-002/);
     expect(html).toContain("Question round-002?");

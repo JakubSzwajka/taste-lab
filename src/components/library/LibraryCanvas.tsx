@@ -187,7 +187,7 @@ function Toolbar({
   surface: CanvasSurface;
 }) {
   return (
-    <div className="flex h-11 shrink-0 items-center gap-3 border-b px-4">
+    <div className="flex min-h-12 shrink-0 flex-wrap items-center gap-4 border-b px-8 py-3">
       <ToggleGroup
         type="single"
         size="sm"
@@ -210,10 +210,10 @@ function Toolbar({
         onValueChange={(v) => v && setCanvasPrefs({ mode: v as CanvasMode })}
       >
         <ToggleGroupItem value="light" aria-label="Light canvas">
-          <Sun />
+          <Sun className="size-5" strokeWidth={1.75} />
         </ToggleGroupItem>
         <ToggleGroupItem value="dark" aria-label="Dark canvas">
-          <Moon />
+          <Moon className="size-5" strokeWidth={1.75} />
         </ToggleGroupItem>
       </ToggleGroup>
       <ToggleGroup

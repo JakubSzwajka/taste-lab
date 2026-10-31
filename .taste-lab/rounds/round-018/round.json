@@ -1,0 +1,35 @@
+{
+  "id": "round-018",
+  "level": "component",
+  "component": "logo",
+  "question": "Flask tile it is (round-017 a), now named taste.lab. Same mark everywhere; how should the name be set?",
+  "fixture": "lab",
+  "basedOn": { "round": "round-017", "pick": "a" },
+  "preview": "flip",
+  "variants": [
+    {
+      "id": "a",
+      "file": "a.tsx",
+      "label": "Plain",
+      "changes": "taste.lab in one weight and color, semibold. The quietest."
+    },
+    {
+      "id": "b",
+      "file": "b.tsx",
+      "label": "Coral dot",
+      "changes": "taste.lab semibold with the dot in coral, the second brand color, as a small accent."
+    },
+    {
+      "id": "c",
+      "file": "c.tsx",
+      "label": "Muted .lab",
+      "changes": "\"taste\" semibold, \".lab\" regular and muted, so the name reads taste first."
+    },
+    {
+      "id": "d",
+      "file": "d.tsx",
+      "label": "Teal mono .lab",
+      "changes": "\"taste\" semibold, \".lab\" in teal mono, like a domain or a file extension."
+    }
+  ]
+}

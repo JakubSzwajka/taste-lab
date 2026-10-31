@@ -17,9 +17,9 @@ export type AppHeaderArgs = {
   labName?: string;
 };
 
-/** The header alone, framed like the top of a page. */
+/** The roomy round-016 b header alone, framed like the top of a page. */
 function Frame({ children }: { children: ReactNode }) {
-  return <div className="overflow-hidden rounded-lg border">{children}</div>;
+  return <div className="overflow-hidden rounded-xl border">{children}</div>;
 }
 
 // Every round answered: no round is open, so none is shown.

@@ -68,6 +68,33 @@ const answerForm = (html: string) => {
 };
 
 describe("CompareScreen (round-003 c + round-009 a)", () => {
+  it("uses the roomy soft-layer canvas and raised frames from round-016 b", () => {
+    const html = render("flip");
+    expect(html).toContain(
+      "gap-8 bg-linear-to-b from-primary/10 via-muted/40 to-accent/30 px-8 pt-8 pb-8",
+    );
+    expect(html).toContain("rounded-xl border bg-card shadow-md");
+    expect(html).toContain("bg-linear-to-r from-primary/15 via-card to-card");
+    expect(html).toMatch(
+      /data-slot="badge"[^>]*data-variant="default"[^>]*>a · 1</,
+    );
+    expect(html).toContain("[&amp;&gt;*]:bg-accent");
+    for (const name of [
+      "layers",
+      "blend",
+      "git-branch",
+      "columns-3",
+      "panels-top-left",
+      "send-horizontal",
+    ]) {
+      const icon = html.match(
+        new RegExp(`<svg[^>]*class="[^"]*lucide-${name}[^"]*"[^>]*>`),
+      )?.[0];
+      expect(icon, name).toContain('stroke-width="1.75"');
+      expect(icon, name).toContain("size-5");
+    }
+  });
+
   it("has no page heading: the header's round tier carries the question", () => {
     const html = render("flip");
     expect(html).not.toMatch(/<h1[\s>]/);
@@ -86,7 +113,10 @@ describe("CompareScreen (round-003 c + round-009 a)", () => {
     const html = render("flip");
     const form = answerForm(html);
     expect(html.indexOf("Variant c: Label c")).toBeLessThan(html.indexOf(form));
-    expect(form).toMatch(/^<form aria-label="Answer" class="sticky bottom-0/);
+    expect(form).toMatch(/^<form aria-label="Answer" class="sticky bottom-3/);
+    expect(form).toContain("m-3 shrink-0 rounded-xl border bg-card");
+    expect(form).toContain("shadow-lg");
+    expect(form).toContain("gap-4 px-8 py-4");
     // Pick buttons for each variant, None and Mix.
     for (const id of ["a", "b", "c"]) {
       expect(form).toContain(`aria-label="Variant ${id}"`);

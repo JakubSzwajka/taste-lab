@@ -35,10 +35,11 @@ const ROW_GUESS_PX = 46;
 /** The bar above the canvas: sidebar trigger, then the page's own items. */
 export function PageBar({ children }: { children?: ReactNode }) {
   return (
-    <div className="flex h-11 shrink-0 items-center gap-2 border-b px-2 sm:px-4">
+    <div className="flex h-12 shrink-0 items-center gap-4 border-b px-8">
       <SidebarTrigger
         aria-label="Toggle entry sidebar"
         title="Entries (Ctrl+B)"
+        className="[&_svg]:size-5! [&_svg]:[stroke-width:1.75]"
       />
       <Separator orientation="vertical" className="my-3" />
       {children}
@@ -188,7 +189,11 @@ function ControlsSplit({
         title={collapsed ? "Expand controls" : "Collapse controls"}
         onClick={() => go(collapsed ? "open" : "collapsed")}
       >
-        {collapsed ? <ChevronUp /> : <ChevronDown />}
+        {collapsed ? (
+          <ChevronUp className="size-5" strokeWidth={1.75} />
+        ) : (
+          <ChevronDown className="size-5" strokeWidth={1.75} />
+        )}
       </Button>
       <Button
         size="icon-xs"
@@ -197,7 +202,11 @@ function ControlsSplit({
         title={full ? "Restore controls" : "Expand controls to full"}
         onClick={() => go(full ? "open" : "full")}
       >
-        {full ? <Minimize2 /> : <Maximize2 />}
+        {full ? (
+          <Minimize2 className="size-5" strokeWidth={1.75} />
+        ) : (
+          <Maximize2 className="size-5" strokeWidth={1.75} />
+        )}
       </Button>
     </>
   );

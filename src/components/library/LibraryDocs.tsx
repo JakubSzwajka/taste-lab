@@ -44,7 +44,7 @@ export function LibraryDocs({
 }) {
   const { meta } = entry;
   return (
-    <div className="flex max-w-3xl flex-col gap-6 p-6">
+    <div className="flex max-w-3xl flex-col gap-8 px-8 py-8">
       <div className="flex flex-col gap-1.5">
         <h1 className="flex items-center gap-2 text-lg font-semibold">
           {meta.title}
@@ -79,7 +79,7 @@ export function LibraryDocs({
       {meta.controls && meta.controls.length > 0 && (
         <section className="flex flex-col gap-2">
           <h2 className="text-sm font-medium">Controls</h2>
-          <Table>
+          <Table className="[&_td]:py-3.5 [&_th]:h-12">
             <TableHeader>
               <TableRow className="hover:bg-transparent">
                 <TableHead className={`pl-0 ${head}`}>Prop</TableHead>

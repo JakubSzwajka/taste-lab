@@ -1,16 +1,16 @@
 import {
   ChevronDown,
-  ChevronLeft,
-  ChevronRight,
   Circle,
   CircleAlert,
+  CircleArrowLeft,
+  CircleArrowRight,
   CircleCheck,
-  Columns2,
-  History,
-  LibraryBig,
+  GalleryHorizontal,
+  Library,
   type LucideIcon,
   Moon,
-  Palette,
+  Paintbrush,
+  ScrollText,
   Sun,
 } from "lucide-react";
 import { useState } from "react";
@@ -42,14 +42,15 @@ import {
 } from "@/components/ui/tooltip";
 import type { LabRound, Page } from "@/fixtures";
 import { cn } from "@/lib/utils";
+import { Logo } from "@/library/logo/Logo";
 
 const PAGES: Page[] = ["Compare", "Library", "Theme", "History"];
 
 const ICON: Record<Page, LucideIcon> = {
-  Compare: Columns2,
-  Library: LibraryBig,
-  Theme: Palette,
-  History: History,
+  Compare: GalleryHorizontal,
+  Library: Library,
+  Theme: Paintbrush,
+  History: ScrollText,
 };
 
 export type AppHeaderProps = {
@@ -76,9 +77,8 @@ export type AppHeaderProps = {
 };
 
 /**
- * The lab header, agreed in round-001 (mix) and round-002 b: a breadcrumb with
- * a round menu, icon-only page toggles at 40px with 20px icons, and a round
- * tier with 20px arrows in 36px buttons, the question, the pick and the count.
+ * Two tiers from round-002 b. Roomy spacing and the C icon set from round-015
+ * mix, with plain 20px icons at stroke 1.75 from round-016 b.
  * Mirrors src/components/AppHeader.tsx.
  */
 export function AppHeader({
@@ -107,12 +107,12 @@ export function AppHeader({
   const answered = rounds.filter((r) => r.status === "answered").length;
 
   return (
-    <header className={cn("bg-background text-foreground", className)}>
-      <div className="flex h-14 items-center gap-3 border-b px-4">
+    <header className={cn("shrink-0 bg-background text-foreground", className)}>
+      <div className="flex h-16 items-center gap-4 border-b px-8">
         <Breadcrumb className="min-w-0">
           <BreadcrumbList className="flex-nowrap">
-            <BreadcrumbItem className="font-semibold text-foreground">
-              taste-lab
+            <BreadcrumbItem>
+              <Logo />
             </BreadcrumbItem>
             <BreadcrumbSeparator>/</BreadcrumbSeparator>
             <BreadcrumbItem className="min-w-0">
@@ -168,9 +168,9 @@ export function AppHeader({
                     aria-label={p}
                     aria-current={page === p ? "page" : undefined}
                     onClick={() => onPageChange?.(p)}
-                    className="h-10 min-w-11 text-muted-foreground aria-checked:bg-muted aria-checked:text-foreground"
+                    className="h-11 min-w-12 text-muted-foreground aria-checked:bg-muted aria-checked:text-foreground"
                   >
-                    <Icon className="size-5" />
+                    <Icon strokeWidth={1.75} className="size-5" />
                   </ToggleGroupItem>
                 </TooltipTrigger>
                 <TooltipContent>{p}</TooltipContent>
@@ -183,13 +183,13 @@ export function AppHeader({
           className="data-vertical:h-6 data-vertical:self-center"
         />
         <Button size="icon-lg" variant="ghost" aria-label="Switch theme">
-          <Sun className="hidden size-5 dark:block" />
-          <Moon className="size-5 dark:hidden" />
+          <Sun strokeWidth={1.75} className="hidden size-5 dark:block" />
+          <Moon strokeWidth={1.75} className="size-5 dark:hidden" />
         </Button>
       </div>
 
       {showRoundTier && rounds.length > 0 && (
-        <div className="flex h-11 items-center gap-3 border-b bg-muted/40 px-4">
+        <div className="flex h-12 items-center gap-4 border-b bg-muted/40 px-8">
           <div className="flex items-center gap-1">
             <Button
               size="icon-lg"
@@ -198,7 +198,7 @@ export function AppHeader({
               disabled={!prev}
               onClick={() => prev && pickRound(prev.id)}
             >
-              <ChevronLeft className="size-5" />
+              <CircleArrowLeft strokeWidth={1.75} className="size-5" />
             </Button>
             <Button
               size="icon-lg"
@@ -207,7 +207,7 @@ export function AppHeader({
               disabled={!next}
               onClick={() => next && pickRound(next.id)}
             >
-              <ChevronRight className="size-5" />
+              <CircleArrowRight strokeWidth={1.75} className="size-5" />
             </Button>
           </div>
 
@@ -295,7 +295,10 @@ function RoundMenu({
           className="-mx-2 min-w-0 shrink font-mono font-normal text-foreground"
         >
           <span className="truncate">{label}</span>
-          <ChevronDown className="shrink-0 text-muted-foreground" />
+          <ChevronDown
+            strokeWidth={1.75}
+            className="size-5 shrink-0 text-muted-foreground"
+          />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="w-80">
@@ -332,7 +335,11 @@ function RoundMenu({
 }
 
 function StatusIcon({ status }: { status: LabRound["status"] }) {
-  if (status === "answered") return <CircleCheck className="text-primary" />;
-  if (status === "error") return <CircleAlert className="text-destructive" />;
-  return <Circle className="text-muted-foreground" />;
+  if (status === "answered")
+    return <CircleCheck strokeWidth={1.75} className="size-5 text-primary" />;
+  if (status === "error")
+    return (
+      <CircleAlert strokeWidth={1.75} className="size-5 text-destructive" />
+    );
+  return <Circle strokeWidth={1.75} className="size-5 text-muted-foreground" />;
 }

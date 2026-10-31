@@ -1,3 +1,4 @@
+import { SendHorizontal } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -96,13 +97,13 @@ export function AnswerBar({
   return (
     <form
       aria-label="Answer"
-      className="sticky bottom-0 z-10 shrink-0 border-t bg-card text-card-foreground"
+      className="sticky bottom-3 z-10 m-3 shrink-0 rounded-xl border bg-card text-card-foreground shadow-lg"
       onSubmit={(e) => {
         e.preventDefault();
         submit();
       }}
     >
-      <div className="mx-auto flex max-w-[120rem] flex-wrap items-center gap-3 px-4 py-3">
+      <div className="flex flex-wrap items-center gap-4 px-8 py-4">
         <ToggleGroup
           type="single"
           variant="outline"
@@ -180,6 +181,11 @@ export function AnswerBar({
           title={mixNeedsReason ? "Mix needs a reason" : undefined}
         >
           {submitting ? "Saving..." : "Submit"}
+          <SendHorizontal
+            className="size-5"
+            strokeWidth={1.75}
+            data-icon="inline-end"
+          />
         </Button>
       </div>
     </form>

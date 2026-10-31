@@ -1,0 +1,57 @@
+{
+  "id": "round-014",
+  "level": "token",
+  "component": "lab-theme",
+  "question": "Blue + coral is in (round-013 b, now in theme.css). Now challenge the blue: which main color should sit next to coral? Surfaces, coral and status colors stay; only the primary (buttons, picked badge, washes, focus ring) changes.",
+  "fixture": "lab",
+  "basedOn": { "round": "round-013", "pick": "b" },
+  "preview": "flip",
+  "variants": [
+    {
+      "id": "a",
+      "file": "a.tsx",
+      "label": "Blue (today)",
+      "changes": "Control: round-013 b exactly as now in theme.css. Blue primary (hue 262), coral accent."
+    },
+    {
+      "id": "b",
+      "file": "b.tsx",
+      "label": "Indigo ink",
+      "changes": "Deeper, inkier blue leaning violet (hue 275). Less bright than today, more serious next to coral.",
+      "tokens": {
+        "--primary": "light-dark(oklch(0.48 0.2 275), oklch(0.68 0.17 278))",
+        "--primary-foreground": "light-dark(oklch(0.985 0 0), oklch(0.18 0.05 278))",
+        "--ring": "light-dark(oklch(0.55 0.18 275), oklch(0.66 0.15 278))",
+        "--chart-2": "light-dark(oklch(0.48 0.2 275), oklch(0.72 0.15 278))"
+      }
+    },
+    {
+      "id": "c",
+      "file": "c.tsx",
+      "label": "Teal",
+      "changes": "Teal primary (hue 190), coral's complement: warm and cool in balance. The green status color moves to a truer green so it does not clash.",
+      "tokens": {
+        "--primary": "light-dark(oklch(0.52 0.1 190), oklch(0.75 0.12 185))",
+        "--primary-foreground": "light-dark(oklch(0.985 0 0), oklch(0.2 0.04 190))",
+        "--ring": "light-dark(oklch(0.56 0.1 190), oklch(0.7 0.11 185))",
+        "--chart-2": "light-dark(oklch(0.52 0.1 190), oklch(0.78 0.12 185))",
+        "--chart-3": "light-dark(oklch(0.55 0.14 145), oklch(0.78 0.15 145))"
+      }
+    },
+    {
+      "id": "d",
+      "file": "d.tsx",
+      "label": "Coral leads",
+      "changes": "Swap roles: coral becomes the primary, blue drops to the second color (accent and first status color). The warmest option.",
+      "tokens": {
+        "--primary": "light-dark(oklch(0.6 0.17 35), oklch(0.72 0.15 35))",
+        "--primary-foreground": "light-dark(oklch(0.985 0.01 35), oklch(0.2 0.05 35))",
+        "--ring": "light-dark(oklch(0.62 0.15 35), oklch(0.68 0.14 35))",
+        "--accent": "light-dark(oklch(0.94 0.03 255), oklch(0.3 0.05 255))",
+        "--accent-foreground": "light-dark(oklch(0.42 0.13 255), oklch(0.88 0.06 255))",
+        "--chart-1": "light-dark(oklch(0.55 0.18 262), oklch(0.75 0.14 262))",
+        "--chart-2": "light-dark(oklch(0.6 0.17 35), oklch(0.75 0.15 35))"
+      }
+    }
+  ]
+}

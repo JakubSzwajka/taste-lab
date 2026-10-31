@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <title>taste.lab</title>
+  <!-- The taste.lab mark (round-017 a): the lucide flask-conical on a
+       primary tile. A browser tab cannot read theme tokens, so the colors
+       copy the primary and primary-foreground tokens in .taste-lab/theme.css
+       (round-014 c). XML comments cannot hold a double hyphen. -->
+  <style>
+    .tile { fill: oklch(0.52 0.1 190); }
+    .flask { stroke: oklch(0.985 0 0); }
+    @media (prefers-color-scheme: dark) {
+      .tile { fill: oklch(0.75 0.12 185); }
+      .flask { stroke: oklch(0.2 0.04 190); }
+    }
+  </style>
+  <rect class="tile" width="32" height="32" rx="9" />
+  <g class="flask" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"
+     transform="translate(6.08 6.08) scale(0.8267)">
+    <path d="M14 2v6a2 2 0 0 0 .245.96l5.51 10.08A2 2 0 0 1 18 22H6a2 2 0 0 1-1.755-2.96l5.51-10.08A2 2 0 0 0 10 8V2" />
+    <path d="M6.453 15h11.094" />
+    <path d="M8.5 2h7" />
+  </g>
+</svg>

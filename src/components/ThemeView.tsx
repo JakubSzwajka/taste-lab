@@ -112,7 +112,11 @@ function IgnoredParts({ problems }: { problems: ThemeProblem[] }) {
   return (
     <div role="alert" className="rounded-lg border border-destructive/50">
       <p className="flex items-center gap-2 border-b border-destructive/30 px-3 py-2 text-sm font-medium text-destructive">
-        <CircleAlert className="size-4 shrink-0" aria-hidden />
+        <CircleAlert
+          className="size-5 shrink-0"
+          strokeWidth={1.75}
+          aria-hidden
+        />
         {n === 1
           ? "1 part of theme.css is ignored."
           : `${n} parts of theme.css are ignored.`}{" "}
@@ -208,7 +212,7 @@ export function ThemeView({
       {problems.length > 0 && <IgnoredParts problems={problems} />}
 
       <div className="rounded-lg border">
-        <Table>
+        <Table className="[&_thead_th]:h-12">
           <TableCaption className="sr-only">
             Theme tokens by role: light value, dark value and source
           </TableCaption>
@@ -250,21 +254,21 @@ export function ThemeView({
                   key={r.name}
                   data-token={r.name}
                   data-source={fromTheme(r) ? "theme" : "stock"}
-                  className="h-9"
+                  className="h-auto"
                 >
                   <TableHead
                     scope="row"
-                    className="h-auto py-1 font-mono text-xs font-normal"
+                    className="h-auto py-3.5 font-mono text-xs font-normal"
                   >
                     {r.name}
                   </TableHead>
-                  <TableCell className="py-1">
+                  <TableCell className="py-3.5">
                     <TokenChip row={r} mode="light" scope={scopes.light} />
                   </TableCell>
-                  <TableCell className="py-1">
+                  <TableCell className="py-3.5">
                     <TokenChip row={r} mode="dark" scope={scopes.dark} />
                   </TableCell>
-                  <TableCell className="py-1">
+                  <TableCell className="py-3.5">
                     <SourcePill row={r} />
                   </TableCell>
                 </TableRow>

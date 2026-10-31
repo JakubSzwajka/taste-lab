@@ -59,14 +59,14 @@ export function LibraryControls({
 }) {
   return (
     <section aria-label="Controls" className="flex h-full min-h-0 flex-col">
-      <div className="flex h-9 shrink-0 items-center gap-2 border-b px-4">
+      <div className="flex h-9 shrink-0 items-center gap-4 border-b px-8">
         <h2 className="text-xs font-medium">Controls</h2>
         <p className="hidden min-w-0 truncate text-xs text-muted-foreground sm:block">
           Unset props keep the example's own value.
         </p>
         <div className="ml-auto flex items-center gap-1">
           <Button size="xs" variant="ghost" onClick={onReset}>
-            <RotateCcw />
+            <RotateCcw className="size-5" strokeWidth={1.75} />
             Reset
           </Button>
           {actions}
@@ -77,7 +77,7 @@ export function LibraryControls({
         inert={collapsed}
         className="min-h-0 flex-1 overflow-y-auto"
       >
-        <Table>
+        <Table className="[&_td]:py-3.5 [&_th]:h-12">
           <TableHeader>
             <TableRow className="hover:bg-transparent">
               <TableHead className="w-44 pl-4 text-xs font-normal text-muted-foreground">
@@ -142,6 +142,7 @@ function Control({
     case "boolean":
       return (
         <Checkbox
+          className="size-6 [&_svg]:size-5! [&_svg]:[stroke-width:1.75]"
           aria-label={name}
           checked={value === true}
           onCheckedChange={(c) => onChange(c === true)}
@@ -219,10 +220,16 @@ function SelectControl({
           className="font-mono text-xs"
         >
           {value ?? "unset"}
-          <ChevronDown className="text-muted-foreground" />
+          <ChevronDown
+            className="size-5 text-muted-foreground"
+            strokeWidth={1.75}
+          />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="start">
+      <DropdownMenuContent
+        align="start"
+        className="[&_svg]:size-5! [&_svg]:[stroke-width:1.75]"
+      >
         {/* Radio values are internal ids, so any option string is safe. */}
         <DropdownMenuRadioGroup
           value={menuOptionId(options, value)}

@@ -1,0 +1,35 @@
+{
+  "id": "round-017",
+  "level": "component",
+  "component": "logo",
+  "question": "The lab look is set (round-011 to round-016). Now the logo: which mark and name for taste-lab? Each shows the header with the logo as its first crumb, the mark from 16 to 128px, the lockup on card, muted and page surfaces, and a browser tab.",
+  "fixture": "lab",
+  "basedOn": { "round": "round-016", "pick": "b" },
+  "preview": "flip",
+  "variants": [
+    {
+      "id": "a",
+      "file": "a.tsx",
+      "label": "Flask tile",
+      "changes": "The lucide flask, white on a teal rounded tile, with \"taste-lab\" in semibold. Safe and app-like."
+    },
+    {
+      "id": "b",
+      "file": "b.tsx",
+      "label": "Split dot",
+      "changes": "A drawn disc split in two halves, teal and coral: A and B side by side. Name as \"taste\" bold, \"lab\" muted."
+    },
+    {
+      "id": "c",
+      "file": "c.tsx",
+      "label": "Wordmark",
+      "changes": "Type first: \"taste\" bold, a coral dot, \"lab\" in teal mono. The small mark is \"t\" plus the coral dot in a soft teal tile."
+    },
+    {
+      "id": "d",
+      "file": "d.tsx",
+      "label": "Two-tone flask",
+      "changes": "A drawn flask outline whose liquid is split teal and coral, a comparison inside a lab. Name in plain semibold."
+    }
+  ]
+}

@@ -97,7 +97,7 @@ export function LibraryPage({
 
   if (entries.length === 0) {
     return (
-      <div className="flex flex-col gap-2 px-4 py-6">
+      <div className="flex flex-col gap-2 px-8 py-8">
         <h1 className="text-2xl font-semibold tracking-tight">Library</h1>
         <p className="max-w-prose text-muted-foreground">
           No components yet. When a direction is settled, the agent promotes the
@@ -146,7 +146,7 @@ export function LibraryPage({
         {!entry ? (
           <>
             <PageBar />
-            <p className="p-6 text-muted-foreground">
+            <p className="px-8 py-8 text-muted-foreground">
               No library entry called {entryName}.
             </p>
           </>
@@ -176,7 +176,7 @@ export function LibraryPage({
 
 function Errors({ name, errors }: { name: string; errors: string[] }) {
   return (
-    <div role="alert" className="flex min-w-0 flex-col gap-3 p-6">
+    <div role="alert" className="flex min-w-0 flex-col gap-4 px-8 py-8">
       <h1 className="flex items-center gap-2 font-mono text-lg font-semibold">
         {name}
         <StatusBadge status="error" />
@@ -187,7 +187,10 @@ function Errors({ name, errors }: { name: string; errors: string[] }) {
       <ul className="flex flex-col gap-1.5 text-sm">
         {errors.map((m) => (
           <li key={m} className="flex items-start gap-2 text-destructive">
-            <CircleAlert className="mt-0.5 size-4 shrink-0" />
+            <CircleAlert
+              className="mt-0.5 size-5 shrink-0"
+              strokeWidth={1.75}
+            />
             {m}
           </li>
         ))}

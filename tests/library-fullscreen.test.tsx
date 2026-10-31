@@ -85,7 +85,7 @@ describe("full-bleed routing", () => {
       expect(root.className).toContain("h-svh");
       expect(root.className).toContain("overflow-hidden");
       // No centred container, padding or closing rule around the page.
-      expect(main.className).not.toMatch(/max-w-|mx-auto|px-4|py-6/);
+      expect(main.className).not.toMatch(/max-w-|mx-auto|px-\d|py-\d/);
       expect(main.className).toContain("flex-1");
       expect(main.nextElementSibling).toBeNull();
       // The sidebar sits in the page, flush left, not over the header.
@@ -96,13 +96,13 @@ describe("full-bleed routing", () => {
     });
   }
 
-  it("keeps the centred, padded layout on other pages", async () => {
+  it("keeps the full-width, padded layout on other pages", async () => {
     for (const hash of ["#/history", "#/theme"]) {
       const { root, main } = await app(hash);
       expect(root.dataset.layout).toBe("page");
       expect(root.className).toContain("min-h-svh");
-      expect(main.className).toContain("max-w-[120rem]");
-      expect(main.className).toContain("px-4");
+      expect(main.className).not.toContain("max-w-");
+      expect(main.className).toContain("px-8 py-8");
       await unmountAll();
     }
   });

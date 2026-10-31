@@ -8,3 +8,11 @@
 {"ts":"2026-10-30T09:14:49.587Z","round":"round-008","component":"library-page","level":"layout","shown":["a","b","c"],"pick":"c","tags":[],"reason":"C seems nice! almost like storybook","theme":"dark","view":"flip"}
 {"ts":"2026-10-30T09:15:03.386Z","round":"round-009","component":"compare-page","level":"layout","shown":["a","b","c"],"pick":"a","tags":["clean"],"reason":"","theme":"dark","view":"flip"}
 {"ts":"2026-10-30T14:50:48.295Z","round":"round-010","component":"theme-page","level":"layout","shown":["a","b","c","d"],"pick":"a","tags":[],"reason":"only this one is readable","theme":"dark","view":"flip"}
+{"ts":"2026-10-31T08:38:33.026Z","round":"round-011","component":"lab-theme","level":"token","shown":["a","b","c","d"],"pick":"b","tags":[],"reason":"B but please make some more adjustments then just colours.","theme":"dark","view":"flip"}
+{"ts":"2026-10-31T08:40:55.047Z","round":"round-012","component":"lab-theme","level":"component","shown":["a","b","c"],"pick":"b","tags":[],"reason":"better but still kind of sad?","theme":"dark","view":"flip"}
+{"ts":"2026-10-31T08:47:13.961Z","round":"round-013","component":"lab-theme","level":"token","shown":["a","b","c"],"pick":"b","tags":[],"reason":"lets also challange a bit this blue","theme":"dark","view":"flip"}
+{"ts":"2026-10-31T08:48:32.034Z","round":"round-014","component":"lab-theme","level":"token","shown":["a","b","c","d"],"pick":"c","tags":[],"reason":"pic teal but whatever. what about different set of icons, a bit different spacing etc?","theme":"dark","view":"flip"}
+{"ts":"2026-10-31T08:51:12.140Z","round":"round-015","component":"lab-theme","level":"component","shown":["a","b","c"],"pick":"mix","tags":[],"reason":"I like it roomy with icons from C","theme":"dark","view":"flip"}
+{"ts":"2026-10-31T08:51:58.317Z","round":"round-016","component":"lab-theme","level":"component","shown":["a","b","c"],"pick":"b","tags":[],"reason":"","theme":"dark","view":"flip"}
+{"ts":"2026-10-31T10:00:29.072Z","round":"round-017","component":"logo","level":"component","shown":["a","b","c","d"],"pick":"a","tags":[],"reason":"lets try taste.lab instead of taste-lab","theme":"dark","view":"flip"}
+{"ts":"2026-10-31T10:01:15.968Z","round":"round-018","component":"logo","level":"component","shown":["a","b","c","d"],"pick":"b","tags":[],"reason":"","theme":"dark","view":"flip"}

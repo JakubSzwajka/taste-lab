@@ -13,7 +13,13 @@ export type Cli =
       events?: boolean;
     }
   | { command: "init"; dir: string; name?: string }
-  | { command: "check"; dir: string };
+  | { command: "check"; dir: string }
+  | {
+      command: "library";
+      dir: string;
+      status?: "draft" | "agreed";
+      json?: boolean;
+    };
 
 export class UsageError extends Error {}
 
@@ -32,6 +38,8 @@ Commands:
   init  --dir <path> [--name X]   Create a new .taste-lab dir. Refuses to overwrite.
   check --dir <path>              Validate rounds and scan variant files.
                                   Exit 0 when clean, 1 with violations.
+  library --dir <path> [--status draft|agreed] [--json]
+                                  List library entries. Exit 1 if any are invalid.
 
 Options:
   -h, --help                      Show this help.`;
@@ -40,6 +48,7 @@ const OPTIONS = {
   serve: ["dir", "port", "lan", "host", "events"],
   init: ["dir", "name"],
   check: ["dir"],
+  library: ["dir", "status", "json"],
 } as const;
 
 /** Parses argv (without node and the script). Paths resolve against `cwd`. */
@@ -70,6 +79,8 @@ export function parseCli(argv: string[], cwd = process.cwd()): Cli {
         host: { type: "string" },
         lan: { type: "boolean" },
         events: { type: "boolean" },
+        status: { type: "string" },
+        json: { type: "boolean" },
         help: { type: "boolean", short: "h" },
       },
     }));
@@ -77,7 +88,15 @@ export function parseCli(argv: string[], cwd = process.cwd()): Cli {
     throw new UsageError(e instanceof Error ? e.message : String(e));
   }
   if (values.help) return { command: "help" };
-  for (const key of ["port", "name", "host", "lan", "events"] as const) {
+  for (const key of [
+    "port",
+    "name",
+    "host",
+    "lan",
+    "events",
+    "status",
+    "json",
+  ] as const) {
     if (
       values[key] !== undefined &&
       !(OPTIONS[cmd] as readonly string[]).includes(key)
@@ -91,6 +110,18 @@ export function parseCli(argv: string[], cwd = process.cwd()): Cli {
   }
   const dir = resolve(cwd, rawDir);
   if (cmd === "check") return { command: "check", dir };
+  if (cmd === "library") {
+    const status = values.status;
+    if (status !== undefined && status !== "draft" && status !== "agreed") {
+      throw new UsageError('--status must be "draft" or "agreed"');
+    }
+    return {
+      command: "library",
+      dir,
+      ...(status ? { status } : {}),
+      ...(values.json ? { json: true } : {}),
+    };
+  }
   if (cmd === "init") {
     const name = values.name;
     if (

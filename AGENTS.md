@@ -31,12 +31,14 @@ Run them from anywhere. Relative `--dir` paths resolve against the current folde
 ```sh
 node <taste-lab>/bin/taste-lab.mjs init  --dir <repo>/.taste-lab [--name X]
 node <taste-lab>/bin/taste-lab.mjs check --dir <repo>/.taste-lab
+node <taste-lab>/bin/taste-lab.mjs library --dir <repo>/.taste-lab [--status draft|agreed] [--json]
 node <taste-lab>/bin/taste-lab.mjs serve --dir <repo>/.taste-lab [--port N] [--lan [--host <ip>]] [--events]
 ```
 
 - `init` writes the skeleton above with one sample fixture (`items`), an empty `library/`, an empty `taste.jsonl`, a `theme.css` with a header comment and empty `:root` and `.dark` blocks, and a `DESIGN.md` stub. It refuses to touch a path that exists.
 - `check` validates `theme.css` (see "Theme"), loads the fixtures (both `fixtures` and `fixtureKeys` must be exported and list the same keys), validates every `round.json` with the app's validator, runs the variant scanner on `rounds/` and validates `library/` (see "Library"). Exit 0 when clean, 1 with one line per problem (filesystem trouble such as a dangling symlink included), 2 on a usage error.
 - A data dir path must not contain a line break or control character, a backslash, `*`, `{`, `}` or both quote kinds. Tailwind reads `@source` raw and as a glob, so `serve`, `init` and `check` reject such paths up front. Spaces, `$`, one kind of quote and `[`, `]`, `(`, `)`, `!` work.
+- `library` lists entries with name, status, title, path, example count, and validation problems. `--status` filters by `draft` or `agreed`. `--json` prints a JSON array. Exit 1 means an entry is invalid. Exit 2 means usage is invalid.
 - `serve` starts the lab on 127.0.0.1 and prints the URL. Without `--port` it takes the first free port from 5300 and never picks 3000, 3326, 5173 or 5310. Stop it with Ctrl+C.
 - `serve --lan` is opt-in LAN access, see "LAN mode". `--host` without `--lan` is a usage error (exit 2).
 - `serve --events` writes JSON lines on stdout for a parent process, see "Event protocol".
@@ -245,7 +247,9 @@ A missing round shows the pick id only, with no link and no label. A broken roun
 
 ## Library
 
-The library holds the components the operator agreed on, with examples and where each came from. It is the source of truth for a component. The lab shows it on the Library page. Later steps copy entries into apps.
+The library holds components, examples, and provenance. It is the source of truth for each component. The lab shows it on the Library page. Later steps copy entries into apps.
+
+Library as a shared database: any session can add a draft entry and validate it with `check`. The agent changes a draft to `agreed` after the operator agrees. The app never writes library source. An implementation session lists agreed entries with `taste-lab library --dir <repo>/.taste-lab --status agreed --json` and copies them into the app.
 
 ```
 <dataDir>/library/<name>/        name: kebab-case, e.g. task-card

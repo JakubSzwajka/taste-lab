@@ -1,7 +1,7 @@
 {
   "name": "app-header",
   "title": "App header",
-  "description": "The lab's header: breadcrumb taste-lab / <lab> / <round menu>, icon-only page toggles and theme switch in a 56px top bar, and on Compare a round tier with arrows, the question, the pick or error badge and \"n of N answered\" with a bar.",
+  "description": "The lab's header: breadcrumb taste-lab / <lab> / <round menu>, icon-only page toggles and theme switch in a roomy 64px top bar, and on Compare a round tier with arrows, the question, the pick or error badge and \"n of N answered\" with a bar.",
   "status": "agreed",
   "examples": [
     {
@@ -52,13 +52,24 @@
       "round": "round-002",
       "pick": "b",
       "note": "\"< and > icons should be slightly bigger. other then dat. perfect\" Applied: 20px arrow icons in 36px buttons."
+    },
+    {
+      "round": "round-015",
+      "pick": "mix",
+      "note": "I like it roomy with icons from C"
+    },
+    {
+      "round": "round-016",
+      "pick": "b",
+      "note": "Plain 20px icons, stroke 1.75. Picked without a reason."
     }
   ],
   "rules": [
     "Two tiers. Top bar: breadcrumb taste-lab / <name> / <round menu>; the round segment opens a menu of every round with its status (round-001 mix, round-002 b).",
     "Round tier on Compare pages only: prev and next, the question, the pick or error badge, \"n of N answered\" with a bar (round-001 mix, round-002 b).",
-    "Page nav as icon-only outline toggles with names in tooltips, 40px tall with 20px icons (round-002 b).",
-    "Round arrows: 20px icons in 36px buttons (round-002 b).",
+    "Page nav as icon-only outline toggles with names in tooltips, 44px tall and at least 48px wide (round-015 mix).",
+    "Roomy tiers: 64px top bar and 48px round tier, both with 32px horizontal padding and 16px gaps (round-015 mix).",
+    "Plain 20px icons at stroke 1.75, no tiles: GalleryHorizontal, Library, Paintbrush, ScrollText, CircleArrowLeft/Right, Sun/Moon (round-016 b).",
     "Off Compare, the breadcrumb names the page and the round tier is hidden (round-002 b).",
     "Never list every round as a button in the header (round-001 a).",
     "Don't shrink page icons to fit (round-001 d)."

@@ -9,7 +9,7 @@ import {
 } from "../src/components/ui/dropdown-menu";
 import type { LoadedRound } from "../src/lib/rounds";
 import type { Answer } from "../src/lib/submit";
-import { click, mount, one, press, type, unmountAll } from "./dom";
+import { click, mount, one, press, settle, type, unmountAll } from "./dom";
 
 type OkRound = Extract<LoadedRound, { ok: true }>;
 
@@ -67,12 +67,65 @@ async function setup(withMenu = false) {
     [...bar.querySelectorAll<HTMLElement>('[role="radio"]')]
       .filter((b) => b.dataset.state === "on")
       .map((b) => b.textContent?.trim().charAt(0).toLowerCase());
-  return { onSubmit, bar, reason, picked };
+  return { host, onSubmit, bar, reason, picked };
 }
 
 afterEach(unmountAll);
 
 describe("Compare answer bar, mounted", () => {
+  it("marks the picked tab with the plain medium Sparkles icon", async () => {
+    const { host } = await setup();
+    await press(document.body, "2");
+    const picked = one(host, '[role="tab"][data-variant="b"] .lucide-sparkles');
+    expect(picked.getAttribute("stroke-width")).toBe("1.75");
+    expect(picked.classList.contains("size-5")).toBe(true);
+    expect(picked.parentElement?.className).toContain("[&>svg]:size-5!");
+    expect(picked.parentElement?.textContent).toBe("Picked");
+  });
+
+  it("renders real variants inside their token scope, not in the chrome header", async () => {
+    const rendered: OkRound = {
+      ...round,
+      spec: {
+        ...round.spec,
+        variants: round.spec.variants.map((v) => ({
+          ...v,
+          tokens: { "--radius": "2rem", "--primary": "var(--chart-2)" },
+        })),
+      },
+      loaders: Object.fromEntries(
+        round.spec.variants.map((v) => [
+          v.id,
+          async () => ({
+            default: () => <p data-live={v.id}>Fixture {v.id}</p>,
+          }),
+        ]),
+      ),
+    };
+    const host = await mount(
+      <CompareScreen
+        round={rendered}
+        theme="dark"
+        previous={undefined}
+        submitting={false}
+        error={null}
+        onSubmit={() => {}}
+      />,
+    );
+    await settle();
+    const frame = one(host, 'section[aria-label="Variant a: Label a"]');
+    const content = one<HTMLElement>(frame, '[data-live="a"]').parentElement;
+    expect(content?.style.getPropertyValue("--radius")).toBe("2rem");
+    expect(content?.style.getPropertyValue("--primary")).toBe("var(--chart-2)");
+    expect(content?.style.colorScheme).toBe("dark");
+    expect(one(frame, "header").getAttribute("style")).toBeNull();
+    expect(one(frame, '[data-live="a"]').textContent).toBe("Fixture a");
+    await press(document.body, "2");
+    expect(
+      one(host, '[role="tabpanel"]:not([hidden]) [data-live="b"]').textContent,
+    ).toBe("Fixture b");
+  });
+
   it("submits exactly once for one Enter in the reason", async () => {
     const { onSubmit, reason } = await setup();
     await press(document.body, "2");

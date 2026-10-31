@@ -1,4 +1,11 @@
-import { Check } from "lucide-react";
+import {
+  Blend,
+  Columns3,
+  GitBranch,
+  Layers,
+  PanelsTopLeft,
+  Sparkles,
+} from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AnswerBar } from "@/components/AnswerPanel";
 import { Badge } from "@/components/ui/badge";
@@ -134,16 +141,37 @@ export function CompareScreen({
   // left, and a one-row answer bar is pinned to the bottom.
   return (
     <div className="flex flex-1 flex-col">
-      <div className="flex w-full flex-1 flex-col gap-4 px-4 pt-6 pb-4">
-        <div className="flex flex-wrap items-center gap-2">
-          <Badge variant="secondary">{spec.id}</Badge>
-          <Badge variant="outline">{spec.level}</Badge>
-          <Badge variant="outline">{spec.component}</Badge>
-          {spec.basedOn && (
-            <Badge variant="outline">
-              based on {spec.basedOn.round} / {spec.basedOn.pick}
+      <div className="flex w-full flex-1 flex-col gap-8 bg-linear-to-b from-primary/10 via-muted/40 to-accent/30 px-8 pt-8 pb-8">
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3 [&>*]:h-7 [&>*]:rounded-full [&>*]:border-transparent [&>*]:bg-accent [&>*]:text-accent-foreground">
+            <Badge variant="secondary">{spec.id}</Badge>
+            <Badge variant="outline" className="[&>svg]:size-5!">
+              <Layers
+                className="size-5"
+                strokeWidth={1.75}
+                data-icon="inline-start"
+              />
+              {spec.level}
             </Badge>
-          )}
+            <Badge variant="outline" className="[&>svg]:size-5!">
+              <Blend
+                className="size-5"
+                strokeWidth={1.75}
+                data-icon="inline-start"
+              />
+              {spec.component}
+            </Badge>
+            {spec.basedOn && (
+              <Badge variant="outline" className="[&>svg]:size-5!">
+                <GitBranch
+                  className="size-5"
+                  strokeWidth={1.75}
+                  data-icon="inline-start"
+                />
+                based on {spec.basedOn.round} / {spec.basedOn.pick}
+              </Badge>
+            )}
+          </div>
           {previous && (
             <p className="text-sm text-muted-foreground">
               Already answered (pick: {previous.pick}). Submitting adds another
@@ -152,7 +180,7 @@ export function CompareScreen({
           )}
         </div>
 
-        <Tabs value={active} onValueChange={show} className="flex-1 gap-4">
+        <Tabs value={active} onValueChange={show} className="flex-1 gap-6">
           <div className="flex flex-wrap items-center justify-between gap-3">
             {flip ? (
               <TabsList
@@ -177,8 +205,12 @@ export function CompareScreen({
                       {i + 1}
                     </Badge>
                     {pick === v.id && (
-                      <Badge>
-                        <Check data-icon="inline-start" />
+                      <Badge className="h-7 [&>svg]:size-5!">
+                        <Sparkles
+                          className="size-5"
+                          strokeWidth={1.75}
+                          data-icon="inline-start"
+                        />
                         Picked
                       </Badge>
                     )}
@@ -202,8 +234,14 @@ export function CompareScreen({
               }}
               aria-label="Preview mode"
             >
-              <ToggleGroupItem value="columns">Side by side</ToggleGroupItem>
-              <ToggleGroupItem value="flip">Full width</ToggleGroupItem>
+              <ToggleGroupItem value="columns">
+                <Columns3 className="size-5" strokeWidth={1.75} />
+                Side by side
+              </ToggleGroupItem>
+              <ToggleGroupItem value="flip">
+                <PanelsTopLeft className="size-5" strokeWidth={1.75} />
+                Full width
+              </ToggleGroupItem>
             </ToggleGroup>
           </div>
 

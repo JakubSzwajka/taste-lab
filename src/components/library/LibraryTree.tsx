@@ -54,7 +54,7 @@ export function LibraryTree({
     <Sidebar className="absolute h-full">
       <SidebarContent>
         <nav aria-label="Library entries and examples">
-          <SidebarGroup>
+          <SidebarGroup className="gap-3 p-4">
             <SidebarGroupLabel>
               {entries.length} {entries.length === 1 ? "entry" : "entries"}
             </SidebarGroupLabel>
@@ -69,7 +69,7 @@ export function LibraryTree({
                       <SidebarMenuButton
                         asChild
                         isActive={current && !open}
-                        className="pr-8"
+                        className="h-10 pr-8 [&_svg]:size-5"
                       >
                         <a
                           href={hrefFor({
@@ -82,7 +82,10 @@ export function LibraryTree({
                           onClick={picked}
                         >
                           {!e.ok && (
-                            <CircleAlert className="text-destructive" />
+                            <CircleAlert
+                              className="size-5 text-destructive"
+                              strokeWidth={1.75}
+                            />
                           )}
                           <span className="min-w-0 flex-1 truncate font-medium">
                             {e.ok ? e.meta.title : e.name}
@@ -94,11 +97,12 @@ export function LibraryTree({
                       </SidebarMenuButton>
                       {e.ok && (
                         <SidebarMenuAction
+                          className="[&>svg]:size-5"
                           aria-expanded={open}
                           aria-label={`${open ? "Hide" : "Show"} examples of ${e.meta.title}`}
                           onClick={() => toggle(e.name)}
                         >
-                          <Chevron />
+                          <Chevron className="size-5" strokeWidth={1.75} />
                         </SidebarMenuAction>
                       )}
                       {e.ok && open && (
@@ -108,6 +112,7 @@ export function LibraryTree({
                             return (
                               <SidebarMenuSubItem key={x.export}>
                                 <SidebarMenuSubButton
+                                  className="h-9"
                                   isActive={active}
                                   href={hrefFor({
                                     page: "library-entry",

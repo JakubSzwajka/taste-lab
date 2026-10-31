@@ -158,7 +158,7 @@ export default function App({
               ? "flex min-h-0 flex-1 flex-col"
               : comparing
                 ? "flex flex-1 flex-col"
-                : "flex w-full flex-col gap-6 px-4 py-6"
+                : "flex w-full flex-col gap-6 px-8 py-8"
           }
         >
           <Notices padded={fullBleed}>
@@ -259,9 +259,7 @@ function Notices({
   if (!padded) return children;
   const shown = Children.toArray(children).length > 0;
   return shown ? (
-    <div className="flex w-full flex-col gap-4 px-4 pt-6">
-      {children}
-    </div>
+    <div className="flex w-full flex-col gap-4 px-8 pt-8">{children}</div>
   ) : null;
 }
 

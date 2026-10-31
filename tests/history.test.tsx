@@ -134,6 +134,23 @@ describe("format helpers", () => {
 });
 
 describe("HistoryView", () => {
+  it("uses taller rows, colored same-height pills and plain medium icons", () => {
+    const out = html([
+      entry({ tags: ["clean"], pick: "c" }),
+      entry({ pick: "mix" }),
+      entry({ pick: "none" }),
+    ]);
+    expect(out).toContain("[&amp;_td]:py-3.5");
+    expect(out).toContain("bg-chart-3/15 text-chart-3");
+    expect(out).toContain("bg-accent text-accent-foreground");
+    expect(out.match(/class="[^"]*h-6 w-48/g)).toHaveLength(3);
+    for (const icon of out.match(/<svg[^>]*>/g) ?? []) {
+      expect(icon).toContain('stroke-width="1.75"');
+      expect(icon).toContain("size-5");
+    }
+    expect(out).toContain("lucide-panels-top-left");
+  });
+
   it("shows the pick pill with its label, the round link, reason and icons", () => {
     const out = html([entry()]);
     expect(out).toContain("Richer row");

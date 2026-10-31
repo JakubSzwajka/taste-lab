@@ -8,20 +8,20 @@ Distilled from `taste.jsonl`. The agent rewrites this file every ~5 rounds. Each
 
 ## Settled pages
 
-| Page    | Settled as                                                  | Rounds               |
-| ------- | ----------------------------------------------------------- | -------------------- |
-| Header  | Two tiers, round menu, icon-only page nav                   | round-001, round-002 |
-| Compare | No heading, full-width frame, one-row answer bar, no tags   | round-003, round-009 |
-| History | One dense table, richer row, tags as same-size pills        | round-004, round-007 |
-| Library | Two panes: tree, canvas with toolbar, Docs, Controls        | round-005, round-008 |
-| Theme   | One dense token table by role, filter, ignored parts on top | round-010 a          |
-| Lab look | Slate surfaces, teal primary, coral second color, soft layers, roomy spacing (icons open) | round-011 to round-015 |
+| Page     | Settled as                                                                                     | Rounds                 |
+| -------- | ---------------------------------------------------------------------------------------------- | ---------------------- |
+| Header   | Two tiers, round menu, icon-only page nav                                                      | round-001, round-002   |
+| Compare  | No heading, full-width frame, one-row answer bar, no tags                                      | round-003, round-009   |
+| History  | One dense table, richer row, tags as same-size pills                                           | round-004, round-007   |
+| Library  | Two panes: tree, canvas with toolbar, Docs, Controls                                           | round-005, round-008   |
+| Theme    | One dense token table by role, filter, ignored parts on top                                    | round-010 a            |
+| Lab look | Slate surfaces, teal primary, coral second color, soft layers, roomy spacing, plain 20px icons | round-011 to round-016 |
 
 The Compare, History, Library and Theme pages are built in `src/` from these picks. `app-header` is promoted to `library/app-header/`.
 
 ## Library
 
-- `app-header` (agreed): `library/app-header/AppHeader.tsx`, from round-002 b with the arrow fix (20px icons in 36px buttons). Props: lab name, rounds, current round, active page, `showRoundTier` (defaults to Compare only). It mirrors `src/components/AppHeader.tsx`. Every layout round imports it from `@/library/app-header/AppHeader`, so only the page under it differs. Provenance round-001 mix and round-002 b.
+- `app-header` (agreed): `library/app-header/AppHeader.tsx`, from round-002 b, with roomy tiers from round-015 mix and plain 20px icons at stroke 1.75 from round-016 b. Props: lab name, rounds, current round, active page, `showRoundTier` (defaults to Compare only). It mirrors `src/components/AppHeader.tsx`. Every layout round imports it from `@/library/app-header/AppHeader`, so only the page under it differs. Provenance round-001 mix, round-002 b, round-015 mix and round-016 b.
 
 ## Starting point
 
@@ -32,8 +32,8 @@ The operator's taste from `examples/demo` (its DESIGN.md) is the prior, not a ru
 ### Header
 
 - Two tiers. Top bar: breadcrumb `taste-lab / <name> / <round ▾>`, where the round segment opens a menu of every round with its status. Second tier, on Compare only: prev and next round, the question, the pick or error badge, "n of N answered" with a bar. round-001 mix ("D is clean but also C has some nice two tiers approach and bar with x of y answered"), round-002 b.
-- Page nav as icon-only outline toggles with names in tooltips, in the top bar, at 40px tall with 20px icons. round-002 b ("perfect"), after round-001 d's icons were "tooo small".
-- Round arrows at 20px icons in 36px buttons. round-002 b ("< and > icons should be slightly bigger").
+- Page nav as icon-only outline toggles with names in tooltips, in the 64px top bar, at 44px tall and at least 48px wide with 20px icons (round-015 mix, round-016 b). round-002 b ("perfect"), after round-001 d's icons were "tooo small".
+- Round arrows are plain circled 20px icons at stroke 1.75 in 36px buttons, in a 48px tier (round-015 mix, round-016 b). round-002 b ("< and > icons should be slightly bigger").
 - Off the Compare page, the breadcrumb names the page and the round tier is hidden. Follows from round-002 b, where the tier belongs to a round.
 
 ### Compare
@@ -57,21 +57,21 @@ The operator's taste from `examples/demo` (its DESIGN.md) is the prior, not a ru
 
 ### Theme
 
-- One dense table, one 36px row per token: name, light chip and value, dark chip and value, a source pill of one size. Group rows by role with counts, an All / theme.css / Stock filter, and the ignored parts of theme.css as a compact list on top. round-010 a ("only this one is readable"), picked over a swatch grid, a preview and a workbench.
+- One table with taller rows (round-015 mix), one row per token: name, light chip and value, dark chip and value, a source pill of one size. Group rows by role with counts, an All / theme.css / Stock filter, and the ignored parts of theme.css as a compact list on top. round-010 a ("only this one is readable"), picked over a swatch grid, a preview and a workbench.
 - Chips show real values in their own mode, set inline from the parsed tokens like the Library canvas, so light chips read in a dark lab. The built page drops the variant's dashed light chips. round-010 a.
 
-### Lab look (round-011 to round-015)
+### Lab look (round-011 to round-016)
 
 - Slate surfaces with a faint blue tint over flat grey. round-011 b ("B but please make some more adjustments then just colours").
 - Soft layers: large radius (0.875rem), the frame a raised card with a shadow on a muted canvas, a floating answer bar. round-012 b ("better but still kind of sad?").
 - Color at work: status badges and avatars from the chart tokens, a soft primary wash on the canvas and frame header, accent badge pills. Coral as second color. round-013 b.
 - Teal primary over blue. round-014 c ("pic teal but whatever": lukewarm).
-- Roomy spacing: 64px header, 32px page padding, taller rows. Icons from the C set (gallery, library, brush, scroll, circled arrows, send). round-015 mix ("I like it roomy with icons from C"). Treatment open in round-016.
-- These are round picks. The real `src/` pages do not have soft layers, colored statuses, roomy spacing or the new icons yet. Only the tokens are live.
+- Roomy spacing: 64px header, 32px page padding, taller rows. Icons from the C set (gallery, library, brush, scroll, circled arrows, send). round-015 mix ("I like it roomy with icons from C"). Plain 20px icons at stroke 1.75, without tiles, won round-016 b (no reason given).
+- Built in `src/`: the soft-layer Compare canvas, raised variant frames and floating answer bar (round-012 b), accent metadata and chart-colored History pick pills (round-013 b), roomy spacing (round-015 mix) and plain 20px icons at stroke 1.75 (round-016 b). The Library keeps its full-bleed workbench. The promoted app header mirrors the real header. Tokens live in `theme.css`; round-017 has not changed the wordmark.
 
 ### Everywhere
 
-- Quiet over loud, dense over roomy, pills of one size. round-004 b, round-007 c, `examples/demo`.
+- Keep pills one size and the information in one table (round-004 b, round-007 c). Later rounds chose roomier spacing for the lab chrome (round-015 mix).
 
 ## Don't
 
@@ -88,27 +88,27 @@ The operator's taste from `examples/demo` (its DESIGN.md) is the prior, not a ru
 
 Copied from `examples/demo` round-007 a (one taste across repos). Judged in dark and light there. No lab round has been a token round, so nothing here was decided by the operator in this lab.
 
-| Token                  | Light                  | Dark                   | Evidence                    |
-| ---------------------- | ---------------------- | ---------------------- | --------------------------- |
-| `--primary`            | `oklch(0.5 0.19 262)`  | `oklch(0.72 0.14 262)` | `examples/demo round-007 a` |
-| `--primary-foreground` | `oklch(0.985 0 0)`     | `oklch(0.2 0.04 262)`  | `examples/demo round-007 a` |
-| `--ring`               | `oklch(0.55 0.17 262)` | `oklch(0.65 0.14 262)` | `examples/demo round-007 a` |
-| Surfaces, text, borders (`--background` to `--input`) | cool slate, hue 255, low chroma | deep slate, hue 255 | round-011 b ("B but please make some more adjustments then just colours") |
-| `--sidebar*` | slate, same values | slate, same values | extends round-011 b; the round did not show a sidebar |
-| `--radius` | `0.875rem` | same | round-012 b (soft layers: "better but still kind of sad?") |
-| `--primary`, `--accent(-foreground)`, `--chart-1` to `--chart-5` | blue 262 primary, coral 35 accent, coral/blue/teal/amber/pink charts | same hues, lighter | round-013 b ("lets also challange a bit this blue": primary under test in round-014) |
-| `--primary`, `--primary-foreground`, `--ring`, `--chart-2`, `--chart-3` | teal 190 primary, green 145 chart-3 | teal 185, lighter | round-014 c ("pic teal but whatever": lukewarm, revisit if it still feels flat) |
+| Token                                                                   | Light                                                                | Dark                   | Evidence                                                                             |
+| ----------------------------------------------------------------------- | -------------------------------------------------------------------- | ---------------------- | ------------------------------------------------------------------------------------ |
+| `--primary`                                                             | `oklch(0.5 0.19 262)`                                                | `oklch(0.72 0.14 262)` | `examples/demo round-007 a`                                                          |
+| `--primary-foreground`                                                  | `oklch(0.985 0 0)`                                                   | `oklch(0.2 0.04 262)`  | `examples/demo round-007 a`                                                          |
+| `--ring`                                                                | `oklch(0.55 0.17 262)`                                               | `oklch(0.65 0.14 262)` | `examples/demo round-007 a`                                                          |
+| Surfaces, text, borders (`--background` to `--input`)                   | cool slate, hue 255, low chroma                                      | deep slate, hue 255    | round-011 b ("B but please make some more adjustments then just colours")            |
+| `--sidebar*`                                                            | slate, same values                                                   | slate, same values     | extends round-011 b; the round did not show a sidebar                                |
+| `--radius`                                                              | `0.875rem`                                                           | same                   | round-012 b (soft layers: "better but still kind of sad?")                           |
+| `--primary`, `--accent(-foreground)`, `--chart-1` to `--chart-5`        | blue 262 primary, coral 35 accent, coral/blue/teal/amber/pink charts | same hues, lighter     | round-013 b ("lets also challange a bit this blue": primary under test in round-014) |
+| `--primary`, `--primary-foreground`, `--ring`, `--chart-2`, `--chart-3` | teal 190 primary, green 145 chart-3                                  | teal 185, lighter      | round-014 c ("pic teal but whatever": lukewarm, revisit if it still feels flat)      |
 
 ### Sizes settled in layout rounds
 
 These are not tokens. They are fixed sizes the picks carry.
 
-| Part                 | Size                                    | Evidence                 |
-| -------------------- | --------------------------------------- | ------------------------ |
-| Header page icons    | 20px in a 40px bar                      | round-002 b              |
-| Header round arrows  | 20px icons in 36px buttons              | round-002 b              |
-| Library column width | about 420px (`column`), or `full`       | round-008 c              |
-| History pick pill    | one fixed width (192px), tag pills 80px | round-004 b, round-007 c |
+| Part                 | Size                                                             | Evidence                   |
+| -------------------- | ---------------------------------------------------------------- | -------------------------- |
+| Header page icons    | plain 20px, stroke 1.75, in 44px toggles and a 64px bar          | round-015 mix, round-016 b |
+| Header round arrows  | plain circled 20px, stroke 1.75, in 36px buttons and a 48px tier | round-015 mix, round-016 b |
+| Library column width | about 420px (`column`), or `full`                                | round-008 c                |
+| History pick pill    | one fixed width (192px), tag pills 80px                          | round-004 b, round-007 c   |
 
 ## Open questions
 

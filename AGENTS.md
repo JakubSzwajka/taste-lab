@@ -177,7 +177,7 @@ Order of the layers: the lab's stock tokens, then `<dataDir>/theme.css`, then th
 - Order: stock, then `theme.css`, then each variant's `round.json` `tokens`. A round override still wins.
 - The server loads `theme.css` as its own stylesheet, after `src/index.css`. Creating, editing or deleting it while the server runs updates the app without a restart.
 - No `light-dark()` in `theme.css`: the app root has no `color-scheme`. Write both values.
-- The Theme page (`#/theme`, the palette icon in the header) is one dense table (round-010 a). The title line says how many tokens come from `theme.css`. An All / theme.css / Stock toggle group filters the rows. Ignored parts of `theme.css` sit on top as a compact list with line numbers, only when there are any.
+- The Theme page (`#/theme`, the paintbrush icon in the header) is one dense table (round-010 a). The title line says how many tokens come from `theme.css`. An All / theme.css / Stock toggle group filters the rows. Ignored parts of `theme.css` sit on top as a compact list with line numbers, only when there are any.
 - One row per token, grouped by role (Surfaces, Brand, States, Charts, Sidebar, Shape) with a count per group: the name, a light chip and value, a dark chip and value, and a source pill of one size ("theme.css" or "stock"). A value from `theme.css` shows in the foreground color. Everything else is stock. `--radius` is a sample box.
 - Each chip sits on a backdrop that holds every token of its mode as inline custom properties, and the chip's color is its real value. So light chips read in a dark lab and dark chips in a light lab, and a `var()` value resolves in its own mode. These token values are the page's only inline styles, as with the Library canvas.
 
@@ -226,15 +226,21 @@ Endpoints, served by `taste-lab serve` and `pnpm preview` for the served data di
 5. Every ~5 rounds, distill the log into `<dataDir>/DESIGN.md`: Do, Don't, Tokens, Open questions. Cite round ids.
 6. Read tags and reasons. A "none" means all options missed. Change direction, not detail.
 
+## Header
+
+The two-tier header uses a 64px top bar and 48px round tier, with 32px horizontal padding and 16px gaps. Page toggles are 44px tall and at least 48px wide (round-015 mix). Chrome icons are plain 20px lucide glyphs at stroke 1.75: GalleryHorizontal, Library, Paintbrush, ScrollText, circled round arrows and Sun/Moon (round-016 b). Keep the current wordmark; round-017 is open.
+
 ## Compare page
 
 Compare has no page heading: the header's round tier shows the question (round-003 c). The frame fills the width. One answer bar is pinned to the bottom (round-009 a, `AnswerBar` in `src/components/AnswerPanel.tsx`): the picks (A to D, None, Mix), a one-line reason that fills the row, and Submit. There are no tags in the UI. Mix needs a reason.
+
+Soft layers (round-012 b) and color (round-013 b) put raised, rounded variant cards on a gradient canvas, with accent metadata pills and a floating answer bar. Spacing is roomy (32px canvas padding, round-015 mix); plain 20px icons at stroke 1.75 follow round-016 b. Token overrides stay scoped to the real variant content.
 
 Keys: `1` to `4` pick and show that variant. `n` picks None. `m` picks Mix and focuses the reason. `r` focuses the reason and `Esc` leaves it. Enter (or Ctrl/Cmd+Enter) in the reason submits. On the page, Enter submits unless a button, link or toggle has focus. Shift+Enter and Alt+Enter do nothing, and pasted line breaks become spaces. In full width, `←` and `→` flip variants.
 
 ## History page
 
-`#/history` is one dense table of the log, newest first (round-007 c). It does not render the winning variant. Each row has:
+`#/history` is one table of the log, newest first (round-007 c). It does not render the winning variant. It uses 32px page padding and taller rows (round-015 mix), same-size accent/chart pills (round-013 b), and plain 20px icons at stroke 1.75 (round-016 b). Each row has:
 
 - the date, and the round as a link to `#/round/<id>`
 - a pick pill, `<id> · <variant label>`, with the label from that round's `round.json`
@@ -335,7 +341,7 @@ export function Default(args: TaskCardArgs) {
 - Docs tab: title, status, description, examples (each opens its canvas), the controls table, rules, and provenance with links to `#/round/<id>`. A round that no longer exists is marked "round not found".
 - A broken entry (bad `meta.json`, missing file, missing export) shows its errors in place and does not break the page. An example that throws shows its error in the canvas. The next control change tries again.
 
-The header's book icon opens Library, next to Compare, Theme and History.
+The header's Library icon opens Library, next to Compare, Theme and History.
 
 `taste-lab check` validates `library/*`: folder name, `<Name>.tsx` and `examples.tsx` present, `meta.json` schema (`controls` and `args` included), `<Name>` exported by `<Name>.tsx` (a regular, readable file), every example `export` found in `examples.tsx` (a file with `export *` or a destructured export is a problem, since its names cannot be read: export each name directly), provenance rounds that exist, and the scanner with the library rules on every `.ts` and `.tsx`. `library/` missing or holding only `.gitkeep` is fine.
 

@@ -1,16 +1,16 @@
 import {
   ChevronDown,
-  ChevronLeft,
-  ChevronRight,
   Circle,
   CircleAlert,
+  CircleArrowLeft,
+  CircleArrowRight,
   CircleCheck,
-  Columns2,
-  History,
-  LibraryBig,
+  GalleryHorizontal,
+  Library,
   type LucideIcon,
   Moon,
-  Palette,
+  Paintbrush,
+  ScrollText,
   Sun,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -56,10 +56,10 @@ import type { TasteEntry } from "@/lib/taste";
 import type { Theme } from "@/lib/theme";
 
 const ICON: Record<Page, LucideIcon> = {
-  compare: Columns2,
-  library: LibraryBig,
-  theme: Palette,
-  history: History,
+  compare: GalleryHorizontal,
+  library: Library,
+  theme: Paintbrush,
+  history: ScrollText,
 };
 
 const go = (href: string) => {
@@ -67,9 +67,8 @@ const go = (href: string) => {
 };
 
 /**
- * The app header, from .taste-lab round-002 b: round-001 d's breadcrumb with a
- * round menu, bigger page icons in the top bar, and round-001 c's round tier
- * (Compare pages only). The tier arrows are bigger, per the round-002 answer.
+ * Two tiers from round-002 b. Roomy spacing and the C icon set from round-015
+ * mix, with plain 20px icons at stroke 1.75 from round-016 b.
  */
 export function AppHeader({
   labName,
@@ -96,9 +95,9 @@ export function AppHeader({
     shown?.id ?? (route.page === "round" ? route.id : idleNotice(items).crumb);
 
   return (
-    <header>
+    <header className="shrink-0 bg-background text-foreground">
       <div className="border-b">
-        <div className="flex h-14 items-center gap-3 px-4">
+        <div className="flex h-16 items-center gap-4 px-8">
           {/* Below sm the lab crumbs hide, so the page crumb keeps the room. */}
           <Breadcrumb className="min-w-0">
             <BreadcrumbList className="flex-nowrap">
@@ -156,9 +155,9 @@ export function AppHeader({
                       aria-label={p.label}
                       aria-current={page === p.id ? "page" : undefined}
                       onClick={() => go(p.href)}
-                      className="h-10 min-w-11 text-muted-foreground aria-checked:bg-muted aria-checked:text-foreground"
+                      className="h-11 min-w-12 text-muted-foreground aria-checked:bg-muted aria-checked:text-foreground"
                     >
-                      <Icon className="size-5" />
+                      <Icon strokeWidth={1.75} className="size-5" />
                     </ToggleGroupItem>
                   </TooltipTrigger>
                   <TooltipContent>{p.label}</TooltipContent>
@@ -177,9 +176,9 @@ export function AppHeader({
             aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
           >
             {theme === "dark" ? (
-              <Sun className="size-5" />
+              <Sun strokeWidth={1.75} className="size-5" />
             ) : (
-              <Moon className="size-5" />
+              <Moon strokeWidth={1.75} className="size-5" />
             )}
           </Button>
         </div>
@@ -244,7 +243,10 @@ function RoundMenu({
           className="-mx-2 min-w-0 shrink font-mono font-normal text-foreground"
         >
           <span className="truncate">{label}</span>
-          <ChevronDown className="shrink-0 text-muted-foreground" />
+          <ChevronDown
+            strokeWidth={1.75}
+            className="size-5 shrink-0 text-muted-foreground"
+          />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="w-80">
@@ -304,7 +306,7 @@ function RoundTier({
     : undefined;
   return (
     <div className="border-b bg-muted/40">
-      <div className="flex h-11 items-center gap-3 px-4">
+      <div className="flex h-12 items-center gap-4 px-8">
         <div className="flex items-center gap-1">
           <Button
             size="icon-lg"
@@ -313,7 +315,7 @@ function RoundTier({
             disabled={!prev}
             onClick={() => prev && go(prev.href)}
           >
-            <ChevronLeft className="size-5" />
+            <CircleArrowLeft strokeWidth={1.75} className="size-5" />
           </Button>
           <Button
             size="icon-lg"
@@ -322,7 +324,7 @@ function RoundTier({
             disabled={!next}
             onClick={() => next && go(next.href)}
           >
-            <ChevronRight className="size-5" />
+            <CircleArrowRight strokeWidth={1.75} className="size-5" />
           </Button>
         </div>
 
@@ -371,8 +373,10 @@ function RoundTier({
 
 function StatusIcon({ status }: { status: RoundStatus }) {
   if (status.kind === "answered")
-    return <CircleCheck className="text-primary" />;
+    return <CircleCheck strokeWidth={1.75} className="size-5 text-primary" />;
   if (status.kind === "error")
-    return <CircleAlert className="text-destructive" />;
-  return <Circle className="text-muted-foreground" />;
+    return (
+      <CircleAlert strokeWidth={1.75} className="size-5 text-destructive" />
+    );
+  return <Circle strokeWidth={1.75} className="size-5 text-muted-foreground" />;
 }

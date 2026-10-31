@@ -169,6 +169,32 @@ describe("AppHeader markup", () => {
     html.match(new RegExp(`<button[^>]*aria-label="${label}"[^>]*>`))?.[0] ??
     "";
 
+  it("uses roomy tiers and plain medium icons from round-016 b", () => {
+    const html = render({ page: "current" }, rounds[1]);
+    expect(html).toContain("h-16 items-center gap-4 px-8");
+    expect(html).toContain("h-12 items-center gap-4 px-8");
+    for (const label of ["Compare", "Library", "Theme", "History"]) {
+      expect(button(html, label)).toContain("h-11 min-w-12");
+    }
+    for (const name of [
+      "gallery-horizontal",
+      "library",
+      "paintbrush",
+      "scroll-text",
+      "circle-arrow-left",
+      "circle-arrow-right",
+      "sun",
+    ]) {
+      expect(html).toContain(`lucide-${name}`);
+    }
+    const icons = html.match(/<svg[^>]*>/g) ?? [];
+    expect(icons.length).toBeGreaterThan(6);
+    for (const icon of icons) {
+      expect(icon).toContain('stroke-width="1.75"');
+      expect(icon).toContain("size-5");
+    }
+  });
+
   it("shows the round crumb, question and answered count on Compare", () => {
     const html = render({ page: "current" }, rounds[1]);
     expect(html).toContain(">taste-lab<");

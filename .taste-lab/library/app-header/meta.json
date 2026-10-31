@@ -1,7 +1,7 @@
 {
   "name": "app-header",
   "title": "App header",
-  "description": "The lab's header: breadcrumb <taste.lab logo> / <lab> / <round menu>, icon-only page toggles and theme switch in a roomy 64px top bar, and on Compare a round tier with arrows, the question, the pick or error badge and \"n of N answered\" with a bar.",
+  "description": "The lab's header: breadcrumb <taste.lab logo> / <lab> / <round menu>, icon-only page toggles and theme switch in a roomy 64px top bar, and on Compare a round tier with arrows, the round id and component, the pick or error badge and \"n of N answered\" with a bar.",
   "status": "agreed",
   "examples": [
     {
@@ -62,11 +62,16 @@
       "round": "round-016",
       "pick": "b",
       "note": "Plain 20px icons, stroke 1.75. Picked without a reason."
+    },
+    {
+      "round": "round-019",
+      "pick": "d",
+      "note": "Question moves to the answer bar. The tier keeps the round id and component."
     }
   ],
   "rules": [
     "Two tiers. Top bar: breadcrumb <taste.lab logo> / <name> / <round menu> (logo: round-017 a, round-018 b); the round segment opens a menu of every round with its status (round-001 mix, round-002 b).",
-    "Round tier on Compare pages only: prev and next, the question, the pick or error badge, \"n of N answered\" with a bar (round-001 mix, round-002 b).",
+    "Round tier on Compare pages only: prev and next, round id and component, the pick or error badge, \"n of N answered\" with a bar. The question lives in the answer bar (round-001 mix, round-002 b, round-019 d).",
     "Page nav as icon-only outline toggles with names in tooltips, 44px tall and at least 48px wide (round-015 mix).",
     "Roomy tiers: 64px top bar and 48px round tier, both with 32px horizontal padding and 16px gaps (round-015 mix).",
     "Plain 20px icons at stroke 1.75, no tiles: GalleryHorizontal, Library, Paintbrush, ScrollText, CircleArrowLeft/Right, Sun/Moon (round-016 b).",

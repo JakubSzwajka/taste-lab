@@ -92,6 +92,20 @@ describe("POST /api/taste", () => {
     expect(readFileSync(file, "utf8").trim().split("\n")).toHaveLength(1);
   });
 
+  it("preserves multiline reasons through POST, JSONL and GET", async () => {
+    const reason = "header of a\n\nbody of b\r\nfooter of c";
+    const result = await post({ ...valid, pick: "mix", reason });
+    expect(result.status).toBe(201);
+    expect(result.json.entry).toMatchObject({ reason });
+    const lines = readFileSync(file, "utf8").split("\n");
+    expect(lines).toHaveLength(2);
+    expect(JSON.parse(lines[0] as string).reason).toBe(reason);
+    const read = await call({});
+    expect(read.status).toBe(200);
+    expect(read.json.entries).toEqual([result.json.entry]);
+    expect(read.json.skipped).toBe(0);
+  });
+
   it("appends one line and uses a server timestamp", async () => {
     const r = await post({ ...valid, ts: "2001-01-01T00:00:00Z" });
     expect(r.status).toBe(201);

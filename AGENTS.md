@@ -214,7 +214,7 @@ Prototypes use shadcn stock from `src/index.css`, then `<dataDir>/theme.css`. Va
 ```
 
 - `view` is optional: `"columns"` or `"flip"`, the view in use when the operator answered. Lines written before it existed have no `view` and stay valid.
-- `pick` is a variant id from `shown`, `"none"` or `"mix"`. For `mix`, `reason` is required and says which parts.
+- `pick` is a variant id from `shown`, `"none"` or `"mix"`. For `mix`, `reason` is required and says which parts. Reasons may contain newlines, escaped inside the JSONL entry. History shows line breaks as spaces and keeps the full reason in the cell title.
 - `tags` is optional in a `POST` and defaults to `[]`. The Compare page has no tags (round-009 a), so new lines carry `tags: []`. Old lines keep theirs. Tags that are sent come from: airy, cramped, loud, quiet, dated, clean, playful, serious, too much, too little.
 - Never edit or reorder existing lines. Only the app middleware appends.
 
@@ -238,11 +238,11 @@ The two-tier header uses a 64px top bar and 48px round tier, with 32px horizonta
 
 ## Compare page
 
-Compare has no page heading: the header's round tier shows the question (round-003 c). The frame fills the width. One answer bar is pinned to the bottom (round-009 a, `AnswerBar` in `src/components/AnswerPanel.tsx`): the picks (A to D, None, Mix), a one-line reason that fills the row, and Submit. There are no tags in the UI. Mix needs a reason.
+Compare has no page heading. The header's round tier shows the round id and component, navigation, status and answered count. The full question sits at the top of the floating answer bar at 16px medium, wrapping without truncation, with a small muted uppercase "Question" label (round-019 d). The frame fills the width. Below the question are the picks (A to D, None, Mix) and a multiline reason that fills the row (`AnswerBar` in `src/components/AnswerPanel.tsx`). The reason grows from about 2 rows to 8, then scrolls. An icon-only Submit button sits inside its bottom-right corner, beside a platform-aware Ctrl↵ or ⌘↵ hint. There are no tags in the UI. Mix needs a reason.
 
 Soft layers (round-012 b) and color (round-013 b) put raised, rounded variant cards on a gradient canvas, with accent metadata pills and a floating answer bar. Spacing is roomy (32px canvas padding, round-015 mix); plain 20px icons at stroke 1.75 follow round-016 b. Token overrides stay scoped to the real variant content.
 
-Keys: `1` to `4` pick and show that variant. `n` picks None. `m` picks Mix and focuses the reason. `r` focuses the reason and `Esc` leaves it. Enter (or Ctrl/Cmd+Enter) in the reason submits. On the page, Enter submits unless a button, link or toggle has focus. Shift+Enter and Alt+Enter do nothing, and pasted line breaks become spaces. In full width, `←` and `→` flip variants.
+Keys: `1` to `4` pick and show that variant. `n` picks None. `m` picks Mix and focuses the reason. `r` focuses the reason and `Esc` leaves it. In the reason, Enter and Shift+Enter insert a newline; Ctrl+Enter or Cmd+Enter submits. Pasted line breaks are kept. On the page, Enter submits unless a button, link or toggle has focus. In full width, `←` and `→` flip variants.
 
 ## History page
 

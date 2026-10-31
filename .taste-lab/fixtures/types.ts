@@ -106,6 +106,11 @@ export type Sample = {
   /** The round on screen: the current one. */
   round: string;
   basedOn: { round: string; pick: string } | null;
+  /**
+   * A full-length question as real rounds write them (2 to 4 sentences), for
+   * rounds that judge where the question sits (round-019).
+   */
+  longQuestion: string;
   variants: SampleVariant[];
   tasks: SampleTask[];
 };

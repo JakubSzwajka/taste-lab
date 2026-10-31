@@ -8,14 +8,14 @@ Distilled from `taste.jsonl`. The agent rewrites this file every ~5 rounds. Each
 
 ## Settled pages
 
-| Page     | Settled as                                                                                     | Rounds                 |
-| -------- | ---------------------------------------------------------------------------------------------- | ---------------------- |
-| Header   | Two tiers, round menu, icon-only page nav                                                      | round-001, round-002   |
-| Compare  | No heading, full-width frame, one-row answer bar, no tags                                      | round-003, round-009   |
-| History  | One dense table, richer row, tags as same-size pills                                           | round-004, round-007   |
-| Library  | Two panes: tree, canvas with toolbar, Docs, Controls                                           | round-005, round-008   |
-| Theme    | One dense token table by role, filter, ignored parts on top                                    | round-010 a            |
-| Lab look | Slate surfaces, teal primary, coral second color, soft layers, roomy spacing, plain 20px icons | round-011 to round-016 |
+| Page     | Settled as                                                                                     | Rounds                            |
+| -------- | ---------------------------------------------------------------------------------------------- | --------------------------------- |
+| Header   | Two tiers, round menu, icon-only page nav                                                      | round-001, round-002              |
+| Compare  | No heading, full-width frame, question in answer bar, no tags                                  | round-003, round-009, round-019 d |
+| History  | One dense table, richer row, tags as same-size pills                                           | round-004, round-007              |
+| Library  | Two panes: tree, canvas with toolbar, Docs, Controls                                           | round-005, round-008              |
+| Theme    | One dense token table by role, filter, ignored parts on top                                    | round-010 a                       |
+| Lab look | Slate surfaces, teal primary, coral second color, soft layers, roomy spacing, plain 20px icons | round-011 to round-016            |
 
 The Compare, History, Library and Theme pages are built in `src/` from these picks. `app-header` is promoted to `library/app-header/`.
 
@@ -31,17 +31,17 @@ The operator's taste from `examples/demo` (its DESIGN.md) is the prior, not a ru
 
 ### Header
 
-- Two tiers. Top bar: breadcrumb `taste-lab / <name> / <round ▾>`, where the round segment opens a menu of every round with its status. Second tier, on Compare only: prev and next round, the question, the pick or error badge, "n of N answered" with a bar. round-001 mix ("D is clean but also C has some nice two tiers approach and bar with x of y answered"), round-002 b.
+- Two tiers. Top bar: breadcrumb `taste-lab / <name> / <round ▾>`, where the round segment opens a menu of every round with its status. Second tier, on Compare only: prev and next round, round id and component (round-019 d), the pick or error badge, "n of N answered" with a bar. round-001 mix ("D is clean but also C has some nice two tiers approach and bar with x of y answered"), round-002 b.
 - Page nav as icon-only outline toggles with names in tooltips, in the 64px top bar, at 44px tall and at least 48px wide with 20px icons (round-015 mix, round-016 b). round-002 b ("perfect"), after round-001 d's icons were "tooo small".
 - Round arrows are plain circled 20px icons at stroke 1.75 in 36px buttons, in a 48px tier (round-015 mix, round-016 b). round-002 b ("< and > icons should be slightly bigger").
 - Off the Compare page, the breadcrumb names the page and the round tier is hidden. Follows from round-002 b, where the tier belongs to a round.
 
 ### Compare
 
-- No page heading. The round tier already shows the question. round-003 c, round-009.
+- No page heading. The full question sits at the top of the floating answer bar at 16px medium, wrapping without truncation, with a small muted uppercase "Question" label. The round tier keeps the round id and component, navigation, status and count. round-019 d, updating round-003 c and round-009.
 - The frame at full width, filling the viewport. round-003 c ("i want to see it full width. C is the closest one yet").
-- One answer bar pinned at the bottom: pick buttons (A, B, C, None, Mix), a single-line reason that fills the row, Submit. Enter submits. Mix needs a reason. round-003 c, round-009 a (picked from three bars, no reason given, tag "clean").
-- Keep answering to the keyboard. The bar is the smallest of the three tried in round-009, and the other two (a roomy 2-line reason, pick first then reason) lost to it.
+- One answer bar pinned at the bottom, without tags (round-003 c, round-009 a). Below the question: pick buttons (A, B, C, None, Mix), a multiline reason that grows from about 2 to 8 rows, then scrolls, and an icon-only Submit inside its bottom-right corner. The composer is an operator request after round-019 d. Mix needs a reason.
+- Keep answering to the keyboard. Enter and Shift+Enter add newlines in the reason, Ctrl/Cmd+Enter submits, Esc leaves it. Pasted line breaks stay. Page shortcuts stay unchanged.
 
 ### History
 
@@ -118,13 +118,13 @@ These are not tokens. They are fixed sizes the picks carry.
 ## Open questions
 
 - Closed: does listing every round in the header scale? No. round-001 and round-002 settled on the round menu plus the round tier.
-- Closed: does Compare need its own question heading? No. round-003 c, round-009 a.
+- Closed: where should Compare show its question? In the floating answer bar, not the header or a page heading. round-019 d.
 - Closed: how much should one History answer show? One dense row with the variant label, round link, and theme and view icons. round-004 b, round-007 c.
 - Closed: list or detail for the Library? Two panes with a canvas, Docs and Controls. round-005 c, round-008 c.
 - Closed: do we need tags? Not in the answer bar. round-006 (none), round-009 a.
 - Closed: how should the Theme page show tokens? One dense table grouped by role. round-010 a.
 - Open: the `lab` fixture has a `theme` part (32 tokens, 3 from theme.css, 3 sample ignored parts) for Theme rounds. Its values copy src/index.css and theme.css; update them when theme.css changes.
-- Open: round-009 a was picked with no reason and the tag "clean". Does the one-line reason get used when it is the only free-text field? Check the next answers for empty reasons.
+- Open: does the growing multiline composer encourage reasons? Check the next answers for empty reasons.
 - Open: History has no filter or search. At about 30 answers the table may need one. Raise it when the log grows.
 - Open: the History tags column holds two pills and a `+n`. The log no longer gets new tags, so the column will empty out. Decide whether to drop it once most rows are blank.
 - Open: round-008 left Controls and the canvas theme toggle as mock behaviour. Judge them again on the real page.

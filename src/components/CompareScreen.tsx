@@ -136,9 +136,8 @@ export function CompareScreen({
     return () => window.removeEventListener("keydown", onKey);
   }, [flip]);
 
-  // .taste-lab round-003 c + round-009 a: no page heading (the header's round
-  // tier carries the question), the frame fills the width and the height
-  // left, and a one-row answer bar is pinned to the bottom.
+  // No page heading; the frame fills the available space (round-003 c).
+  // The floating answer bar carries the question and composer (round-019 d).
   return (
     <div className="flex flex-1 flex-col">
       <div className="flex w-full flex-1 flex-col gap-8 bg-linear-to-b from-primary/10 via-muted/40 to-accent/30 px-8 pt-8 pb-8">
@@ -281,6 +280,7 @@ export function CompareScreen({
 
       <AnswerBar
         key={spec.id}
+        question={spec.question}
         variantIds={ids}
         pick={pick}
         onPick={handlePick}

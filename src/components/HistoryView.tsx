@@ -147,7 +147,7 @@ export function HistoryView({
                       className="max-w-0 truncate"
                       title={e.reason || undefined}
                     >
-                      {e.reason}
+                      {e.reason.replace(/\r\n|\r|\n/g, " ")}
                     </TableCell>
                     <TableCell className="pr-4">
                       <span className="flex items-center gap-0.5">

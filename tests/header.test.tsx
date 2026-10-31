@@ -198,13 +198,15 @@ describe("AppHeader markup", () => {
     }
   });
 
-  it("shows the round crumb, question and answered count on Compare", () => {
+  it("shows round id and component, not the question, on Compare (round-019 d)", () => {
     const html = render({ page: "current" }, rounds[1]);
     expect(html).toContain('data-slot="logo"');
     expect(html).toMatch(/taste<span[^>]*>\.<\/span>lab/);
     expect(html).toContain(">acme<");
     expect(html).toMatch(/aria-haspopup="menu"[^>]*><span[^>]*>round-002/);
-    expect(html).toContain("Question round-002?");
+    expect(html).not.toContain("Question round-002?");
+    expect(html).toContain('title="round-002 · card"');
+    expect(html).toMatch(/class="font-mono">round-002<\/span>/);
     expect(html).toContain("1 of 4 answered");
     expect(html).toMatch(
       /<div[^>]*data-slot="progress"[^>]*aria-hidden="true"/,
@@ -316,7 +318,7 @@ describe("AppHeader markup", () => {
     expect(html).toMatch(/<a[^>]*class="[^"]*\bmax-w-40\b/);
     expect(html).toMatch(/<li[^>]*class="[^"]*\bhidden\b[^"]*\bsm:inline-flex/);
     expect(html).toMatch(
-      /<p[^>]*class="[^"]*\btruncate\b[^>]*title="card: Question round-002\?"/,
+      /<p[^>]*class="[^"]*\btruncate\b[^>]*title="round-002 · card"/,
     );
     const lib = render(
       { page: "library-entry", name: "x".repeat(60) },

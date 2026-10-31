@@ -61,6 +61,15 @@ describe("model-visible messages", () => {
     assertNoSecret(text);
   });
 
+  it("flattens multiline composer reasons without changing the entry", () => {
+    const reason = "header of a\n\nbody of b\r\nfooter of c\rlast";
+    const multiline = { ...entry, reason };
+    const text = answerText(multiline, "/d");
+    expect(text).toContain('reason "header of a body of b footer of c last"');
+    expect(text).not.toMatch(/[\r\n]/);
+    expect(multiline.reason).toBe(reason);
+  });
+
   it("answer text without tags, reason or view", () => {
     const text = answerText(
       { ...entry, tags: [], reason: "", view: undefined, pick: "none" },

@@ -528,6 +528,8 @@ const library: LibraryItem[] = [
 const sample: Sample = {
   round: "round-010",
   basedOn: { round: "round-006", pick: "c" },
+  longQuestion:
+    "Owners in table rows (T-04). Rows show the owner's name today; round-006 c put a 20px avatar before it. Avatars help you scan a long table but cost width at 1280px and add colour next to the status pill. Only one can ship. Keep the avatar, drop it, or show initials only, and does the answer change for tables under 10 rows?",
   variants: [
     {
       id: "a",

@@ -216,7 +216,7 @@ export function AppHeader({
             title={
               shown?.status === "error"
                 ? undefined
-                : shown && `${shown.component}: ${shown.question}`
+                : shown && `${shown.id} · ${shown.component}`
             }
           >
             {!shown ? (
@@ -227,10 +227,11 @@ export function AppHeader({
               </span>
             ) : (
               <>
+                <span className="font-mono">{shown.id}</span>
                 <span className="text-muted-foreground">
-                  {shown.component}:{" "}
+                  {" "}
+                  · {shown.component}
                 </span>
-                {shown.question}
               </>
             )}
           </p>

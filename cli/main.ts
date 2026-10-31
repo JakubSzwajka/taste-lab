@@ -2,6 +2,7 @@ import { eventLine, type ServeEvent } from "../server/events.ts";
 import { parseCli, USAGE, UsageError } from "./args.ts";
 import { checkDataDir } from "./check.ts";
 import { InitError, initDataDir } from "./init.ts";
+import { listLibrary } from "./library.ts";
 
 export type Io = { out: (s: string) => void; err: (s: string) => void };
 // stdout by hand, not console.log: `--events` points console.log at stderr.
@@ -73,6 +74,42 @@ export async function run(argv: string[], io: Io = consoleIo): Promise<number> {
           .join("\n")}`,
       );
       return 1;
+    }
+    case "library": {
+      const result = listLibrary(cli.dir, { status: cli.status });
+      if (cli.json) {
+        io.out(JSON.stringify(result.entries, null, 2));
+      } else if (result.entries.length === 0) {
+        io.out("No library entries.");
+      } else {
+        const rows = result.entries.map((entry) => [
+          entry.name,
+          entry.status ?? "invalid",
+          entry.title ?? "(no title)",
+          String(entry.exampleCount),
+          entry.path,
+        ]);
+        const headers = ["NAME", "STATUS", "TITLE", "EXAMPLES", "PATH"];
+        const widths = headers.map((h, i) =>
+          Math.max(h.length, ...rows.map((r) => r[i].length)),
+        );
+        io.out(
+          [headers, ...rows]
+            .map((row) =>
+              row.map((cell, i) => cell.padEnd(widths[i])).join("  "),
+            )
+            .join("\n"),
+        );
+        for (const entry of result.entries) {
+          for (const problem of entry.problems)
+            io.err(`  ${entry.name}: ${problem}`);
+        }
+      }
+      for (const problem of result.problems) io.err(`  ${problem}`);
+      return result.entries.some((entry) => entry.problems.length > 0) ||
+        result.problems.length > 0
+        ? 1
+        : 0;
     }
     case "serve":
       return runServe(cli, io);

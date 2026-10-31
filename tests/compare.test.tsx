@@ -125,7 +125,7 @@ describe("CompareScreen (round-003 c + round-009 a)", () => {
     expect(form).toMatch(/^<form aria-label="Answer" class="sticky bottom-3/);
     expect(form).toContain("m-3 shrink-0 rounded-xl border bg-card");
     expect(form).toContain("shadow-lg");
-    expect(form).toContain("gap-4 px-8 py-4");
+    expect(form).toContain("flex flex-col gap-3 px-8 py-4");
     // Pick buttons for each variant, None and Mix.
     for (const id of ["a", "b", "c"]) {
       expect(form).toContain(`aria-label="Variant ${id}"`);
@@ -133,16 +133,26 @@ describe("CompareScreen (round-003 c + round-009 a)", () => {
     expect(form).toContain("None");
     expect(form).toContain("Mix");
     expect(form).toMatch(/<textarea[^>]*aria-label="Reason"[^>]*rows="2"/);
-    expect(form).toContain("min-w-48 flex-1 rounded-lg border border-input");
-    expect(form).toContain("max-h-[calc(8lh+1rem)]");
+    // One box holds the whole answer: the reason on top, then picks and Submit.
+    expect(form).toContain("rounded-xl border border-input");
+    const box = form.slice(form.indexOf("rounded-xl border border-input"));
+    expect(box.indexOf("<textarea")).toBeLessThan(
+      box.indexOf('aria-label="Variant a"'),
+    );
+    expect(box.indexOf('aria-label="Variant a"')).toBeLessThan(
+      box.indexOf('aria-label="Submit"'),
+    );
+    expect(form).toContain("max-h-[calc(8lh+1.5rem)]");
     expect(form).toContain("overflow-y-auto");
     expect(form.match(/<textarea[^>]*>/)?.[0]).not.toContain(
       "whitespace-nowrap",
     );
-    expect(form).toContain("justify-end gap-2 px-2 pb-2");
+    expect(form).toContain("flex flex-wrap items-center gap-3 px-3 pb-3");
     expect(submitTag(form)).toContain('aria-label="Submit"');
     expect(form).not.toContain(">Submit<");
-    expect(form).toContain("Ctrl↵");
+    expect(form).toContain('title="Ctrl+Enter submits"');
+    expect(form).toContain(">Ctrl</kbd>");
+    expect(form).toContain("lucide-corner-down-left");
   });
 
   it("has no tags in the UI", () => {

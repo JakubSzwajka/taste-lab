@@ -198,7 +198,10 @@ describe("Compare answer bar, mounted", () => {
     vi.spyOn(navigator, "platform", "get").mockReturnValue("MacIntel");
     try {
       const { bar, reason } = await setup();
-      expect(bar.textContent).toContain("⌘↵");
+      const hint = bar.querySelector('[data-slot="shortcut-hint"]');
+      expect(hint?.getAttribute("title")).toBe("Command+Enter submits");
+      expect(hint?.querySelector(".lucide-command")).not.toBeNull();
+      expect(hint?.querySelector(".lucide-corner-down-left")).not.toBeNull();
       expect(reason.getAttribute("aria-keyshortcuts")).toBe("Meta+Enter");
     } finally {
       vi.restoreAllMocks();

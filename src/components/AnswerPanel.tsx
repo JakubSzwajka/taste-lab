@@ -1,8 +1,7 @@
-import { SendHorizontal } from "lucide-react";
+import { Command, CornerDownLeft, SendHorizontal } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import {
@@ -26,6 +25,33 @@ export type BarAnswer = { pick: string; reason: string };
  * a growing multiline reason. Ctrl/Cmd+Enter submits from the reason.
  * Page shortcuts stay in place; Escape leaves the reason.
  */
+/** Pick toggles: big enough to hit, one size for letters and words. */
+const PICK =
+  "min-w-14 px-3 text-sm font-medium data-[state=on]:border-primary data-[state=on]:bg-primary data-[state=on]:text-primary-foreground [&[data-state=on]_[data-slot=badge]]:border-primary-foreground/40 [&[data-state=on]_[data-slot=badge]]:text-primary-foreground";
+
+/** Key caps drawn with lucide icons: the ⌘ and ↵ glyphs are missing from Geist. */
+const KEYCAP =
+  "inline-flex h-5 min-w-5 items-center justify-center rounded border bg-muted px-1 font-sans text-[0.6875rem] leading-none font-medium text-muted-foreground";
+
+/** "⌘ ↵" on a Mac, "Ctrl ↵" elsewhere. Screen readers get aria-keyshortcuts on the reason. */
+function ShortcutHint({ mac }: { mac: boolean }) {
+  return (
+    <span
+      data-slot="shortcut-hint"
+      aria-hidden="true"
+      title={mac ? "Command+Enter submits" : "Ctrl+Enter submits"}
+      className="ml-auto inline-flex items-center gap-1"
+    >
+      <kbd className={KEYCAP}>
+        {mac ? <Command className="size-3" strokeWidth={2} /> : "Ctrl"}
+      </kbd>
+      <kbd className={KEYCAP}>
+        <CornerDownLeft className="size-3" strokeWidth={2} />
+      </kbd>
+    </span>
+  );
+}
+
 export function AnswerBar({
   question,
   variantIds,
@@ -111,48 +137,16 @@ export function AnswerBar({
         submit();
       }}
     >
-      <div className="flex flex-wrap items-center gap-4 px-8 py-4">
-        <p className="basis-full text-base leading-snug font-medium text-pretty">
+      <div className="flex flex-col gap-3 px-8 py-4">
+        <p className="text-base leading-snug font-medium text-pretty">
           <span className="mr-2 text-xs font-normal tracking-wider text-muted-foreground uppercase">
             Question
           </span>
           {question}
         </p>
-        <ToggleGroup
-          type="single"
-          variant="outline"
-          value={pick}
-          onValueChange={(v) => v && choose(v)}
-          aria-label="Pick a variant"
-        >
-          {variantIds.map((id, i) => (
-            <ToggleGroupItem key={id} value={id} aria-label={`Variant ${id}`}>
-              <span className="uppercase">{id}</span>
-              <Badge variant="outline" className="font-mono">
-                {i + 1}
-              </Badge>
-            </ToggleGroupItem>
-          ))}
-          <ToggleGroupItem value="none">
-            None{" "}
-            <Badge variant="outline" className="font-mono">
-              n
-            </Badge>
-          </ToggleGroupItem>
-          <ToggleGroupItem value="mix">
-            Mix{" "}
-            <Badge variant="outline" className="font-mono">
-              m
-            </Badge>
-          </ToggleGroupItem>
-        </ToggleGroup>
-
-        <Separator
-          orientation="vertical"
-          className="data-vertical:h-6 data-vertical:self-center"
-        />
-
-        <div className="min-w-48 flex-1 rounded-lg border border-input focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/50 dark:bg-input/30">
+        {/* One box for the whole answer (operator, after round-019 d): the
+            reason on top, picks and Submit in its bottom row. */}
+        <div className="rounded-xl border border-input has-[textarea:focus-visible]:border-ring has-[textarea:focus-visible]:ring-3 has-[textarea:focus-visible]:ring-ring/50 dark:bg-input/30">
           <Textarea
             ref={reasonRef}
             aria-label="Reason"
@@ -180,17 +174,50 @@ export function AnswerBar({
                 : "Why? A few words is enough."
             }
             rows={2}
-            className="min-h-[calc(2lh+1rem)] max-h-[calc(8lh+1rem)] resize-none overflow-y-auto rounded-b-none border-0 leading-5 focus-visible:ring-0 dark:bg-transparent"
+            className="min-h-[calc(2lh+1.5rem)] max-h-[calc(8lh+1.5rem)] resize-none overflow-y-auto rounded-b-none border-0 px-4 pt-3 text-base leading-6 shadow-none focus-visible:ring-0 dark:bg-transparent"
           />
-          <div className="flex items-center justify-end gap-2 px-2 pb-2">
-            <span aria-hidden="true" className="text-xs text-muted-foreground">
-              {mac ? "⌘↵" : "Ctrl↵"}
-            </span>
+          <div className="flex flex-wrap items-center gap-3 px-3 pb-3">
+            <ToggleGroup
+              type="single"
+              variant="outline"
+              value={pick}
+              onValueChange={(v) => v && choose(v)}
+              size="lg"
+              aria-label="Pick a variant"
+            >
+              {variantIds.map((id, i) => (
+                <ToggleGroupItem
+                  key={id}
+                  value={id}
+                  aria-label={`Variant ${id}`}
+                  className={PICK}
+                >
+                  <span className="uppercase">{id}</span>
+                  <Badge variant="outline" className="font-mono">
+                    {i + 1}
+                  </Badge>
+                </ToggleGroupItem>
+              ))}
+              <ToggleGroupItem value="none" className={PICK}>
+                None{" "}
+                <Badge variant="outline" className="font-mono">
+                  n
+                </Badge>
+              </ToggleGroupItem>
+              <ToggleGroupItem value="mix" className={PICK}>
+                Mix{" "}
+                <Badge variant="outline" className="font-mono">
+                  m
+                </Badge>
+              </ToggleGroupItem>
+            </ToggleGroup>
+            <ShortcutHint mac={mac} />
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
                   type="submit"
-                  size="icon-sm"
+                  size="icon-lg"
+                  className="size-10 rounded-full"
                   data-submit="true"
                   aria-label="Submit"
                   aria-busy={submitting}

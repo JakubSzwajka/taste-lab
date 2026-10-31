@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <title>taste.lab: a round waits for you</title>
+  <!-- src/favicon.svg with a red dot at the top right. The App swaps to this
+       icon while a round has no answer (src/lib/tab-badge.ts). A mask cuts a
+       ring out of the tile, so the dot reads on any tab bar. Keep the tile and
+       flask in step with src/favicon.svg. XML comments cannot hold a double
+       hyphen. -->
+  <style>
+    .tile { fill: oklch(0.52 0.1 190); }
+    .flask { stroke: oklch(0.985 0 0); }
+    .dot { fill: oklch(0.63 0.24 27); }
+    @media (prefers-color-scheme: dark) {
+      .tile { fill: oklch(0.75 0.12 185); }
+      .flask { stroke: oklch(0.2 0.04 190); }
+      .dot { fill: oklch(0.7 0.2 25); }
+    }
+  </style>
+  <mask id="cut">
+    <rect width="32" height="32" fill="white" />
+    <circle cx="25" cy="7" r="9" fill="black" />
+  </mask>
+  <g mask="url(#cut)">
+    <rect class="tile" width="32" height="32" rx="9" />
+    <g class="flask" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"
+       transform="translate(6.08 6.08) scale(0.8267)">
+      <path d="M14 2v6a2 2 0 0 0 .245.96l5.51 10.08A2 2 0 0 1 18 22H6a2 2 0 0 1-1.755-2.96l5.51-10.08A2 2 0 0 0 10 8V2" />
+      <path d="M6.453 15h11.094" />
+      <path d="M8.5 2h7" />
+    </g>
+  </g>
+  <circle class="dot" cx="25" cy="7" r="7" />
+</svg>

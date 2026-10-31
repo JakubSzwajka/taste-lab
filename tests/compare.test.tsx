@@ -150,7 +150,9 @@ describe("CompareScreen (round-003 c + round-009 a)", () => {
     expect(form).toContain("flex flex-wrap items-center gap-3 px-3 pb-3");
     expect(submitTag(form)).toContain('aria-label="Submit"');
     expect(form).not.toContain(">Submit<");
-    expect(form).toContain("Ctrl↵");
+    expect(form).toContain('title="Ctrl+Enter submits"');
+    expect(form).toContain(">Ctrl</kbd>");
+    expect(form).toContain("lucide-corner-down-left");
   });
 
   it("has no tags in the UI", () => {

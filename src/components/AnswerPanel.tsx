@@ -1,4 +1,4 @@
-import { SendHorizontal } from "lucide-react";
+import { Command, CornerDownLeft, SendHorizontal } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -28,6 +28,29 @@ export type BarAnswer = { pick: string; reason: string };
 /** Pick toggles: big enough to hit, one size for letters and words. */
 const PICK =
   "min-w-14 px-3 text-sm font-medium data-[state=on]:border-primary data-[state=on]:bg-primary data-[state=on]:text-primary-foreground [&[data-state=on]_[data-slot=badge]]:border-primary-foreground/40 [&[data-state=on]_[data-slot=badge]]:text-primary-foreground";
+
+/** Key caps drawn with lucide icons: the ⌘ and ↵ glyphs are missing from Geist. */
+const KEYCAP =
+  "inline-flex h-5 min-w-5 items-center justify-center rounded border bg-muted px-1 font-sans text-[0.6875rem] leading-none font-medium text-muted-foreground";
+
+/** "⌘ ↵" on a Mac, "Ctrl ↵" elsewhere. Screen readers get aria-keyshortcuts on the reason. */
+function ShortcutHint({ mac }: { mac: boolean }) {
+  return (
+    <span
+      data-slot="shortcut-hint"
+      aria-hidden="true"
+      title={mac ? "Command+Enter submits" : "Ctrl+Enter submits"}
+      className="ml-auto inline-flex items-center gap-1"
+    >
+      <kbd className={KEYCAP}>
+        {mac ? <Command className="size-3" strokeWidth={2} /> : "Ctrl"}
+      </kbd>
+      <kbd className={KEYCAP}>
+        <CornerDownLeft className="size-3" strokeWidth={2} />
+      </kbd>
+    </span>
+  );
+}
 
 export function AnswerBar({
   question,
@@ -188,12 +211,7 @@ export function AnswerBar({
                 </Badge>
               </ToggleGroupItem>
             </ToggleGroup>
-            <span
-              aria-hidden="true"
-              className="ml-auto font-mono text-xs text-muted-foreground"
-            >
-              {mac ? "⌘↵" : "Ctrl↵"}
-            </span>
+            <ShortcutHint mac={mac} />
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button

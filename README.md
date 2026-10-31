@@ -1,197 +1,36 @@
 # taste.lab
 
-A local shadcn lab for tuning UI taste with an agent. You compare 2 to 4 component variants side by side, pick one and say why. The agent reads that log and writes the next round. The app never calls an LLM.
+Tune UI taste with your coding agent. You compare 2 to 4 variants of a component, pick one and say why. The agent reads your answer and writes the next round. What you agree on goes into a component library inside your repo.
 
-The taste data for an app lives in a `.taste-lab` folder in that app's repo, committed with the app. One lab serves any such folder. Agreed components go into a library inside that folder, ready for another session to build into the app.
+![Compare: three variants side by side, the question and your answer at the bottom](docs/screenshots/compare.png)
 
-![Compare: three variants of a chat system line side by side, with the answer bar at the bottom](docs/screenshots/compare.png)
-
-| Library                                                                                               | History                                                                         |
-| ----------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
-| ![Library: agreed components with examples, a live canvas and controls](docs/screenshots/library.png) | ![History: every answer with its pick and reason](docs/screenshots/history.png) |
-
-Screenshots: the lab serving the `.taste-lab` folder of a real app, in dark mode.
+| Library                                                                               | History                                                              |
+| ------------------------------------------------------------------------------------- | -------------------------------------------------------------------- |
+| ![Library: agreed components, live canvas and controls](docs/screenshots/library.png) | ![History: every pick with its reason](docs/screenshots/history.png) |
 
 ## Install
 
-You need Node 23.6 or newer (it runs the TypeScript sources directly) and pnpm.
-
-As a [pi](https://pi.dev) package, which gives you the `/taste` command and the `taste` skill:
+Needs Node 23.6+ and [pi](https://pi.dev).
 
 ```sh
 pi install git:github.com/JakubSzwajka/taste-lab
 ```
 
-Or from a clone, which also gives you the `taste-lab` CLI:
-
-```sh
-git clone https://github.com/JakubSzwajka/taste-lab
-cd taste-lab
-pnpm install
-pi install .   # optional: the pi package from this clone
-```
-
-## Run
-
-```sh
-pnpm install
-pnpm dev     # serves the demo in examples/demo/.taste-lab, prints a 127.0.0.1 URL
-```
-
-For another repo, from any folder:
-
-```sh
-node <taste-lab>/bin/taste-lab.mjs init  --dir ../my-app/.taste-lab
-node <taste-lab>/bin/taste-lab.mjs check --dir ../my-app/.taste-lab
-node <taste-lab>/bin/taste-lab.mjs serve --dir ../my-app/.taste-lab [--port N] [--lan [--host <ip>]]
-```
-
-`init` creates the folder with a sample fixture, an empty `library/` and an empty `theme.css`, and refuses to overwrite one that exists. `check` validates `theme.css`, rounds and `library/` entries and scans variant and library files; it exits 1 and lists the problems when something is wrong. `serve` starts the lab on 127.0.0.1. Without `--port` it takes the first free port from 5300, skipping 3000, 3326, 5173 and 5310.
-
-`check` loads `fixtures/index.ts` and needs both exports: `fixtures` and `fixtureKeys` (the same keys). It reports broken files, dangling or looping symlinks and unreadable paths as problems. Data dir paths may contain spaces, quotes (not both kinds) and `$`. `serve`, `init` and `check` reject paths with a line break or control character, a backslash, `*`, `{` or `}`, or both quote kinds: Tailwind reads its `@source` path raw as a glob and cannot carry them.
-
-### Open the lab from another device on your LAN
-
-`serve --lan` binds one private IPv4 address instead of 127.0.0.1 and prints a link with a token:
-
-```sh
-node <taste-lab>/bin/taste-lab.mjs serve --dir ../my-app/.taste-lab --lan
-#   LAN address 192.168.1.50 (wlan0). The link token changes on every run.
-#   http://192.168.1.50:5301/?k=<token>
-```
-
-- The address is the interface that carries the default route (read from `/proc/net/route`, Linux only). Without a default route, it is the first private IPv4 that is not on a docker, bridge, veth, libvirt or tunnel interface. The output names other candidates.
-- `--host <ip>` picks the address yourself. It must be a private or loopback IPv4 (10/8, 172.16/12, 192.168/16, 127/8). `--host` without `--lan` is a usage error (exit 2). The server never binds 0.0.0.0.
-- Open the printed link once. The server swaps `?k=` for a cookie (`taste_lab_<port>`, `HttpOnly`, `SameSite=Strict`) and redirects to the same page without `k`. The app never sees the token, and nothing is kept in `localStorage`.
-- The token is 128 random bits, made at start. It lives in server memory, the printed URL and that browser cookie only. It is never written to disk or into the data dir, and Vite never sees a URL that carries it, so it stays out of `DEBUG=vite:*` logs. It changes on every run, so an old link or cookie stops working after a restart.
-- Protected: every HTTP request, including the page, modules, `/@fs` files, assets, `/api/taste` and the HMR WebSocket. A request needs a private remote address, `Host` equal to `<ip>:<port>`, an `Origin` (if sent) equal to `http://<ip>:<port>` and the cookie. A bad address, Host or Origin gets 403. A missing or wrong cookie gets 401 and a page that says "Open the link printed by `taste-lab serve --lan`". The JSON content type, size limit and validation rules of the API still apply.
-- The gate covers listeners attached before it, which today is all of Vite's HTTP and HMR handlers. A listener added later, such as a configured `server.proxy`, is not covered. The lab configures no proxy.
-- Anyone on the LAN who has the link can read everything the lab serves, including the round and library source. Use it on a network you trust. There is no HTTPS, so the token and cookie travel in clear text.
-- In every mode, Vite refuses to serve `taste.jsonl` as a file (`server.fs.deny`). The app reads the log only through `/api/taste`.
-- Vite public serving is off (`publicDir: false`), so nothing is served from a `public/` folder. A data dir inside the lab's `public/` folder is also rejected (symlinks followed), as defense in depth.
-- Without `--lan`, nothing changes: 127.0.0.1 only, no token.
-
-Node version is pinned in `.node-version`. pnpm version is in `package.json`.
-
-### Use it from pi
-
-This repo is a [pi](https://pi.dev) package with a `/taste` command and a `taste` skill. Install it once, see "Install". A local clone needs `pnpm install` first, because the package uses the clone's own `node_modules`.
-
-Then, in a pi session in any repo:
-
-| Command               | Does                                                                                                          |
-| --------------------- | ------------------------------------------------------------------------------------------------------------- |
-| `/taste`              | Serves `<cwd>/.taste-lab` on 127.0.0.1 and the LAN. Shows both links. Offers `init` if the folder is missing. |
-| `/taste local`        | Same, without the LAN listener and link.                                                                      |
-| `/taste --dir <path>` | Serves another data dir. Combines with `local`.                                                               |
-| `/taste status`       | Shows the links again, or "starting…" while the server is still starting.                                     |
-| `/taste qr`           | Shows a private LAN QR code in pi's terminal UI for your phone. No code in local-only mode.                   |
-| `/taste stop`         | Stops the server. Quitting pi stops it too.                                                                   |
-
-taste.lab uses pi's active theme. A compact widget below the editor shows the app name, links and round progress, updated on each answer. The status item shows the port and whether LAN is on. Links and QR codes stay in pi's UI only, never in model messages or session files. Keep the LAN link and QR code private.
-
-The transcript shows compact started and answer lines, including the pick's variant label and your reason. Each answer you log wakes the agent with the same safe text as before (`answered round-NNN (...): pick b; tags ...; reason ...`). The `taste` skill then has it write the next round, run `check` and ask you to refresh. If the agent is busy, the answer waits until its current run ends.
-
-The server's stderr goes to a log in a private folder in the OS temp dir (`taste-lab-pi-XXXXXX/`, mode 0700, file mode 0600). If the server dies, pi says so and names that log.
-
 ## Use
 
-1. Open the URL. The current round is the first one with no answer.
-   The header has two rows. The top row shows the taste.lab logo, then `<name> / <round>`. Click the round to open a menu of every round with its status (pick, open or error). On the right are icon buttons for Compare, Library, Theme and History, then the light or dark switch. On Compare pages, a second row shows `<` and `>` to step through rounds, the round id and component, its pick or error badge and "n of N answered".
-2. Toggle light or dark. All variants switch.
-3. Compare has no page heading. The full question wraps at the top of the floating answer bar, at 16px medium with a small muted uppercase "Question" label (round-019 d). Below it is one box for the whole answer: the reason on top, then the picks (A to D, None, Mix) on the left of its bottom row and a round Submit button on the right, with a Ctrl↵ or ⌘↵ hint for your platform. The reason grows from about 2 rows to 8, then scrolls. There are no tags. Mix needs a reason.
-   Keys: `1` to `4` pick and show that variant, `n` picks None, `m` picks Mix and focuses the reason, `r` focuses the reason and `Esc` leaves it. In the reason, Enter and Shift+Enter insert a newline; Ctrl+Enter or Cmd+Enter submits. Pasted line breaks are kept. On the page, Enter submits unless a button, link or toggle has focus.
-   A view switch ("Side by side" or "Full width") sits above the variants. Full width shows one variant at full page width with A/B/C tabs. `←` and `→` flip between variants and wrap around. Number keys pick and also show that variant. Arrow keys do nothing while the reason box or a toggle, tab or menu has focus. Use full width for tables and layouts that need room.
-4. Each submit appends one line to `.taste-lab/taste.jsonl` in the served folder and moves to the next round.
-5. Open History to see past answers, newest first, in one table. Each row has the date, the round (a link to it), a pick pill with the winning variant's label, tag pills (old answers only), the reason, and the theme and view as icons.
-6. Open Library to see the agreed components, laid out like Storybook and filling the screen under the header. The left sidebar lists entries and their examples; its trigger (or Ctrl/Cmd+B) hides it, and on a phone it slides in as a sheet. The Canvas tab shows one example live, with a toolbar for width (Column 420 or Full width), a light or dark canvas, and a plain or muted background. When the entry declares controls, a Controls panel at the bottom edits its props live. Drag its top edge to resize it, collapse it to its header bar, or expand it to fill the page. The sizes stay after a reload. The Docs tab has the description, rules and the rounds it came from (links to `#/round/<id>`).
+In any repo, in pi:
 
-7. Open Theme to see every shadcn token in one table, grouped by role, with its light and dark value and a chip of each. A pill marks values from `theme.css`; the rest are stock. Filter to theme.css or stock tokens. Ignored parts of `theme.css` are listed on top. `--radius` shows as a sample box.
+| Command        | Does                                                |
+| -------------- | --------------------------------------------------- |
+| `/taste`       | Serves `<repo>/.taste-lab` locally and on your LAN. |
+| `/taste local` | Local only.                                         |
+| `/taste qr`    | Shows the LAN link as a QR code for your phone.     |
+| `/taste stop`  | Stops the lab.                                      |
 
-With no rounds in `.taste-lab/rounds/`, the app shows a "no rounds yet" screen.
+Ask the agent for a round, answer it in the browser, repeat. Your taste data lives in `.taste-lab/` and is committed with your app.
 
-## The lab for taste-lab itself
-
-The repo root has its own data dir, `.taste-lab/`, so taste-lab's interface is tuned with taste-lab. Its rounds compare designs for the app chrome, starting with the header (round-001). Its `theme.css` starts from the demo's round-007 a blue accent. A pick there becomes a change in `src/` afterwards.
-
-```sh
-node bin/taste-lab.mjs serve --dir .taste-lab
-```
-
-`pnpm dev` still serves the demo. `pnpm check` type-checks both labs (`tsconfig.lab.json` points `@/fixtures` at the root lab) and `pnpm test` runs the variant rules and `check` on both.
-
-## Scripts
-
-| Script         | Does                                                      |
-| -------------- | --------------------------------------------------------- |
-| `pnpm dev`     | `taste-lab serve` for the demo, on 127.0.0.1              |
-| `pnpm check`   | `tsc` for the demo and the root lab, then Biome           |
-| `pnpm test`    | Vitest                                                    |
-| `pnpm build`   | type check and Vite build                                 |
-| `pnpm preview` | serve the build on 127.0.0.1 (the log API works here too) |
-
-## Layout
-
-A data dir, committed in each app repo:
-
-```
-<repo>/.taste-lab/
-  config.json         { "version": 1, "name": "<app name>" }, name defaults to <repo>
-  fixtures/index.ts   sample data for variants, imported as @/fixtures
-  theme.css           shadcn tokens for this app, over the lab's stock theme (see Theme)
-  rounds/round-NNN/   rounds written by the agent (round.json + a.tsx, b.tsx, ...)
-  library/<name>/     agreed components: <Name>.tsx, examples.tsx, meta.json
-  taste.jsonl         append-only answer log
-  DESIGN.md           distilled rules for this app
-```
-
-This repo:
-
-```
-bin/taste-lab.mjs        CLI entry (Node runs the TypeScript in cli/ directly)
-cli/                     serve, init, check, port picking, variant scanner
-pi/                      pi package: /taste extension, taste skill, helpers in pi/lib
-examples/demo/.taste-lab the demo data dir (rounds 1 to 7, round-007 a accent in theme.css)
-.taste-lab/              the lab for taste-lab's own interface
-server/                  Vite plugin and /api/taste middleware
-src/                     lab UI
-src/components/ui/       stock shadcn primitives, generated, not hand-edited
-tests/                   loader, library, log writer, CLI, variant rule and pi extension tests
-```
-
-## Theme
-
-`<dir>/theme.css` holds the shadcn tokens this app's lab renders with: rounds, library, history and the app chrome. The lab's own `src/index.css` is the stock theme. Without a `theme.css`, or with empty blocks, you see stock.
-
-```css
-/* theme.css: only :root (light) and .dark, only shadcn custom properties */
-:root {
-  --primary: oklch(0.55 0.2 255);
-}
-.dark {
-  --primary: oklch(0.75 0.15 255);
-}
-```
-
-- Allowed: `:root` and `.dark` blocks, comments, and custom properties named like the variables in `src/index.css` (`--background`, `--primary`, `--radius`, `--chart-1` to `--chart-5`, `--sidebar-*` and the `-foreground` pairs). Raw colors are fine here. This file is the one place they live.
-- Not allowed: other selectors, at-rules, `@import`, `url()`, `!important`, other names, non-custom properties. `taste-lab check` lists each with its line. The app ignores a rejected part and the Theme page lists it.
-- Order: stock tokens, then `theme.css`, then each variant's `round.json` `tokens`. Round tokens win.
-- A token missing from a mode falls back to stock for that mode. A `:root` value does not change the stock `.dark` value. A token that stock defines only in `:root`, like `--radius`, applies to both modes.
-- A `theme.css` created, edited or deleted while the server runs updates the page without a restart or reload.
-- Do not use `light-dark()` in `theme.css`. Write the two values into `:root` and `.dark`.
-
-To promote a token round winner, copy the winning variant's `tokens` into `:root` and `.dark`. Split each `light-dark(a, b)` into `a` in `:root` and `b` in `.dark`. Cite the round in a comment next to the values and in the Tokens table of `DESIGN.md`. Then run `check`.
-
-## Library
-
-`library/<name>/` holds a component the operator agreed on, with examples and provenance. Names are kebab-case. The component is a named export `<Name>` in `<Name>.tsx`, takes its data through props and follows the variant rules (shadcn only, no raw colors, no `style` prop). `examples.tsx` holds named components with no required props, one per example or state, and may import `@/fixtures`. `meta.json` has `name`, `title`, `description`, `status` (`draft` or `agreed`), `examples` (`export`, `title`, `width` of `column` or `full`, optional `args`), `provenance` (`round`, `pick`, `note`), `rules` and optional `controls`.
-
-`controls` lists the props the Controls panel edits: `{ "prop", "kind", "options"?, "default"?, "label"? }`, with `kind` one of `boolean`, `select`, `text` or `number`. Only `select` takes `options`, and it needs them. An example's `args` sets its starting values; each key must be a declared prop. The canvas renders `<Example {...values} />`, and the example merges those values over its fixture data. `check` validates both. The full rules are in [AGENTS.md](AGENTS.md).
-
-Round variants can import a library component as `@/library/<name>/<Name>`, to iterate on an agreed component. To promote a winner, copy the winning variant into `library/<name>/`, turn the fixture use into props, add examples and write `meta.json` with the rounds it came from. Details and the full contract are in [AGENTS.md](AGENTS.md). Variants may also import `class-variance-authority`, so a round can copy a library component that uses `cva`.
-
-Rules for variants, the round and log contracts, and the agent loop are in [AGENTS.md](AGENTS.md).
+The contract for agents (rounds, library, theme, CLI) is in [AGENTS.md](AGENTS.md).
 
 ## License
 
-MIT. See [LICENSE](LICENSE).
+MIT

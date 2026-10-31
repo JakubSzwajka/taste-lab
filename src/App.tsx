@@ -27,6 +27,7 @@ import { library as defaultLibrary } from "@/lib/library-entries";
 import type { LoadedRound } from "@/lib/rounds";
 import { hrefFor, useRoute } from "@/lib/route";
 import { type Answer, answerEntry, submitEntry } from "@/lib/submit";
+import { useTabBadge } from "@/lib/tab-badge";
 import type { TasteEntry } from "@/lib/taste";
 import { useTheme } from "@/lib/theme";
 import { useThemeData } from "@/lib/theme-data";
@@ -82,6 +83,13 @@ export default function App({
   );
   const broken = rounds.filter((r) => !r.ok);
   const nextOpen = rounds.find((r) => r.ok && !answered.has(r.id));
+  // A red dot on the favicon and "(n)" in the title while rounds wait.
+  useTabBadge(
+    loaded && !logError
+      ? rounds.filter((r) => r.ok && !answered.has(r.id)).length
+      : null,
+    labConfig.name,
+  );
 
   const onLibrary = route.page === "library" || route.page === "library-entry";
   const shown =

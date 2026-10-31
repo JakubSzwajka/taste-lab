@@ -5,7 +5,36 @@
 
 export type NotifyType = "info" | "warning" | "error";
 
+export type ThemeColor = "accent" | "dim" | "text" | "mdLink" | "success";
+export interface TasteTheme {
+  fg(color: ThemeColor, text: string): string;
+}
+export interface TasteComponent {
+  render(width: number): string[];
+  invalidate(): void;
+  handleInput?(data: string): void;
+}
+export type WidgetFactory = (
+  tui: { requestRender(): void },
+  theme: TasteTheme,
+) => TasteComponent;
+export type MessageRenderer = (
+  message: CustomMessageIn,
+  options: { expanded: boolean },
+  theme: TasteTheme,
+) => TasteComponent;
+export type Truncate = (text: string, width: number) => string;
+
 export interface TasteUi {
+  readonly theme: TasteTheme;
+  custom(
+    factory: (
+      tui: { requestRender(): void },
+      theme: TasteTheme,
+      keybindings: { matches(data: string, action: string): boolean },
+      done: () => void,
+    ) => TasteComponent,
+  ): Promise<void>;
   notify(message: string, type?: NotifyType): void;
   /** Pi 1.4.0 closes the dialog when `signal` aborts. */
   confirm(
@@ -16,7 +45,7 @@ export interface TasteUi {
   setStatus(key: string, text: string | undefined): void;
   setWidget(
     key: string,
-    content: string[] | undefined,
+    content: string[] | WidgetFactory | undefined,
     options?: { placement?: "aboveEditor" | "belowEditor" },
   ): void;
 }
@@ -24,6 +53,7 @@ export interface TasteUi {
 export interface TasteCtx {
   cwd: string;
   hasUI: boolean;
+  mode: "tui" | "rpc" | "json" | "print";
   ui: TasteUi;
 }
 
@@ -42,6 +72,7 @@ export type SendOptions = {
 export type Completion = { value: string; label: string; description?: string };
 
 export interface TastePi {
+  registerMessageRenderer(customType: string, renderer: MessageRenderer): void;
   registerCommand(
     name: string,
     options: {

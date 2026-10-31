@@ -55,13 +55,13 @@ export function lanToken(lan: string | null): string | undefined {
 
 /** Links for the operator: notification, widget. Never sent to the model. */
 export function linkLines(ready: ReadyEvent): string[] {
-  const lines = [`taste-lab local  ${ready.local}`];
-  if (ready.lan) lines.push(`taste-lab LAN    ${ready.lan}`);
+  const lines = [`taste.lab local  ${ready.local}`];
+  if (ready.lan) lines.push(`taste.lab LAN    ${ready.lan}`);
   return lines;
 }
 
 export function statusText(ready: ReadyEvent): string {
-  return `taste :${ready.port}${ready.lan ? " +LAN" : ""}`;
+  return `taste.lab :${ready.port}${ready.lan ? " LAN" : ""}`;
 }
 
 /** What the model may learn about a running lab. `lan` is a flag, not the link. */

@@ -17,9 +17,12 @@ import { createTasteExtension, type TasteDeps } from "../pi/extensions/taste";
 import type { ChildLike, SpawnFn } from "../pi/lib/lab-process";
 import type {
   CustomMessageIn,
+  MessageRenderer,
   SendOptions,
   TasteCtx,
   TastePi,
+  TasteUi,
+  WidgetFactory,
 } from "../pi/lib/pi-api";
 
 const TOKEN = "Zx9_Qw-8rT5yU3iO1pLk2j";
@@ -58,15 +61,42 @@ let spawnCalls: { command: string; args: string[] }[];
 let sent: { message: CustomMessageIn; options?: SendOptions }[];
 let commands: Map<string, (args: string, ctx: TasteCtx) => Promise<void>>;
 let shutdown: (() => Promise<void> | void) | undefined;
+let renderers: Map<string, MessageRenderer>;
+let widget: ReturnType<WidgetFactory> | undefined;
+let qrScreen: string[];
+const theme = { fg: (_color: string, text: string) => text };
+const truncate = (text: string, width: number) => text.slice(0, width);
 function fakeUi() {
   return {
+    theme,
+    custom: vi.fn<TasteUi["custom"]>(async (factory) => {
+      const component = factory(
+        { requestRender() {} },
+        theme,
+        {
+          matches: (data, action) =>
+            data === (action === "tui.select.confirm" ? "\r" : "\x1b"),
+        },
+        () => {},
+      );
+      qrScreen = component.render(120);
+      component.handleInput?.("\r");
+    }),
     notify: vi.fn<(message: string, type?: string) => void>(),
     confirm: vi.fn(async (_title: string, _message: string) => true),
     setStatus: vi.fn<(key: string, text: string | undefined) => void>(),
-    setWidget:
-      vi.fn<
-        (key: string, content: string[] | undefined, options?: object) => void
-      >(),
+    setWidget: vi.fn<
+      (
+        key: string,
+        content: string[] | WidgetFactory | undefined,
+        options?: object,
+      ) => void
+    >((_key, content) => {
+      widget =
+        typeof content === "function"
+          ? content({ requestRender() {} }, theme)
+          : undefined;
+    }),
   };
 }
 let ctx: TasteCtx & { ui: ReturnType<typeof fakeUi> };
@@ -80,6 +110,7 @@ function load(overrides: Partial<TasteDeps> = {}) {
     return child;
   };
   const pi: TastePi = {
+    registerMessageRenderer: (type, renderer) => renderers.set(type, renderer),
     registerCommand: (name, opts) => commands.set(name, opts.handler),
     on: (_event, handler) => {
       shutdown = () =>
@@ -88,6 +119,7 @@ function load(overrides: Partial<TasteDeps> = {}) {
     sendMessage: (message, options) => sent.push({ message, options }),
   };
   createTasteExtension({
+    truncate,
     spawn,
     bin: "/lab/bin/taste-lab.mjs",
     logDir: join(tmp, "logs"),
@@ -143,8 +175,11 @@ beforeEach(() => {
   sent = [];
   commands = new Map();
   shutdown = undefined;
+  renderers = new Map();
+  widget = undefined;
+  qrScreen = [];
   nextIgnore = [];
-  ctx = { cwd: tmp, hasUI: true, ui: fakeUi() };
+  ctx = { cwd: tmp, hasUI: true, mode: "tui", ui: fakeUi() };
 });
 afterEach(async () => {
   await shutdown?.();
@@ -152,6 +187,131 @@ afterEach(async () => {
 });
 
 describe("/taste lifecycle", () => {
+  it("registers compact transcript renderers without changing safe messages", async () => {
+    load();
+    expect([...renderers.keys()]).toEqual(["taste-lab", "taste-lab-answer"]);
+    await taste();
+    children[0].send(ready());
+    children[0].send({ event: "answer", entry });
+    await flush();
+    const lines = sent.flatMap(
+      ({ message }) =>
+        renderers
+          .get(message.customType)?.(message, { expanded: false }, theme)
+          .render(200) ?? [],
+    );
+    expect(lines[0]).toContain(`· taste.lab started ${dataDir} :5301`);
+    expect(lines[1]).toBe('· taste.lab round-004 card · a "calmer"');
+    assertModelNeverSawSecrets();
+  });
+
+  it("updates named widget progress on each answer, counts repeated answers once and sees new rounds", async () => {
+    writeFileSync(
+      join(dataDir, "config.json"),
+      JSON.stringify({ version: 1, name: "My app" }),
+    );
+    const round = (id: string) => {
+      mkdirSync(join(dataDir, "rounds", id), { recursive: true });
+      writeFileSync(join(dataDir, "rounds", id, "round.json"), "{}");
+    };
+    round("round-004");
+    round("round-005");
+    writeFileSync(join(dataDir, "taste.jsonl"), `${JSON.stringify(entry)}\n`);
+    load();
+    await taste();
+    children[0].send(ready());
+    await flush();
+    expect(widget?.render(120)[0]).toBe("taste.lab · My app");
+    expect(widget?.render(120).at(-1)).toBe("round-005 open · 1 of 2 answered");
+    children[0].send({ event: "answer", entry });
+    await flush();
+    expect(widget?.render(120).at(-1)).toContain("1 of 2 answered");
+    children[0].send({
+      event: "answer",
+      entry: { ...entry, round: "round-005", pick: "none" },
+    });
+    await flush();
+    expect(widget?.render(120).at(-1)).toBe("all answered");
+    round("round-006");
+    children[0].send({ event: "answer", entry });
+    await flush();
+    expect(widget?.render(120).at(-1)).toContain(
+      "round-006 open · 2 of 3 answered",
+    );
+  });
+
+  it("shows QR only in terminal UI, not messages or logs", async () => {
+    load();
+    await taste("qr");
+    expect(notes().at(-1)).toContain("not running");
+    await taste();
+    await taste("qr");
+    expect(notes().at(-1)).toContain("starting");
+    children[0].send(ready());
+    await flush();
+    const before = sent.length;
+    await taste("qr");
+    expect(ctx.ui.custom).toHaveBeenCalledOnce();
+    expect(qrScreen.join("\n")).toMatch(/[▀▄]/);
+    expect(qrScreen[0]).toContain("scan to open on your LAN");
+    expect(sent).toHaveLength(before);
+    expect(qrScreen.join("\n")).not.toContain(TOKEN);
+    assertModelNeverSawSecrets();
+    const dir = join(tmp, "logs", readdirSync(join(tmp, "logs"))[0]);
+    expect(readFileSync(join(dir, readdirSync(dir)[0]), "utf8")).not.toContain(
+      TOKEN,
+    );
+    ctx.mode = "rpc";
+    await taste("qr");
+    expect(ctx.ui.custom).toHaveBeenCalledOnce();
+    expect(notes().at(-1)).toContain("terminal UI");
+  });
+
+  it("refreshes themed status on widget invalidation", async () => {
+    load();
+    await taste();
+    children[0].send(ready());
+    await flush();
+    ctx.ui.theme = { fg: (_color, text) => `new-theme:${text}` };
+    widget?.invalidate();
+    expect(ctx.ui.setStatus).toHaveBeenLastCalledWith(
+      "taste-lab",
+      "new-theme:taste.lab new-theme::5301 LAN",
+    );
+    const calls = ctx.ui.setStatus.mock.calls.length;
+    widget?.invalidate();
+    expect(ctx.ui.setStatus).toHaveBeenCalledTimes(calls);
+  });
+
+  it("reports QR failure with the log path, not the exception's link", async () => {
+    load();
+    await taste();
+    children[0].send(ready());
+    await flush();
+    ctx.ui.custom.mockRejectedValueOnce(new Error(ready().lan as string));
+    await taste("qr");
+    expect(notes().at(-1)).toMatch(
+      /^taste\.lab could not show the QR code\. Log: .*\.log$/,
+    );
+    expect(notes().at(-1)).not.toContain(TOKEN);
+    assertModelNeverSawSecrets();
+  });
+
+  it("explains why local-only mode has no QR", async () => {
+    load();
+    await taste("local");
+    children[0].send(ready(null));
+    await flush();
+    expect(widget?.render(120)).toHaveLength(3);
+    expect(ctx.ui.setStatus).toHaveBeenCalledWith(
+      "taste-lab",
+      "taste.lab :5301",
+    );
+    await taste("qr");
+    expect(notes().at(-1)).toContain("local only. No LAN QR code");
+    expect(ctx.ui.custom).not.toHaveBeenCalled();
+    assertModelNeverSawSecrets();
+  });
   it("spawns serve --events --lan, shows links in the UI only, wakes the agent on answers", async () => {
     load();
     await taste();
@@ -185,15 +345,18 @@ describe("/taste lifecycle", () => {
     ).toBe(true);
     expect(ctx.ui.setWidget).toHaveBeenCalledWith(
       "taste-lab",
-      [
-        "taste-lab local  http://127.0.0.1:5301/",
-        `taste-lab LAN    http://192.168.1.23:5301/?k=${TOKEN}`,
-      ],
+      expect.any(Function),
       { placement: "belowEditor" },
     );
+    expect(widget?.render(120)).toEqual([
+      `taste.lab · ${tmp.split("/").at(-1)}`,
+      "local http://127.0.0.1:5301/",
+      `LAN   http://192.168.1.23:5301/?k=${TOKEN}`,
+      "rounds unavailable",
+    ]);
     expect(ctx.ui.setStatus).toHaveBeenCalledWith(
       "taste-lab",
-      "taste :5301 +LAN",
+      "taste.lab :5301 LAN",
     );
     expect(sent).toHaveLength(1);
     expect(sent[0].message.content).toContain("taste-lab is running");
@@ -248,7 +411,7 @@ describe("/taste lifecycle", () => {
     await taste("status");
     expect(spawnCalls).toHaveLength(1);
     expect(
-      notes().filter((n) => n === "taste-lab local  http://127.0.0.1:5301/"),
+      notes().filter((n) => n === "taste.lab local  http://127.0.0.1:5301/"),
     ).toHaveLength(3);
   });
 
@@ -260,7 +423,7 @@ describe("/taste lifecycle", () => {
     await taste("stop");
     expect(children[0].signals).toEqual(["SIGTERM"]);
     await flush();
-    expect(notes()).toContain("taste-lab stopped");
+    expect(notes()).toContain("taste.lab stopped");
     expect(ctx.ui.setWidget).toHaveBeenLastCalledWith("taste-lab", undefined);
     expect(ctx.ui.setStatus).toHaveBeenLastCalledWith("taste-lab", undefined);
     await taste("status");
@@ -290,7 +453,7 @@ describe("/taste lifecycle", () => {
     children[0].die(1);
     await flush();
     expect(notes().at(-1)).toMatch(
-      /^taste-lab stopped \(exit code 1\)\. Log: .*serve-.*\.log$/,
+      /^taste\.lab stopped \(exit code 1\)\. Log: .*serve-.*\.log$/,
     );
     expect(ctx.ui.setWidget).toHaveBeenLastCalledWith("taste-lab", undefined);
 
@@ -298,9 +461,13 @@ describe("/taste lifecycle", () => {
     children[1].send({ event: "error", message: "port 5301 is in use" });
     children[1].die(2);
     await flush();
-    expect(notes()).toContain("taste-lab: port 5301 is in use");
+    expect(
+      notes().some((n) =>
+        /^taste\.lab: port 5301 is in use\. Log: .*\.log$/.test(n),
+      ),
+    ).toBe(true);
     expect(notes().at(-1)).toContain(
-      "taste-lab failed to start (exit code 2): port 5301 is in use",
+      "taste.lab failed to start (exit code 2): port 5301 is in use",
     );
     assertModelNeverSawSecrets();
   });
@@ -373,7 +540,7 @@ describe("/taste lifecycle", () => {
     expect(init).toHaveBeenCalledTimes(1);
     // a second /taste while starting does not start another
     await taste("--dir new-lab");
-    expect(notes().at(-1)).toBe("taste-lab is starting…");
+    expect(notes().at(-1)).toBe("taste.lab is starting…");
     const down = shutdown?.();
     expect(initSignal?.aborted).toBe(true);
     finishInit?.();
@@ -411,7 +578,7 @@ describe("/taste lifecycle", () => {
     await taste("stop");
     expect(confirmSignal?.aborted).toBe(true);
     await first;
-    expect(notes().at(-1)).toBe("taste-lab start cancelled");
+    expect(notes().at(-1)).toBe("taste.lab start cancelled");
     expect(init).not.toHaveBeenCalled();
 
     const second = taste("--dir b-lab");
@@ -422,7 +589,7 @@ describe("/taste lifecycle", () => {
     await stopping;
     await second;
     await flush();
-    expect(notes().at(-1)).toBe("taste-lab start cancelled");
+    expect(notes().at(-1)).toBe("taste.lab start cancelled");
     expect(spawnCalls).toHaveLength(0);
 
     // the runtime still works: the dir now exists, so /taste spawns
@@ -433,7 +600,9 @@ describe("/taste lifecycle", () => {
   it("does not spawn when init fails or the path is a file", async () => {
     load({ init: async () => ({ ok: false, output: "refusing" }) });
     await taste("--dir missing");
-    expect(notes().at(-1)).toBe("taste-lab init failed: refusing");
+    expect(notes().at(-1)).toBe(
+      "taste.lab init failed: refusing. Log: none (server not started)",
+    );
     writeFileSync(join(tmp, "a-file"), "");
     await taste(`--dir ${join(tmp, "a-file")}`);
     expect(notes().at(-1)).toContain("is not a directory");

@@ -408,7 +408,7 @@ Or copy the component into the round and change one thing. A copy can import `cl
 `serve --events` is for a parent process, such as the pi extension in `pi/extensions/taste.ts`. stdout then carries only JSON lines. Human text goes to stderr. Without `--events`, output is unchanged.
 
 ```json
-{"event":"ready","port":5301,"dataDir":"/abs/.taste-lab","local":"http://127.0.0.1:5301/","lan":"http://192.168.1.23:5301/?k=<token>"}
+{"event":"ready","port":5301,"dataDir":"/abs/.taste-lab","local":"http://127.0.0.1:5301/","lan":"http://192.168.1.50:5301/?k=<token>"}
 {"event":"answer","entry":{ "...": "the exact taste.jsonl entry as appended" }}
 {"event":"error","message":"..."}
 ```

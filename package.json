@@ -1,7 +1,27 @@
 {
   "name": "taste-lab",
-  "private": true,
   "version": "0.1.0",
+  "description": "A local shadcn lab for tuning UI taste with an agent: compare variants, pick one, say why, and let the agent write the next round.",
+  "license": "MIT",
+  "author": "Jakub Szwajka",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/JakubSzwajka/taste-lab.git"
+  },
+  "homepage": "https://github.com/JakubSzwajka/taste-lab#readme",
+  "keywords": [
+    "pi-package",
+    "shadcn",
+    "design",
+    "taste",
+    "ui",
+    "vite",
+    "agent"
+  ],
+  "engines": {
+    "node": ">=23.6"
+  },
+  "private": true,
   "type": "module",
   "bin": {
     "taste-lab": "bin/taste-lab.mjs"
@@ -26,27 +46,28 @@
   },
   "dependencies": {
     "@fontsource-variable/geist": "^5.3.0",
+    "@tailwindcss/vite": "^4.3.3",
+    "@vitejs/plugin-react": "^6.1.2",
     "class-variance-authority": "^0.7.1",
     "cn": "^0.5.0",
     "lucide-react": "^1.62.0",
+    "qr": "^0.7.2",
     "radix-ui": "^1.8.1",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
     "react-resizable-panels": "^4.15.1",
     "shadcn": "^4.23.0",
-    "tw-animate-css": "^1.4.0"
+    "tailwindcss": "^4.3.3",
+    "tw-animate-css": "^1.4.0",
+    "vite": "^8.3.5"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.6.3",
-    "@tailwindcss/vite": "^4.3.3",
     "@types/node": "^26.6.5",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
-    "@vitejs/plugin-react": "^6.1.2",
     "happy-dom": "^21.0.4",
-    "tailwindcss": "^4.3.3",
     "typescript": "^7.0.2",
-    "vite": "^8.3.5",
     "vitest": "^5.0.5"
   }
 }

@@ -156,11 +156,11 @@ describe("model-visible messages", () => {
 describe("UI-only text", () => {
   it("link lines carry both links", () => {
     expect(linkLines(ready)).toEqual([
-      "taste-lab local  http://127.0.0.1:5301/",
-      `taste-lab LAN    ${ready.lan}`,
+      "taste.lab local  http://127.0.0.1:5301/",
+      `taste.lab LAN    ${ready.lan}`,
     ]);
     expect(linkLines({ ...ready, lan: null })).toHaveLength(1);
-    expect(statusText(ready)).toBe("taste :5301 +LAN");
+    expect(statusText(ready)).toBe("taste.lab :5301 LAN");
     expect(statusText(ready)).not.toContain(TOKEN);
   });
 

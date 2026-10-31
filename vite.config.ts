@@ -1,8 +1,9 @@
+/// <reference types="vitest/config" />
 import { createHash } from "node:crypto";
 import path from "node:path";
 import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
-import { defineConfig } from "vitest/config";
+import { defineConfig } from "vite";
 import { labPaths } from "./server/lab-dir.ts";
 import { tasteLab } from "./server/vite-plugin.ts";
 

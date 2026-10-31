@@ -103,7 +103,15 @@ export function AppHeader({
           <Breadcrumb className="min-w-0">
             <BreadcrumbList className="flex-nowrap">
               <BreadcrumbItem className="hidden sm:inline-flex">
-                <Logo />
+                {/* The logo goes home: the next open round, or the idle page. */}
+                <BreadcrumbLink
+                  href={hrefFor({ page: "current" })}
+                  aria-label="taste.lab home"
+                  title="Home"
+                  className="rounded-md hover:opacity-80"
+                >
+                  <Logo />
+                </BreadcrumbLink>
               </BreadcrumbItem>
               <BreadcrumbSeparator className="hidden sm:block">
                 /

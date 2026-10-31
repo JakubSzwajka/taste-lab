@@ -202,6 +202,10 @@ describe("AppHeader markup", () => {
     const html = render({ page: "current" }, rounds[1]);
     expect(html).toContain('data-slot="logo"');
     expect(html).toMatch(/taste<span[^>]*>\.<\/span>lab/);
+    // The logo goes home: the next open round, or the idle page.
+    expect(html).toMatch(
+      /<a[^>]*aria-label="taste.lab home"[^>]*href="#\/"|<a[^>]*href="#\/"[^>]*aria-label="taste.lab home"/,
+    );
     expect(html).toContain(">acme<");
     expect(html).toMatch(/aria-haspopup="menu"[^>]*><span[^>]*>round-002/);
     expect(html).not.toContain("Question round-002?");

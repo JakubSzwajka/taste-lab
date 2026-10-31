@@ -96,6 +96,18 @@ describe("full-bleed routing", () => {
     });
   }
 
+  it("centres the idle page when nothing waits for an answer", async () => {
+    const { main } = await app("#/");
+    expect(main.className).toContain("flex-1");
+    const idle = one(main, 'section[aria-labelledby="idle-title"]');
+    expect(idle.className).toContain("items-center justify-center");
+    expect(idle.className).toContain("flex-1");
+    expect(idle.textContent).toContain("No rounds yet");
+    expect(idle.querySelector('[data-slot="logo-mark"]')).not.toBeNull();
+    expect(idle.querySelector('a[href="#/history"]')).not.toBeNull();
+    expect(idle.querySelector('a[href="#/library"]')).not.toBeNull();
+  });
+
   it("keeps the full-width, padded layout on other pages", async () => {
     for (const hash of ["#/history", "#/theme"]) {
       const { root, main } = await app(hash);

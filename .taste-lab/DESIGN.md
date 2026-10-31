@@ -76,7 +76,6 @@ The operator's taste from `examples/demo` (its DESIGN.md) is the prior, not a ru
 - Name: one semibold weight with the dot in coral (`--chart-1`). round-018 b, no reason given.
 - Built as `src/components/Logo.tsx`, promoted to `library/logo/`, and the first crumb of the header.
 
-
 - Keep pills one size and the information in one table (round-004 b, round-007 c). Later rounds chose roomier spacing for the lab chrome (round-015 mix).
 
 ## Don't

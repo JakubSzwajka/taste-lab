@@ -1,6 +1,6 @@
 ---
 name: taste
-description: Run the taste-lab loop after the operator answers a round. Use when a taste-lab message says "answered round-NNN", when /taste reports the lab running, or when asked to write the next taste-lab round or promote a winner into the library or theme.
+description: Run the taste-lab loop after the operator answers a round. Use when a taste-lab message says "answered round-NNN", when /taste reports the lab running, or when asked to write the next taste-lab round, add to the library or taste database, promote a winner, or implement agreed components.
 ---
 
 # Taste loop
@@ -23,6 +23,14 @@ The lab's contract is `../../../AGENTS.md` (the taste-lab repo root, relative to
 5. Every ~5 rounds, distill the log into `<dataDir>/DESIGN.md` with round ids.
 6. Run `node <lab>/bin/taste-lab.mjs check --dir <dataDir>`. Fix every line it prints. Exit 0 is required.
 7. Tell the operator in one or two lines what the new round asks and to refresh the lab page. The running server picks up the round without a restart.
+
+## Shared library workflow
+
+The data dir library is a shared taste database. Read the `Library` contract in `AGENTS.md` before editing it.
+
+- To add a component from any session, create `library/<name>/` with its component, examples, and `meta.json`. Set `status` to `draft`, then run `taste-lab check --dir <dataDir>`.
+- Iterate on draft entries with the operator. When they agree, the agent changes `meta.json` status to `agreed`. The app never writes library source files.
+- In an app implementation session, run `taste-lab library --dir <repo>/.taste-lab --status agreed --json`. Copy the agreed entries into the app and adapt them to its codebase.
 
 ## Rules
 

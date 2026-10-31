@@ -1,4 +1,5 @@
 import labConfig from "virtual:taste-lab/config";
+import { Check, History, Library } from "lucide-react";
 import {
   Children,
   type ReactNode,
@@ -12,6 +13,7 @@ import { AppHeader } from "@/components/AppHeader";
 import { CompareScreen } from "@/components/CompareScreen";
 import { HistoryView } from "@/components/HistoryView";
 import { LibraryEntryView, LibraryView } from "@/components/LibraryView";
+import { LogoMark } from "@/components/Logo";
 import { ThemeView } from "@/components/ThemeView";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -158,7 +160,7 @@ export default function App({
               ? "flex min-h-0 flex-1 flex-col"
               : comparing
                 ? "flex flex-1 flex-col"
-                : "flex w-full flex-col gap-6 px-8 py-8"
+                : "flex w-full flex-1 flex-col gap-6 px-8 py-8"
           }
         >
           <Notices padded={fullBleed}>
@@ -263,20 +265,65 @@ function Notices({
   ) : null;
 }
 
+/**
+ * Nothing to answer: a centered page with the lab mark, so an idle tab reads
+ * at a glance (operator request after the left-aligned notice).
+ */
 function EmptyState({ hasRounds }: { hasRounds: boolean }) {
   return (
-    <div className="flex flex-col items-start gap-2 py-12">
-      <h1 className="text-2xl font-semibold tracking-tight">
-        {hasRounds ? "All rounds answered" : "No rounds yet"}
-      </h1>
-      <p className="max-w-prose text-muted-foreground">
-        {hasRounds
-          ? "Ask your agent to read .taste-lab/taste.jsonl and write the next round under .taste-lab/rounds/. It shows up here on reload."
-          : "Ask your agent to write .taste-lab/rounds/round-001/ (a round.json plus 2 to 4 variant files). See the taste-lab AGENTS.md for the contract."}
-      </p>
-      <Button asChild variant="outline">
-        <a href={hrefFor({ page: "history" })}>Open history</a>
-      </Button>
-    </div>
+    <section
+      aria-labelledby="idle-title"
+      className="flex flex-1 flex-col items-center justify-center gap-6 py-16 text-center"
+    >
+      <div aria-hidden="true" className="relative grid place-items-center">
+        <span className="absolute size-44 rounded-full border border-dashed" />
+        <span className="absolute size-32 rounded-full bg-muted" />
+        <LogoMark className="relative size-16 shadow-lg" />
+        {hasRounds && (
+          <span className="absolute -right-1 -bottom-1 grid size-7 place-items-center rounded-full border-4 border-background bg-primary text-primary-foreground">
+            <Check className="size-3.5" strokeWidth={3} />
+          </span>
+        )}
+      </div>
+      <div className="mt-8 flex max-w-md flex-col items-center gap-2">
+        <h1 id="idle-title" className="text-2xl font-semibold tracking-tight">
+          {hasRounds ? "All rounds answered" : "No rounds yet"}
+        </h1>
+        <p className="text-muted-foreground">
+          {hasRounds ? (
+            <>
+              Ask your agent for the next round. It reads{" "}
+              <code className="font-mono text-sm whitespace-nowrap">
+                .taste-lab/taste.jsonl
+              </code>{" "}
+              and shows up here on reload.
+            </>
+          ) : (
+            <>
+              Ask your agent to write{" "}
+              <code className="font-mono text-sm whitespace-nowrap">
+                .taste-lab/rounds/round-001/
+              </code>
+              : a round.json plus 2 to 4 variant files. AGENTS.md has the
+              contract.
+            </>
+          )}
+        </p>
+      </div>
+      <div className="flex flex-wrap justify-center gap-2">
+        <Button asChild variant="outline">
+          <a href={hrefFor({ page: "history" })}>
+            <History />
+            History
+          </a>
+        </Button>
+        <Button asChild variant="outline">
+          <a href={hrefFor({ page: "library" })}>
+            <Library />
+            Library
+          </a>
+        </Button>
+      </div>
+    </section>
   );
 }

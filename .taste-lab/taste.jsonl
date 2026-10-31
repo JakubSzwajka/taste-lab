@@ -16,3 +16,4 @@
 {"ts":"2026-10-31T08:51:58.317Z","round":"round-016","component":"lab-theme","level":"component","shown":["a","b","c"],"pick":"b","tags":[],"reason":"","theme":"dark","view":"flip"}
 {"ts":"2026-10-31T10:00:29.072Z","round":"round-017","component":"logo","level":"component","shown":["a","b","c","d"],"pick":"a","tags":[],"reason":"lets try taste.lab instead of taste-lab","theme":"dark","view":"flip"}
 {"ts":"2026-10-31T10:01:15.968Z","round":"round-018","component":"logo","level":"component","shown":["a","b","c","d"],"pick":"b","tags":[],"reason":"","theme":"dark","view":"flip"}
+{"ts":"2026-10-31T12:05:31.151Z","round":"round-019","component":"compare-question","level":"layout","shown":["a","b","c","d"],"pick":"d","tags":[],"reason":"","theme":"dark","view":"flip"}

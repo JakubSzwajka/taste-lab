@@ -27,6 +27,8 @@ In any repo, in pi:
 | `/taste qr`    | Shows the LAN link as a QR code for your phone.     |
 | `/taste stop`  | Stops the lab.                                      |
 
+The agent can do the same with the `taste_lab` tool (`start`, `status`, `stop`), so another session can start the lab when asked. Links still show only in your pi UI.
+
 Ask the agent for a round, answer it in the browser, repeat. Your taste data lives in `.taste-lab/` and is committed with your app.
 
 The contract for agents (rounds, library, theme, CLI) is in [AGENTS.md](AGENTS.md).

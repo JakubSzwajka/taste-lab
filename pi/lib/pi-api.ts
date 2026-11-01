@@ -71,6 +71,29 @@ export type SendOptions = {
 
 export type Completion = { value: string; label: string; description?: string };
 
+export type ToolResult<TDetails> = {
+  content: { type: "text"; text: string }[];
+  details: TDetails;
+};
+
+/** A model-callable tool. `parameters` is a TypeBox schema built at load time. */
+export interface TasteToolDefinition<TParams, TDetails> {
+  name: string;
+  label: string;
+  description: string;
+  promptSnippet?: string;
+  promptGuidelines?: string[];
+  parameters: unknown;
+  executionMode?: "sequential" | "parallel";
+  execute(
+    toolCallId: string,
+    params: TParams,
+    signal: AbortSignal | undefined,
+    onUpdate: unknown,
+    ctx: TasteCtx,
+  ): Promise<ToolResult<TDetails>>;
+}
+
 export interface TastePi {
   registerMessageRenderer(customType: string, renderer: MessageRenderer): void;
   registerCommand(
@@ -86,4 +109,6 @@ export interface TastePi {
     handler: (event: unknown, ctx: TasteCtx) => Promise<void> | void,
   ): unknown;
   sendMessage(message: CustomMessageIn, options?: SendOptions): void;
+  // biome-ignore lint/suspicious/noExplicitAny: pi's registerTool is generic over params and details
+  registerTool(tool: TasteToolDefinition<any, any>): void;
 }

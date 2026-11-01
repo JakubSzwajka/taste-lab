@@ -45,6 +45,11 @@ function expandHome(p: string): string {
   return p;
 }
 
+/** The data dir defaults to `<cwd>/.taste-lab`. A relative dir resolves against cwd, `~` against home. */
+export function resolveDataDir(dir: string | undefined, cwd: string): string {
+  return resolve(cwd, dir === undefined ? ".taste-lab" : expandHome(dir));
+}
+
 /** The data dir defaults to `<cwd>/.taste-lab`. Relative `--dir` resolves against cwd. */
 export function parseTasteArgs(input: string, cwd: string): TasteCommand {
   const words = splitWords(input);
@@ -73,8 +78,7 @@ export function parseTasteArgs(input: string, cwd: string): TasteCommand {
       return { action: "error", message: `unknown argument "${w}"` };
     }
   }
-  const target = dir === undefined ? ".taste-lab" : expandHome(dir);
-  return { action: "start", lan, dir: resolve(cwd, target) };
+  return { action: "start", lan, dir: resolveDataDir(dir, cwd) };
 }
 
 /** Completions for the first word of `/taste`. */

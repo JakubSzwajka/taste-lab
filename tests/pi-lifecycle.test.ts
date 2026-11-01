@@ -21,6 +21,7 @@ import type {
   SendOptions,
   TasteCtx,
   TastePi,
+  TasteToolDefinition,
   TasteUi,
   WidgetFactory,
 } from "../pi/lib/pi-api";
@@ -60,6 +61,8 @@ let children: FakeChild[];
 let spawnCalls: { command: string; args: string[] }[];
 let sent: { message: CustomMessageIn; options?: SendOptions }[];
 let commands: Map<string, (args: string, ctx: TasteCtx) => Promise<void>>;
+// biome-ignore lint/suspicious/noExplicitAny: the fake pi stores any tool
+let tools: Map<string, TasteToolDefinition<any, any>>;
 let shutdown: (() => Promise<void> | void) | undefined;
 let renderers: Map<string, MessageRenderer>;
 let widget: ReturnType<WidgetFactory> | undefined;
@@ -117,6 +120,7 @@ function load(overrides: Partial<TasteDeps> = {}) {
         handler({ type: "session_shutdown", reason: "quit" }, ctx);
     },
     sendMessage: (message, options) => sent.push({ message, options }),
+    registerTool: (tool) => tools.set(tool.name, tool),
   };
   createTasteExtension({
     truncate,
@@ -124,6 +128,7 @@ function load(overrides: Partial<TasteDeps> = {}) {
     bin: "/lab/bin/taste-lab.mjs",
     logDir: join(tmp, "logs"),
     killAfterMs: 30,
+    toolParameters: { type: "object" },
     ...overrides,
   })(pi);
 }
@@ -174,6 +179,7 @@ beforeEach(() => {
   spawnCalls = [];
   sent = [];
   commands = new Map();
+  tools = new Map();
   shutdown = undefined;
   renderers = new Map();
   widget = undefined;
@@ -607,5 +613,185 @@ describe("/taste lifecycle", () => {
     await taste(`--dir ${join(tmp, "a-file")}`);
     expect(notes().at(-1)).toContain("is not a directory");
     expect(spawnCalls).toHaveLength(0);
+  });
+});
+
+describe("taste_lab tool", () => {
+  const tool = (params: object, signal?: AbortSignal) => {
+    const t = tools.get("taste_lab");
+    if (!t) throw new Error("no taste_lab tool");
+    return t.execute("call-1", params, signal, undefined, ctx);
+  };
+  const text = (r: { content: { text: string }[] }) => r.content[0].text;
+  /** Starts the tool and sends `ready` once the child exists. */
+  const startReady = async (params: object = {}, lan = ready().lan) => {
+    const result = tool({ action: "start", ...params });
+    await flush();
+    children.at(-1)?.send(ready(lan));
+    return result;
+  };
+
+  it("registers only with a schema, sequential, with prompt guidance", () => {
+    load({ toolParameters: undefined });
+    expect(tools.size).toBe(0);
+    load();
+    const t = tools.get("taste_lab");
+    expect(t?.executionMode).toBe("sequential");
+    expect(t?.parameters).toEqual({ type: "object" });
+    expect(t?.promptGuidelines?.join(" ")).toContain(
+      "Never ask for the lab links",
+    );
+  });
+
+  it("start spawns serve --lan, waits for ready and returns no link", async () => {
+    load();
+    const result = await startReady();
+    expect(spawnCalls[0].args).toEqual([
+      "/lab/bin/taste-lab.mjs",
+      "serve",
+      "--dir",
+      dataDir,
+      "--events",
+      "--lan",
+    ]);
+    expect(text(result)).toBe(
+      `taste-lab is running (local and LAN) for ${dataDir} on port 5301. The operator has the links in pi's UI. Each answer arrives as a message; on one, load the taste skill and follow it.`,
+    );
+    expect(result.details).toEqual({
+      action: "start",
+      state: "running",
+      port: 5301,
+      dataDir,
+      lan: true,
+    });
+    const all = JSON.stringify(result);
+    expect(all).not.toContain(TOKEN);
+    expect(all).not.toContain("k=");
+    expect(all).not.toContain("192.168.1.23");
+    // the links reach the operator's UI; no duplicate started message
+    expect(notes().join("\n")).toContain(TOKEN);
+    expect(sent).toHaveLength(0);
+    // answers still wake the agent
+    children[0].send({ event: "answer", entry });
+    await flush();
+    expect(sent[0].options).toEqual({
+      triggerTurn: true,
+      deliverAs: "followUp",
+    });
+    assertModelNeverSawSecrets();
+  });
+
+  it("start honours local and a relative dir", async () => {
+    mkdirSync(join(tmp, "app", ".taste-lab"), { recursive: true });
+    load();
+    const result = await startReady(
+      { local: true, dir: "app/.taste-lab" },
+      null,
+    );
+    expect(spawnCalls[0].args).toEqual([
+      "/lab/bin/taste-lab.mjs",
+      "serve",
+      "--dir",
+      join(tmp, "app", ".taste-lab"),
+      "--events",
+    ]);
+    expect(text(result)).toContain("(local only)");
+  });
+
+  it("start refuses a missing dir unless create is set, and never asks", async () => {
+    const init = vi.fn(async (_bin: string, dir: string) => {
+      mkdirSync(dir, { recursive: true });
+      return { ok: true, output: "" };
+    });
+    load({ init });
+    await expect(tool({ action: "start", dir: "new-lab" })).rejects.toThrow(
+      `taste.lab: ${join(tmp, "new-lab")} does not exist. Start with create: true to init it.`,
+    );
+    expect(init).not.toHaveBeenCalled();
+    expect(spawnCalls).toHaveLength(0);
+
+    const result = await startReady({ dir: "new-lab", create: true });
+    expect(ctx.ui.confirm).not.toHaveBeenCalled();
+    expect(init).toHaveBeenCalledWith(
+      "/lab/bin/taste-lab.mjs",
+      join(tmp, "new-lab"),
+      expect.any(AbortSignal),
+    );
+    expect(text(result)).toContain(join(tmp, "new-lab"));
+  });
+
+  it("start fails with the exit and log path when serve dies before ready", async () => {
+    load();
+    const result = tool({ action: "start" });
+    await flush();
+    children[0].send({ event: "error", message: "port taken" });
+    children[0].die(1);
+    await expect(result).rejects.toThrow(
+      /^taste\.lab failed to start \(exit code 1\): port taken\. Log: .*\.log$/,
+    );
+    const status = await tool({ action: "status" });
+    expect(text(status)).toBe("taste-lab is not running.");
+  });
+
+  it("start reports a lab /taste already runs, and a different dir", async () => {
+    mkdirSync(join(tmp, "other"));
+    load();
+    await taste();
+    children[0].send(ready());
+    await flush();
+    const result = await tool({ action: "start", dir: "other" });
+    expect(spawnCalls).toHaveLength(1);
+    expect(text(result)).toContain(
+      `It serves ${dataDir}, not ${join(tmp, "other")}. Stop it first`,
+    );
+  });
+
+  it("start times out or stops waiting on abort, leaving the lab", async () => {
+    load({ readyTimeoutMs: 20 });
+    await expect(tool({ action: "start" })).rejects.toThrow(
+      /still starting after 0 s\. Check again with action status/,
+    );
+    expect(text(await tool({ action: "status" }))).toBe(
+      `taste-lab is starting for ${dataDir}.`,
+    );
+    const abort = new AbortController();
+    abort.abort();
+    await expect(tool({ action: "start" }, abort.signal)).rejects.toThrow(
+      "tool call was aborted",
+    );
+    expect(spawnCalls).toHaveLength(1);
+    children[0].send(ready());
+    await flush();
+    expect(text(await tool({ action: "start" }))).toContain("on port 5301");
+  });
+
+  it("status shows links in the UI only, stop stops", async () => {
+    load();
+    expect(text(await tool({ action: "status" }))).toBe(
+      "taste-lab is not running.",
+    );
+    await startReady();
+    const before = notes().length;
+    const status = await tool({ action: "status" });
+    expect(status.details.state).toBe("running");
+    expect(text(status)).toContain("on port 5301");
+    expect(notes().slice(before).join("\n")).toContain(TOKEN);
+    expect(JSON.stringify(status)).not.toContain(TOKEN);
+
+    const stop = await tool({ action: "stop" });
+    expect(text(stop)).toBe("taste-lab stopped.");
+    expect(children[0].signals).toContain("SIGTERM");
+    expect(text(await tool({ action: "stop" }))).toBe(
+      "taste-lab is not running.",
+    );
+    expect(notes().at(-1)).toBe("taste.lab stopped");
+  });
+
+  it("/taste stop during a tool start ends the wait", async () => {
+    load();
+    const result = tool({ action: "start" });
+    await flush();
+    await taste("stop");
+    await expect(result).rejects.toThrow("taste.lab stopped");
   });
 });

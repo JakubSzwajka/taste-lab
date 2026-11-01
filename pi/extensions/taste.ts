@@ -1,18 +1,26 @@
 // /taste: run the lab for this repo's .taste-lab and wake the agent on each answer.
+// The taste_lab tool drives the same lab, so an agent can start it too.
 // Links (the LAN one holds a token) go to pi's UI only. The model gets text
-// from pi/lib/messages.ts, which never reads `ready.lan`.
+// from pi/lib/messages.ts and pi/lib/tool.ts, which never read `ready.lan`.
 import { execFile, spawn } from "node:child_process";
 import { stat } from "node:fs/promises";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { completeTasteArgs, parseTasteArgs, TASTE_USAGE } from "../lib/args.ts";
+import {
+  completeTasteArgs,
+  parseTasteArgs,
+  resolveDataDir,
+  TASTE_USAGE,
+} from "../lib/args.ts";
 import { type LabExit, LabProcess, type SpawnFn } from "../lib/lab-process.ts";
 import {
   answerDetails,
   answerText,
+  type LabInfo,
   lanToken,
   linkLines,
   modelMessage,
+  scrubSecrets,
   startedDetails,
   startedText,
 } from "../lib/messages.ts";
@@ -26,6 +34,19 @@ import {
   widgetLines,
 } from "../lib/presentation.ts";
 import { qrComponent } from "../lib/qr.ts";
+import {
+  NOT_RUNNING_TEXT,
+  runningText,
+  type StringEnumFn,
+  startingText,
+  type TasteToolDetails,
+  type TasteToolParams,
+  TOOL_DESCRIPTION,
+  TOOL_GUIDELINES,
+  TOOL_NAME,
+  type TypeBuilder,
+  toolParameters,
+} from "../lib/tool.ts";
 
 export const PACKAGE_ROOT = fileURLToPath(new URL("../..", import.meta.url));
 const KEY = "taste-lab";
@@ -45,7 +66,17 @@ export type TasteDeps = {
   node: string;
   logDir?: string;
   killAfterMs?: number;
+  /** TypeBox schema of the taste_lab tool. Without one, no tool registers. */
+  toolParameters?: unknown;
+  /** How long a taste_lab start waits for `ready`. */
+  readyTimeoutMs?: number;
 };
+
+/** How a start ended, for the tool. */
+type LabOutcome = { ok: true; info: LabInfo } | { ok: false; message: string };
+
+/** What to do when the data dir is missing. */
+type MissingDir = "confirm" | "create" | "refuse";
 
 const runInit: InitFn = (bin, dataDir, signal) =>
   new Promise((resolve) => {
@@ -88,6 +119,12 @@ export function createTasteExtension(
       );
     }
     let lab: LabProcess | undefined;
+    /** What the model may know about `lab` once it is ready. */
+    let labInfo: LabInfo | undefined;
+    /** Settles when `lab` is ready or exits. */
+    let labOutcome: Promise<LabOutcome> | undefined;
+    /** The data dir `lab` serves. */
+    let labDir: string | undefined;
     let ui: TasteUi | undefined;
     /** A /taste start between its first await and the spawn (dialog, init). */
     let pending: { abort: AbortController; done: Promise<void> } | undefined;
@@ -118,10 +155,20 @@ export function createTasteExtension(
       target.notify(linkLines(lab.ready).join("\n"), "info");
     };
 
-    const onExit = (proc: LabProcess, exit: LabExit) => {
-      if (lab === proc) lab = undefined;
+    const onExit = (
+      proc: LabProcess,
+      exit: LabExit,
+      settle: (o: LabOutcome) => void,
+    ) => {
+      if (lab === proc) {
+        lab = undefined;
+        labInfo = undefined;
+        labOutcome = undefined;
+        labDir = undefined;
+      }
       clearUi();
       if (exit.expected) {
+        settle({ ok: false, message: "taste.lab stopped" });
         ui?.notify("taste.lab stopped", "info");
         return;
       }
@@ -130,18 +177,27 @@ export function createTasteExtension(
         : `exit code ${exit.code}`;
       const why = exit.error ? `: ${exit.error}` : "";
       const phase = exit.beforeReady ? "failed to start" : "stopped";
-      ui?.notify(
-        `taste.lab ${phase} (${how})${why}. Log: ${proc.logPath || "none"}`,
-        "error",
-      );
+      const message = `taste.lab ${phase} (${how})${why}. Log: ${proc.logPath || "none"}`;
+      settle({ ok: false, message });
+      ui?.notify(message, "error");
     };
 
-    const start = (ctx: TasteCtx, dataDir: string, lan: boolean) => {
+    type StartOptions = { missing: MissingDir; announce: boolean };
+
+    /** Resolves to an error message, or undefined once spawned (or already running). */
+    const start = (
+      ctx: TasteCtx,
+      dataDir: string,
+      lan: boolean,
+      opts: StartOptions,
+    ) => {
       const abort = new AbortController();
-      const done = startSteps(ctx, dataDir, lan, abort.signal).finally(() => {
-        if (pending?.abort === abort) pending = undefined;
-      });
-      pending = { abort, done };
+      const done = startSteps(ctx, dataDir, lan, opts, abort.signal).finally(
+        () => {
+          if (pending?.abort === abort) pending = undefined;
+        },
+      );
+      pending = { abort, done: done.then(() => undefined) };
       return done;
     };
 
@@ -149,45 +205,63 @@ export function createTasteExtension(
       ctx: TasteCtx,
       dataDir: string,
       lan: boolean,
+      opts: StartOptions,
       signal: AbortSignal,
-    ) => {
+    ): Promise<string | undefined> => {
       // Every await below can outlive a /taste stop or a shutdown.
       const cancelled = () => signal.aborted || closed;
+      const CANCELLED = "taste.lab start cancelled";
+      const fail = (message: string) => {
+        ctx.ui.notify(message, "error");
+        return message;
+      };
       const state = await dirState(dataDir);
-      if (cancelled()) return;
+      if (cancelled()) return CANCELLED;
       if (state === "other") {
-        ctx.ui.notify(
+        return fail(
           `taste.lab: ${dataDir} is not a directory. Log: none (server not started)`,
-          "error",
         );
-        return;
       }
       if (state === "missing") {
-        if (!ctx.hasUI) {
-          ctx.ui.notify(
-            `taste.lab: ${dataDir} does not exist. Log: none (server not started)`,
-            "error",
+        const missing =
+          opts.missing === "confirm" && !ctx.hasUI ? "refuse" : opts.missing;
+        if (missing === "refuse") {
+          const hint =
+            opts.missing === "confirm"
+              ? ""
+              : " Start with create: true to init it.";
+          return fail(
+            `taste.lab: ${dataDir} does not exist.${hint} Log: none (server not started)`,
           );
-          return;
         }
-        const yes = await ctx.ui.confirm(
-          "Create a taste.lab data dir?",
-          `${dataDir} does not exist. Run taste-lab init there?`,
-          { signal },
-        );
-        if (!yes || cancelled()) return;
-        const result = await deps.init(deps.bin, dataDir, signal);
-        if (cancelled()) return;
-        if (!result.ok) {
-          ctx.ui.notify(
-            `taste.lab init failed: ${result.output}. Log: none (server not started)`,
-            "error",
+        if (missing === "confirm") {
+          const yes = await ctx.ui.confirm(
+            "Create a taste.lab data dir?",
+            `${dataDir} does not exist. Run taste-lab init there?`,
+            { signal },
           );
-          return;
+          if (!yes)
+            return "taste.lab: the operator declined to create the data dir";
+          if (cancelled()) return CANCELLED;
+        }
+        const result = await deps.init(deps.bin, dataDir, signal);
+        if (cancelled()) return CANCELLED;
+        if (!result.ok) {
+          return fail(
+            `taste.lab init failed: ${result.output}. Log: none (server not started)`,
+          );
         }
         ctx.ui.notify(`taste.lab created ${dataDir}`, "info");
       }
-      if (lab) return showLinks(ctx.ui);
+      if (lab) {
+        showLinks(ctx.ui);
+        return undefined;
+      }
+
+      let settle: (o: LabOutcome) => void = () => {};
+      const outcome = new Promise<LabOutcome>((resolve) => {
+        settle = resolve;
+      });
 
       const liveAnswers = new Set<string>();
       const refreshWidget = (proc: LabProcess) => {
@@ -233,6 +307,10 @@ export function createTasteExtension(
             refreshWidget(proc);
             // Model-visible: the dataDir we spawned with, never the event's.
             const info = { port: ready.port, dataDir, lan: ready.lan !== null };
+            labInfo = info;
+            settle({ ok: true, info });
+            // A tool start reports this in its own result.
+            if (!opts.announce) return;
             const token = lanToken(ready.lan);
             pi.sendMessage(
               modelMessage(
@@ -273,12 +351,16 @@ export function createTasteExtension(
             );
           },
           onExit(exit) {
-            onExit(proc, exit);
+            onExit(proc, exit, settle);
           },
         },
       });
       lab = proc;
+      labInfo = undefined;
+      labOutcome = outcome;
+      labDir = dataDir;
       ctx.ui.notify(`taste.lab starting for ${dataDir}…`, "info");
+      return undefined;
     };
 
     pi.registerCommand("taste", {
@@ -348,16 +430,157 @@ export function createTasteExtension(
             if (closed) return;
             if (lab) showLinks(ctx.ui);
             else if (pending) ctx.ui.notify("taste.lab is starting…", "info");
-            else await start(ctx, cmd.dir, cmd.lan);
+            else
+              await start(ctx, cmd.dir, cmd.lan, {
+                missing: "confirm",
+                announce: true,
+              });
             return;
         }
       },
     });
 
+    const readyTimeoutMs = deps.readyTimeoutMs ?? 60_000;
+
+    /** Waits for the current lab's outcome, a timeout or an abort. */
+    const awaitOutcome = async (
+      signal: AbortSignal | undefined,
+    ): Promise<LabOutcome> => {
+      const outcome = labOutcome;
+      if (!outcome) return { ok: false, message: "taste.lab did not start" };
+      let timer: ReturnType<typeof setTimeout> | undefined;
+      let onAbort: (() => void) | undefined;
+      const stopWaiting = new Promise<LabOutcome>((resolve) => {
+        timer = setTimeout(
+          () =>
+            resolve({
+              ok: false,
+              message: `taste.lab is still starting after ${Math.round(readyTimeoutMs / 1000)} s. Check again with action status. Log: ${lab?.logPath || "none"}`,
+            }),
+          readyTimeoutMs,
+        );
+        onAbort = () =>
+          resolve({
+            ok: false,
+            message:
+              "Stopped waiting: the tool call was aborted. The lab may still start.",
+          });
+        if (signal?.aborted) onAbort();
+        else signal?.addEventListener("abort", onAbort, { once: true });
+      });
+      try {
+        return await Promise.race([outcome, stopWaiting]);
+      } finally {
+        clearTimeout(timer);
+        if (onAbort) signal?.removeEventListener("abort", onAbort);
+      }
+    };
+
+    /** Model text, scrubbed of the current LAN token and any `k=` link. */
+    const toolResult = (
+      text: string,
+      details: TasteToolDetails,
+    ): {
+      content: { type: "text"; text: string }[];
+      details: TasteToolDetails;
+    } => {
+      const token = lanToken(lab?.ready?.lan ?? null);
+      return {
+        content: [
+          { type: "text", text: scrubSecrets(text, token ? [token] : []) },
+        ],
+        details,
+      };
+    };
+    const toolError = (message: string) => {
+      const token = lanToken(lab?.ready?.lan ?? null);
+      return new Error(scrubSecrets(message, token ? [token] : []));
+    };
+    const runningDetails = (
+      action: TasteToolParams["action"],
+      info: LabInfo,
+    ): TasteToolDetails => ({ action, state: "running", ...info });
+
+    if (deps.toolParameters !== undefined) {
+      pi.registerTool({
+        name: TOOL_NAME,
+        label: "taste.lab",
+        description: TOOL_DESCRIPTION,
+        promptSnippet: "Start, check or stop taste.lab",
+        promptGuidelines: TOOL_GUIDELINES,
+        parameters: deps.toolParameters,
+        executionMode: "sequential",
+        async execute(
+          _toolCallId,
+          params: TasteToolParams,
+          signal,
+          _onUpdate,
+          ctx,
+        ) {
+          ui = ctx.ui;
+          const { action } = params;
+          if (action === "status") {
+            if (lab?.ready && labInfo) {
+              showLinks(ctx.ui);
+              return toolResult(
+                runningText(labInfo),
+                runningDetails(action, labInfo),
+              );
+            }
+            if (lab || pending) {
+              return toolResult(
+                labDir ? startingText(labDir) : "taste-lab is starting.",
+                { action, state: "starting" },
+              );
+            }
+            return toolResult(NOT_RUNNING_TEXT, { action, state: "stopped" });
+          }
+          if (action === "stop") {
+            if (await cancelPending()) {
+              return toolResult("taste-lab start cancelled.", {
+                action,
+                state: "stopped",
+              });
+            }
+            if (!lab) {
+              return toolResult(NOT_RUNNING_TEXT, { action, state: "stopped" });
+            }
+            await lab.stop();
+            return toolResult("taste-lab stopped.", {
+              action,
+              state: "stopped",
+            });
+          }
+          // start
+          if (closed)
+            throw toolError("taste.lab: this session is shutting down");
+          const dataDir = resolveDataDir(params.dir, ctx.cwd);
+          // A /taste start in flight: wait for it, then report what it made.
+          if (!lab && pending) await pending.done;
+          if (!lab) {
+            const failure = await start(ctx, dataDir, !params.local, {
+              missing: params.create ? "create" : "refuse",
+              announce: false,
+            });
+            if (failure) throw toolError(failure);
+          }
+          const outcome = await awaitOutcome(signal);
+          if (!outcome.ok) throw toolError(outcome.message);
+          return toolResult(
+            runningText(outcome.info, dataDir),
+            runningDetails(action, outcome.info),
+          );
+        },
+      });
+    }
+
     pi.on("session_shutdown", async () => {
       closed = true;
       const proc = lab;
       lab = undefined;
+      labInfo = undefined;
+      labOutcome = undefined;
+      labDir = undefined;
       clearUi();
       ui = undefined; // the old context is invalid after shutdown
       await Promise.all([cancelPending(), proc?.stop()]);
@@ -368,7 +591,16 @@ export function createTasteExtension(
 // Pi supplies this module at runtime. Keep it out of the package dependency tree.
 // A variable import lets unit tests exercise the extension without installing pi.
 const TUI_MODULE = "@earendil-works/pi-tui";
+const AI_MODULE = "@earendil-works/pi-ai";
+const TYPEBOX_MODULE = "typebox";
 export default async function taste(pi: TastePi) {
-  const { truncateToWidth } = await import(TUI_MODULE);
-  createTasteExtension({ truncate: truncateToWidth })(pi);
+  const [{ truncateToWidth }, { StringEnum }, { Type }] = await Promise.all([
+    import(TUI_MODULE),
+    import(AI_MODULE) as Promise<{ StringEnum: StringEnumFn }>,
+    import(TYPEBOX_MODULE) as Promise<{ Type: TypeBuilder }>,
+  ]);
+  createTasteExtension({
+    truncate: truncateToWidth,
+    toolParameters: toolParameters(Type, StringEnum),
+  })(pi);
 }

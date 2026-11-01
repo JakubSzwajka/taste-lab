@@ -424,13 +424,19 @@ Or copy the component into the round and change one thing. A copy can import `cl
 
 ## Pi package
 
-The repo root is a pi package (`pi` key in `package.json`): the `/taste` extension in `pi/extensions/taste.ts` and the `taste` skill in `pi/skills/taste/SKILL.md`. Helpers live in `pi/lib/`, outside the extensions folder, because pi loads every `.ts` file directly in `pi/extensions/` as an extension.
+The repo root is a pi package (`pi` key in `package.json`): the `/taste` extension with its `taste_lab` tool in `pi/extensions/taste.ts` and the `taste` skill in `pi/skills/taste/SKILL.md`. Helpers live in `pi/lib/`, outside the extensions folder, because pi loads every `.ts` file directly in `pi/extensions/` as an extension.
 
 - `/taste [local] [--dir <path>]` spawns `node bin/taste-lab.mjs serve --dir <d> --events`, plus `--lan` unless `local`. The data dir defaults to `<cwd>/.taste-lab`. A missing one is created with `init` after a confirm.
 - On `ready`, the links go to pi's UI only: a notification, a widget below the editor and a status item. The agent gets a custom message with the data dir and port, never a link.
+- The `taste_lab` tool lets the agent drive the same lab. One lab per pi session, shared with `/taste`. Calls run one at a time.
+  - `start` takes optional `local`, `dir` (resolved like `--dir`) and `create`. It waits for `ready`, up to 60 s, and returns the data dir, port and LAN flag. When the session already runs a lab, it reports that one and says so if the dir differs. A missing data dir is an error unless `create: true`, which runs `init` without a dialog. A start by the tool sends no extra started message; its result says the same.
+  - `status` returns running, starting or not running, and shows the links in pi's UI again.
+  - `stop` stops the lab or cancels a pending start.
+  - Tool text and errors pass the same scrub as messages. A failed start throws with the exit and log path.
+  - Answers wake the session that runs the lab. To run the lab for another session, ask that session to call `taste_lab start`, for example over intercom.
 - Each `answer` becomes `pi.sendMessage(..., { triggerTurn: true, deliverAs: "followUp" })`: one line with round, pick, tags, reason, theme and view. A busy agent gets it after its current run.
 - Child stderr goes to `<os tmpdir>/taste-lab-pi-XXXXXX/serve-<pid>-<time>.log`, with any `k=` value scrubbed. The dir is private (mode 0700) and the file is mode 0600. The child runs in its own process group. The group gets SIGTERM, then SIGKILL after 3 s, on `/taste stop` and on `session_shutdown`.
-- Model text is built in `pi/lib/messages.ts` from named fields only. Keep `ready.lan` out of it. Any `k=` link in model text becomes `[link redacted]`. `tests/pi-*.test.ts` assert no message holds the token or `k=`.
+- Model text is built in `pi/lib/messages.ts` and `pi/lib/tool.ts` from named fields only. Keep `ready.lan` out of it. Any `k=` link in model text becomes `[link redacted]`. `tests/pi-*.test.ts` assert no message holds the token or `k=`.
 
 ## Known limits
 

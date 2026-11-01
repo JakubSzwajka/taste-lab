@@ -443,7 +443,7 @@ The repo root is a pi package (`pi` key in `package.json`): the `/taste` extensi
 - `pnpm dev` serves the demo: `taste-lab serve --dir examples/demo/.taste-lab`.
 - `node bin/taste-lab.mjs init|check|serve --dir <path>`, see "Commands for a data dir".
 - `pnpm check` runs `tsc --noEmit` for the demo (`tsconfig.json`) and for the root lab (`tsconfig.lab.json`), then Biome.
-- `node bin/taste-lab.mjs serve --dir .taste-lab` serves the lab for taste-lab's own interface. Its rounds compare designs for `src/` chrome; a pick changes `src/` afterwards.
+- `node bin/taste-lab.mjs serve --dir .taste-lab` serves the lab for taste-lab's own interface. Its rounds compare designs for `src/` chrome; a pick changes `src/` afterwards. That data dir is local and gitignored (`/.taste-lab/`), so a fresh clone has none. Tests that read it (the root lab `check`, its variant scan, and chrome tokens equal to its `theme.css`) skip when it is missing.
 - `pnpm test` runs Vitest.
 - `pnpm build` runs the type check and a Vite build of the demo. `TASTE_LAB_DIR=<path>` builds or previews another data dir.
 - `pnpm format` runs `biome check --write .`.

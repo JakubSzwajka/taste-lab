@@ -2,3 +2,6 @@ node_modules
 dist
 *.tsbuildinfo
 .DS_Store
+
+# The lab for taste-lab itself: local taste data, not shipped.
+/.taste-lab/

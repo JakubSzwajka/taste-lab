@@ -1,4 +1,4 @@
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { describe, expect, it } from "vitest";
@@ -177,9 +177,13 @@ describe("repo rules", () => {
     expect(scanVariants(repo("examples/demo/.taste-lab/rounds"))).toEqual([]);
   });
 
-  it("the repo's own lab rounds follow the allowlist and have no raw colors", () => {
-    expect(scanVariants(repo(".taste-lab/rounds"))).toEqual([]);
-  });
+  // The repo's own lab is local and gitignored: a fresh clone has none.
+  it.skipIf(!existsSync(repo(".taste-lab/rounds")))(
+    "the repo's own lab rounds follow the allowlist and have no raw colors",
+    () => {
+      expect(scanVariants(repo(".taste-lab/rounds"))).toEqual([]);
+    },
+  );
 
   it("app chrome has no raw colors (generated ui/ excluded)", () => {
     const v = scanVariants(repo("src"), { imports: false, ignore: ["ui"] });

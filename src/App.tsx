@@ -12,6 +12,7 @@ import {
 import { AppHeader } from "@/components/AppHeader";
 import { CompareScreen } from "@/components/CompareScreen";
 import { HistoryView } from "@/components/HistoryView";
+import { IdlePage, IdlePath } from "@/components/IdlePage";
 import { LibraryEntryView, LibraryView } from "@/components/LibraryView";
 import { LogoMark } from "@/components/Logo";
 import { ThemeView } from "@/components/ThemeView";
@@ -273,65 +274,44 @@ function Notices({
   ) : null;
 }
 
-/**
- * Nothing to answer: a centered page with the lab mark, so an idle tab reads
- * at a glance (operator request after the left-aligned notice).
- */
+/** Nothing to answer: the centered idle page with the lab mark. */
 function EmptyState({ hasRounds }: { hasRounds: boolean }) {
   return (
-    <section
-      aria-labelledby="idle-title"
-      className="flex flex-1 flex-col items-center justify-center gap-6 py-16 text-center"
+    <IdlePage
+      id="idle-title"
+      mark={<LogoMark className="size-16 shadow-lg" />}
+      badge={hasRounds ? <Check strokeWidth={3} /> : undefined}
+      title={hasRounds ? "All rounds answered" : "No rounds yet"}
+      actions={
+        <>
+          <Button asChild variant="outline">
+            <a href={hrefFor({ page: "history" })}>
+              <History />
+              History
+            </a>
+          </Button>
+          <Button asChild variant="outline">
+            <a href={hrefFor({ page: "library" })}>
+              <Library />
+              Library
+            </a>
+          </Button>
+        </>
+      }
     >
-      <div aria-hidden="true" className="relative grid place-items-center">
-        <span className="absolute size-44 rounded-full border border-dashed" />
-        <span className="absolute size-32 rounded-full bg-muted" />
-        <LogoMark className="relative size-16 shadow-lg" />
-        {hasRounds && (
-          <span className="absolute -right-1 -bottom-1 grid size-7 place-items-center rounded-full border-4 border-background bg-primary text-primary-foreground">
-            <Check className="size-3.5" strokeWidth={3} />
-          </span>
-        )}
-      </div>
-      <div className="mt-8 flex max-w-md flex-col items-center gap-2">
-        <h1 id="idle-title" className="text-2xl font-semibold tracking-tight">
-          {hasRounds ? "All rounds answered" : "No rounds yet"}
-        </h1>
-        <p className="text-muted-foreground">
-          {hasRounds ? (
-            <>
-              Ask your agent for the next round. It reads{" "}
-              <code className="font-mono text-sm whitespace-nowrap">
-                .taste-lab/taste.jsonl
-              </code>{" "}
-              and shows up here on reload.
-            </>
-          ) : (
-            <>
-              Ask your agent to write{" "}
-              <code className="font-mono text-sm whitespace-nowrap">
-                .taste-lab/rounds/round-001/
-              </code>
-              : a round.json plus 2 to 4 variant files. AGENTS.md has the
-              contract.
-            </>
-          )}
-        </p>
-      </div>
-      <div className="flex flex-wrap justify-center gap-2">
-        <Button asChild variant="outline">
-          <a href={hrefFor({ page: "history" })}>
-            <History />
-            History
-          </a>
-        </Button>
-        <Button asChild variant="outline">
-          <a href={hrefFor({ page: "library" })}>
-            <Library />
-            Library
-          </a>
-        </Button>
-      </div>
-    </section>
+      {hasRounds ? (
+        <>
+          Ask your agent for the next round. It reads{" "}
+          <IdlePath>.taste-lab/taste.jsonl</IdlePath> and shows up here on
+          reload.
+        </>
+      ) : (
+        <>
+          Ask your agent to write{" "}
+          <IdlePath>.taste-lab/rounds/round-001/</IdlePath>: a round.json plus 2
+          to 4 variant files. AGENTS.md has the contract.
+        </>
+      )}
+    </IdlePage>
   );
 }

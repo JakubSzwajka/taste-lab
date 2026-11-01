@@ -351,6 +351,8 @@ export function Default(args: TaskCardArgs) {
 - Docs tab: title, status, description, examples (each opens its canvas), the controls table, rules, and provenance with links to `#/round/<id>`. A round that no longer exists is marked "round not found".
 - A broken entry (bad `meta.json`, missing file, missing export) shows its errors in place and does not break the page. An example that throws shows its error in the canvas. The next control change tries again.
 
+An empty library shows the same centered idle page as Compare (`src/components/IdlePage.tsx`): a library mark, "No components yet", a line on promoting a winner, and Compare and History buttons.
+
 The header's Library icon opens Library, next to Compare, Theme and History.
 
 `taste-lab check` validates `library/*`: folder name, `<Name>.tsx` and `examples.tsx` present, `meta.json` schema (`controls` and `args` included), `<Name>` exported by `<Name>.tsx` (a regular, readable file), every example `export` found in `examples.tsx` (a file with `export *` or a destructured export is a problem, since its names cannot be read: export each name directly), provenance rounds that exist, and the scanner with the library rules on every `.ts` and `.tsx`. `library/` missing or holding only `.gitkeep` is fine.

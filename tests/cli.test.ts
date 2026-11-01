@@ -244,9 +244,13 @@ describe("check", () => {
     expect(await checkDataDir(demo)).toEqual([]);
   });
 
-  it("passes the repo's own data dir", async () => {
-    expect(await checkDataDir(rootLab)).toEqual([]);
-  });
+  // Local and gitignored: a fresh clone has none.
+  it.skipIf(!existsSync(rootLab))(
+    "passes the repo's own data dir",
+    async () => {
+      expect(await checkDataDir(rootLab)).toEqual([]);
+    },
+  );
 
   it("passes a fresh init and an init plus one valid round", async () => {
     const dir = join(tmp, "app", ".taste-lab");

@@ -159,7 +159,11 @@ describe("Library page", () => {
   });
 
   it("explains an empty library", () => {
-    expect(page({ entries: [] })).toContain("No components yet.");
+    const html = page({ entries: [] });
+    expect(html).toContain("No components yet");
+    expect(html).toContain('data-slot="idle-page"');
+    expect(html).toContain('aria-labelledby="library-empty-title"');
+    expect(html).toContain('href="#/history"');
   });
 });
 

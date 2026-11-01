@@ -351,6 +351,8 @@ export function Default(args: TaskCardArgs) {
 - Docs tab: title, status, description, examples (each opens its canvas), the controls table, rules, and provenance with links to `#/round/<id>`. A round that no longer exists is marked "round not found".
 - A broken entry (bad `meta.json`, missing file, missing export) shows its errors in place and does not break the page. An example that throws shows its error in the canvas. The next control change tries again.
 
+An empty library shows the same centered idle page as Compare (`src/components/IdlePage.tsx`): a library mark, "No components yet", a line on promoting a winner, and Compare and History buttons.
+
 The header's Library icon opens Library, next to Compare, Theme and History.
 
 `taste-lab check` validates `library/*`: folder name, `<Name>.tsx` and `examples.tsx` present, `meta.json` schema (`controls` and `args` included), `<Name>` exported by `<Name>.tsx` (a regular, readable file), every example `export` found in `examples.tsx` (a file with `export *` or a destructured export is a problem, since its names cannot be read: export each name directly), provenance rounds that exist, and the scanner with the library rules on every `.ts` and `.tsx`. `library/` missing or holding only `.gitkeep` is fine.
@@ -443,7 +445,7 @@ The repo root is a pi package (`pi` key in `package.json`): the `/taste` extensi
 - `pnpm dev` serves the demo: `taste-lab serve --dir examples/demo/.taste-lab`.
 - `node bin/taste-lab.mjs init|check|serve --dir <path>`, see "Commands for a data dir".
 - `pnpm check` runs `tsc --noEmit` for the demo (`tsconfig.json`) and for the root lab (`tsconfig.lab.json`), then Biome.
-- `node bin/taste-lab.mjs serve --dir .taste-lab` serves the lab for taste-lab's own interface. Its rounds compare designs for `src/` chrome; a pick changes `src/` afterwards.
+- `node bin/taste-lab.mjs serve --dir .taste-lab` serves the lab for taste-lab's own interface. Its rounds compare designs for `src/` chrome; a pick changes `src/` afterwards. That data dir is local and gitignored (`/.taste-lab/`), so a fresh clone has none. Tests that read it (the root lab `check`, its variant scan, and chrome tokens equal to its `theme.css`) skip when it is missing.
 - `pnpm test` runs Vitest.
 - `pnpm build` runs the type check and a Vite build of the demo. `TASTE_LAB_DIR=<path>` builds or previews another data dir.
 - `pnpm format` runs `biome check --write .`.

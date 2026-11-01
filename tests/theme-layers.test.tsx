@@ -1,5 +1,6 @@
 // @vitest-environment happy-dom
 import {
+  existsSync,
   mkdirSync,
   mkdtempSync,
   readFileSync,
@@ -69,11 +70,15 @@ function value(el: Element, name = "--primary"): string {
 }
 
 describe("theme layers", () => {
-  it("keeps the chrome stylesheet equal to the meta lab token picks", () => {
-    expect(lab).toEqual(
-      parseStock(readFileSync(join(repo, ".taste-lab/theme.css"), "utf8")),
-    );
-  });
+  // The meta lab is local and gitignored: a fresh clone has none.
+  it.skipIf(!existsSync(join(repo, ".taste-lab/theme.css")))(
+    "keeps the chrome stylesheet equal to the meta lab token picks",
+    () => {
+      expect(lab).toEqual(
+        parseStock(readFileSync(join(repo, ".taste-lab/theme.css"), "utf8")),
+      );
+    },
+  );
 
   for (const mode of ["light", "dark"] as const) {
     it(`computes lab chrome and data dir frame tokens in ${mode} mode`, async () => {

@@ -22,13 +22,14 @@ import {
   SidebarMenuSubItem,
   useSidebar,
 } from "@/components/ui/sidebar";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import type { LibraryEntry } from "@/lib/library";
+import type { LibraryEntry, LibraryKind } from "@/lib/library";
 import { hrefFor } from "@/lib/route";
 import { StatusBadge } from "./LibraryDocs";
 
@@ -45,7 +46,11 @@ export function LibraryTree({
   entryName,
   exampleName,
   onExample,
+  category,
+  onCategory,
 }: {
+  category: LibraryKind;
+  onCategory: (kind: LibraryKind) => void;
   entries: LibraryEntry[];
   entryName: string | undefined;
   exampleName: string | undefined;
@@ -79,120 +84,140 @@ export function LibraryTree({
       <SidebarContent>
         <nav aria-label="Library entries and examples">
           <SidebarGroup className="gap-3 p-4">
-            <div className="flex items-center gap-1 pr-1">
-              <SidebarGroupLabel className="flex-1">
-                {entries.length} {entries.length === 1 ? "entry" : "entries"}
-                {drafts.length > 0 &&
-                  `, ${drafts.length} ${drafts.length === 1 ? "draft" : "drafts"}`}
-              </SidebarGroupLabel>
-              {/* Own provider: the Library page also mounts outside App. */}
-              <TooltipProvider>
-                <FoldButton
-                  label="Collapse all"
-                  disabled={!anyOpen}
-                  onClick={() => foldAll(true)}
-                >
-                  <ChevronsDownUp />
-                </FoldButton>
-                <FoldButton
-                  label="Expand all"
-                  disabled={!anyClosed}
-                  onClick={() => foldAll(false)}
-                >
-                  <ChevronsUpDown />
-                </FoldButton>
-              </TooltipProvider>
-            </div>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {entries.map((e) => {
-                  const current = e.name === entryName;
-                  const open = e.ok && !collapsed.has(e.name);
-                  const Chevron = open ? ChevronDown : ChevronRight;
-                  return (
-                    <SidebarMenuItem key={e.name}>
-                      <SidebarMenuButton
-                        asChild
-                        isActive={current && !open}
-                        className="h-10 pr-8 [&_svg]:size-5"
-                      >
-                        <a
-                          href={hrefFor({
-                            page: "library-entry",
-                            name: e.name,
-                          })}
-                          // The example carries the mark, unless it is hidden.
-                          aria-current={current && !open ? "true" : undefined}
-                          title={e.ok ? e.meta.title : e.name}
-                          onClick={picked}
-                        >
-                          {!e.ok && (
-                            <CircleAlert
-                              className="size-5 text-destructive"
-                              strokeWidth={1.75}
-                            />
-                          )}
-                          <span className="min-w-0 flex-1 truncate font-medium">
-                            {e.ok ? e.meta.title : e.name}
-                          </span>
-                          {/* Agreed is the normal case: only a draft or a
+            <Tabs
+              value={category}
+              onValueChange={(v) => {
+                onCategory(v as LibraryKind);
+                picked();
+              }}
+            >
+              <TabsList className="w-full" aria-label="Library category">
+                <TabsTrigger value="screen">Screens</TabsTrigger>
+                <TabsTrigger value="component">Components</TabsTrigger>
+              </TabsList>
+              <TabsContent value={category} className="space-y-3">
+                <div className="flex items-center gap-1 pr-1">
+                  <SidebarGroupLabel className="flex-1">
+                    {entries.length}{" "}
+                    {entries.length === 1 ? "entry" : "entries"}
+                    {drafts.length > 0 &&
+                      `, ${drafts.length} ${drafts.length === 1 ? "draft" : "drafts"}`}
+                  </SidebarGroupLabel>
+                  {/* Own provider: the Library page also mounts outside App. */}
+                  <TooltipProvider>
+                    <FoldButton
+                      label="Collapse all"
+                      disabled={!anyOpen}
+                      onClick={() => foldAll(true)}
+                    >
+                      <ChevronsDownUp />
+                    </FoldButton>
+                    <FoldButton
+                      label="Expand all"
+                      disabled={!anyClosed}
+                      onClick={() => foldAll(false)}
+                    >
+                      <ChevronsUpDown />
+                    </FoldButton>
+                  </TooltipProvider>
+                </div>
+                <SidebarGroupContent>
+                  <SidebarMenu>
+                    {entries.map((e) => {
+                      const current = e.name === entryName;
+                      const open = e.ok && !collapsed.has(e.name);
+                      const Chevron = open ? ChevronDown : ChevronRight;
+                      return (
+                        <SidebarMenuItem key={e.name}>
+                          <SidebarMenuButton
+                            asChild
+                            isActive={current && !open}
+                            className="h-10 pr-8 [&_svg]:size-5"
+                          >
+                            <a
+                              href={hrefFor({
+                                page: "library-entry",
+                                name: e.name,
+                              })}
+                              // The example carries the mark, unless it is hidden.
+                              aria-current={
+                                current && !open ? "true" : undefined
+                              }
+                              title={e.ok ? e.meta.title : e.name}
+                              onClick={picked}
+                            >
+                              {!e.ok && (
+                                <CircleAlert
+                                  className="size-5 text-destructive"
+                                  strokeWidth={1.75}
+                                />
+                              )}
+                              <span className="min-w-0 flex-1 truncate font-medium">
+                                {e.ok ? e.meta.title : e.name}
+                              </span>
+                              {/* Agreed is the normal case: only a draft or a
                               broken entry gets a pill (operator, after the
                               sidebar showed "agreed" 17 times). */}
-                          {!(e.ok && e.meta.status === "agreed") && (
-                            <StatusBadge
-                              status={e.ok ? e.meta.status : "error"}
-                            />
+                              {!(e.ok && e.meta.status === "agreed") && (
+                                <StatusBadge
+                                  status={e.ok ? e.meta.status : "error"}
+                                />
+                              )}
+                            </a>
+                          </SidebarMenuButton>
+                          {e.ok && (
+                            <SidebarMenuAction
+                              className="[&>svg]:size-5"
+                              aria-expanded={open}
+                              aria-label={`${open ? "Hide" : "Show"} examples of ${e.meta.title}`}
+                              onClick={() => toggle(e.name)}
+                            >
+                              <Chevron className="size-5" strokeWidth={1.75} />
+                            </SidebarMenuAction>
                           )}
-                        </a>
-                      </SidebarMenuButton>
-                      {e.ok && (
-                        <SidebarMenuAction
-                          className="[&>svg]:size-5"
-                          aria-expanded={open}
-                          aria-label={`${open ? "Hide" : "Show"} examples of ${e.meta.title}`}
-                          onClick={() => toggle(e.name)}
-                        >
-                          <Chevron className="size-5" strokeWidth={1.75} />
-                        </SidebarMenuAction>
-                      )}
-                      {e.ok && open && (
-                        <SidebarMenuSub>
-                          {e.meta.examples.map((x) => {
-                            const active = current && x.export === exampleName;
-                            return (
-                              <SidebarMenuSubItem key={x.export}>
-                                <SidebarMenuSubButton
-                                  className="h-9"
-                                  isActive={active}
-                                  href={hrefFor({
-                                    page: "library-entry",
-                                    name: e.name,
-                                    example: x.export,
-                                  })}
-                                  aria-current={active ? "true" : undefined}
-                                  title={x.title}
-                                  onClick={() => {
-                                    onExample(e.name, x.export);
-                                    picked();
-                                  }}
-                                >
-                                  <span className="min-w-0 flex-1 truncate">
-                                    {x.export}
-                                  </span>
-                                  <span className="font-mono text-xs text-muted-foreground">
-                                    {x.width}
-                                  </span>
-                                </SidebarMenuSubButton>
-                              </SidebarMenuSubItem>
-                            );
-                          })}
-                        </SidebarMenuSub>
-                      )}
-                    </SidebarMenuItem>
-                  );
-                })}
-              </SidebarMenu>
-            </SidebarGroupContent>
+                          {e.ok && open && (
+                            <SidebarMenuSub>
+                              {e.meta.examples.map((x) => {
+                                const active =
+                                  current && x.export === exampleName;
+                                return (
+                                  <SidebarMenuSubItem key={x.export}>
+                                    <SidebarMenuSubButton
+                                      className="h-9"
+                                      isActive={active}
+                                      href={hrefFor({
+                                        page: "library-entry",
+                                        name: e.name,
+                                        example: x.export,
+                                      })}
+                                      aria-current={active ? "true" : undefined}
+                                      title={x.title}
+                                      onClick={() => {
+                                        onExample(e.name, x.export);
+                                        picked();
+                                      }}
+                                    >
+                                      <span className="min-w-0 flex-1 truncate">
+                                        {x.export}
+                                      </span>
+                                      <span className="font-mono text-xs text-muted-foreground">
+                                        {e.meta.kind === "screen"
+                                          ? "screen"
+                                          : x.width}
+                                      </span>
+                                    </SidebarMenuSubButton>
+                                  </SidebarMenuSubItem>
+                                );
+                              })}
+                            </SidebarMenuSub>
+                          )}
+                        </SidebarMenuItem>
+                      );
+                    })}
+                  </SidebarMenu>
+                </SidebarGroupContent>
+              </TabsContent>
+            </Tabs>
           </SidebarGroup>
         </nav>
       </SidebarContent>

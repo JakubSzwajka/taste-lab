@@ -31,6 +31,12 @@ The agent can do the same with the `taste_lab` tool (`start`, `status`, `stop`),
 
 Ask the agent for a round, answer it in the browser, repeat. Your taste data lives in `.taste-lab/` and is committed with your app.
 
+## Library
+
+Screens and Components have separate tabs, with named examples nested under each entry. Screens are interactive compositions at full available width, without scaling. Authored Used components links open the actual entries; Back to screen restores the screen and example.
+
+The demo includes draft task-list and task-detail screens with Compact, Loading, Empty and Error examples. Search, filter and edit/cancel/save work locally. Switching examples resets local edits. Native viewport sizes and flows are not implemented.
+
 The contract for agents (rounds, library, theme, CLI) is in [AGENTS.md](AGENTS.md).
 
 ## License

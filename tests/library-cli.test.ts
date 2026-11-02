@@ -20,7 +20,12 @@ function capture() {
     io: { out: (s: string) => out.push(s), err: (s: string) => err.push(s) },
   };
 }
-function entry(dir: string, name: string, status: "draft" | "agreed") {
+function entry(
+  dir: string,
+  name: string,
+  status: "draft" | "agreed",
+  extra: Record<string, unknown> = {},
+) {
   const folder = join(dir, "library", name);
   mkdirSync(folder, { recursive: true });
   const component = name
@@ -45,6 +50,7 @@ function entry(dir: string, name: string, status: "draft" | "agreed") {
       examples: [{ export: "Default", title: "Default", width: "column" }],
       provenance: [],
       rules: [],
+      ...extra,
     }),
   );
 }
@@ -85,12 +91,43 @@ describe("library command", () => {
       expect.objectContaining({
         name: "agreed-card",
         status: "agreed",
+        kind: "component",
         title: "AgreedCard",
         path: join(tmp, "library", "agreed-card"),
         exampleCount: 1,
         problems: [],
       }),
     ]);
+  });
+
+  it("lists screen kinds and reports malformed metadata honestly", async () => {
+    entry(tmp, "screen", "draft", { kind: "screen" });
+    entry(tmp, "unknown", "draft", { kind: "page" });
+    entry(tmp, "bad-kind", "draft", { kind: 42 });
+    const c = capture();
+    expect(
+      await run(["library", "--dir", tmp, "--json", "--status", "draft"], c.io),
+    ).toBe(1);
+    const listings = JSON.parse(c.out[0]);
+    expect(listings).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          name: "screen",
+          kind: "screen",
+          problems: [],
+        }),
+        expect.objectContaining({
+          name: "unknown",
+          kind: "page",
+          problems: ["kind must be component or screen"],
+        }),
+        expect.objectContaining({
+          name: "bad-kind",
+          kind: null,
+          problems: ["kind must be component or screen"],
+        }),
+      ]),
+    );
   });
 
   it("rejects invalid filters and missing dirs as usage errors", async () => {

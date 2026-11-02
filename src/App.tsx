@@ -13,7 +13,7 @@ import { AppHeader } from "@/components/AppHeader";
 import { CompareScreen } from "@/components/CompareScreen";
 import { HistoryView } from "@/components/HistoryView";
 import { IdlePage, IdlePath } from "@/components/IdlePage";
-import { LibraryEntryView, LibraryView } from "@/components/LibraryView";
+import { LibraryView } from "@/components/LibraryView";
 import { LogoMark } from "@/components/Logo";
 import { ThemeView } from "@/components/ThemeView";
 import { Button } from "@/components/ui/button";
@@ -218,13 +218,12 @@ export default function App({
 
           {route.page === "theme" ? (
             <ThemeView {...themeData} />
-          ) : route.page === "library" ? (
-            <LibraryView entries={library} rounds={rounds} />
-          ) : route.page === "library-entry" ? (
-            <LibraryEntryView
-              key={route.name}
-              name={route.name}
-              example={route.example}
+          ) : onLibrary ? (
+            <LibraryView
+              name={route.page === "library-entry" ? route.name : undefined}
+              example={
+                route.page === "library-entry" ? route.example : undefined
+              }
               entries={library}
               rounds={rounds}
             />

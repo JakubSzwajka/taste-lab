@@ -1,0 +1,62 @@
+{
+  "name": "task-detail-screen",
+  "title": "Task detail screen",
+  "description": "Interactive task composition with local search, filtering and edit/cancel/save. State examples recover to sample data.",
+  "status": "draft",
+  "kind": "screen",
+  "uses": ["task-card", "task-editor"],
+  "examples": [
+    {
+      "export": "Default",
+      "title": "Default",
+      "width": "full",
+      "args": {
+        "compact": false
+      }
+    },
+    {
+      "export": "Compact",
+      "title": "Compact",
+      "width": "full",
+      "args": {
+        "compact": true
+      }
+    },
+    {
+      "export": "Loading",
+      "title": "Loading",
+      "width": "full",
+      "args": {
+        "compact": false
+      }
+    },
+    {
+      "export": "Empty",
+      "title": "Empty",
+      "width": "full",
+      "args": {
+        "compact": false
+      }
+    },
+    {
+      "export": "Error",
+      "title": "Error",
+      "width": "full",
+      "args": {
+        "compact": false
+      }
+    }
+  ],
+  "controls": [
+    {
+      "prop": "compact",
+      "kind": "boolean",
+      "label": "Compact layout"
+    }
+  ],
+  "provenance": [],
+  "rules": [
+    "Render at full available width without scaling.",
+    "Edits stay local to the example."
+  ]
+}

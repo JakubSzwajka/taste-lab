@@ -9,3 +9,7 @@ Use the selected direction and design rules to resolve related spacing, sizing a
 Reserve comparison rounds for meaningful visual or structural directions. Keep one clear axis between variants; shared rule-based cleanup may form their common baseline. Check all affected pages, responsive behavior, readability and interactions rather than asking the operator to validate each implementation detail.
 
 This is autonomy over preview refinements, not permission to change production, merge, release, rewrite taste.jsonl or reopen unrelated deferred work.
+
+## Keep future rounds desktop-only
+
+Round-045 None says: "we dont do mobile support at all. ignore it". Do not propose phone-specific comparisons or mobile-only refinements for this project. Existing phone screenshots and checks are historical evidence, not a support commitment. Keep the rejected round as history; do not promote its layout or touch-target adjustments.

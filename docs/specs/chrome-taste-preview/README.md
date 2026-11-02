@@ -2,6 +2,8 @@
 
 Goal: let the operator compare brighter dark chrome, workbench spacing and font families in the existing lab before changing the live interface.
 
+Current UI scope is desktop-only. Round-045 None says: "we dont do mobile support at all. ignore it". This supersedes the historical narrow-layout acceptance below. The phone experiment is rejected; no layout or touch-target changes are promoted. See [ROUND-045.md](ROUND-045.md). Later round reports refine the original preview choices below.
+
 ## Scope
 
 Three independent rounds in the existing local data dir:

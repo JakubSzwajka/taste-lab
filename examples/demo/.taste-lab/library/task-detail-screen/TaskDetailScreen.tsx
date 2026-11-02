@@ -78,6 +78,7 @@ export function TaskDetailScreen({
               onChange={(event) => {
                 setQuery(event.target.value);
                 setEditing(false);
+                setSaved("");
               }}
             />
             <ToggleGroup
@@ -89,6 +90,7 @@ export function TaskDetailScreen({
                 if (value) {
                   setFilter(value);
                   setEditing(false);
+                  setSaved("");
                 }
               }}
             >
@@ -152,6 +154,7 @@ export function TaskDetailScreen({
                     onClick={() => {
                       setQuery("");
                       setFilter("all");
+                      setSaved("");
                     }}
                   >
                     Clear filters

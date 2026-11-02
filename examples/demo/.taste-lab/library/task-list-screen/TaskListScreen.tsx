@@ -85,14 +85,22 @@ export function TaskListScreen({
               aria-label="Search tasks"
               placeholder="Search tasks or assignees"
               value={query}
-              onChange={(event) => setQuery(event.target.value)}
+              onChange={(event) => {
+                setQuery(event.target.value);
+                setSaved("");
+              }}
             />
             <ToggleGroup
               type="single"
               variant="outline"
               aria-label="Task filter"
               value={filter}
-              onValueChange={(value) => value && setFilter(value)}
+              onValueChange={(value) => {
+                if (value) {
+                  setFilter(value);
+                  setSaved("");
+                }
+              }}
             >
               <ToggleGroupItem value="all">All</ToggleGroupItem>
               <ToggleGroupItem value="open">Open</ToggleGroupItem>
@@ -121,6 +129,7 @@ export function TaskListScreen({
                 onClick={() => {
                   setQuery("");
                   setFilter("all");
+                  setSaved("");
                 }}
               >
                 Clear filters

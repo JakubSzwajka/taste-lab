@@ -86,7 +86,10 @@ export function LibraryTree({
           <SidebarGroup className="gap-3 p-4">
             <Tabs
               value={category}
-              onValueChange={(v) => onCategory(v as LibraryKind)}
+              onValueChange={(v) => {
+                onCategory(v as LibraryKind);
+                picked();
+              }}
             >
               <TabsList className="w-full" aria-label="Library category">
                 <TabsTrigger value="screen">Screens</TabsTrigger>

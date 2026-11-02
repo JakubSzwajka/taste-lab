@@ -9,7 +9,7 @@ import {
 } from "../src/components/library/prefs";
 import type { LibraryEntry, LibraryKind } from "../src/lib/library";
 
-import { click, mount, one, unmountAll } from "./dom";
+import { click, mount, one, press, unmountAll } from "./dom";
 
 function Probe() {
   return <p>Live example</p>;
@@ -52,7 +52,7 @@ const entries = () => [
   { ok: false, name: "broken", errors: ["bad kind"] } as LibraryEntry,
 ];
 
-// Exercise the production router, including LibraryView -> LibraryEntryView remounts.
+// Exercise the production router, including entry through the Library index.
 function Routed({ items }: { items: LibraryEntry[] }) {
   return <App rounds={[]} library={items} />;
 }
@@ -88,7 +88,7 @@ afterEach(async () => {
   vi.unstubAllGlobals();
 });
 
-describe("production screen browsing through hash remounts", () => {
+describe("production screen browsing through App hash routes", () => {
   it.each(["#/library", "#/library/a-screen/Compact"])(
     "inspects and returns to the exact named example from %s",
     async (start) => {
@@ -160,6 +160,66 @@ describe("production screen browsing through hash remounts", () => {
       host.querySelector('a[href="#/library/task-card/Compact"]'),
     ).toBeNull();
   });
+  it("keeps Screens selected when its only target is an unknown broken entry", async () => {
+    await route("#/library/task-card");
+    const host = await mount(
+      <Routed items={entries().filter((e) => e.name !== "a-screen")} />,
+    );
+    await category(host, "screen");
+    await route(location.hash);
+    expect(location.hash).toBe("#/library/broken");
+    expect(
+      one(host, '[aria-label="Library category"] [aria-selected="true"]')
+        .textContent,
+    ).toBe("Screens");
+    expect(one(host, '[role="alert"]').textContent).toContain("bad kind");
+    expect(host.querySelector('a[href="#/library/broken"]')).not.toBeNull();
+    expect(host.querySelector('a[href="#/library/task-card"]')).toBeNull();
+    await category(host, "component");
+    await route(location.hash);
+    expect(host.querySelector('a[href="#/library/broken"]')).not.toBeNull();
+  });
+  it("keeps the current category when a broken row is opened after a direct screen route", async () => {
+    await route("#/library/task-card");
+    const host = await mount(<Routed items={entries()} />);
+    await route("#/library/a-screen/Compact");
+    await follow(one<HTMLAnchorElement>(host, 'a[href="#/library/broken"]'));
+    expect(
+      one(host, '[aria-label="Library category"] [aria-selected="true"]')
+        .textContent,
+    ).toBe("Screens");
+    expect(one(host, '[role="alert"]').textContent).toContain("bad kind");
+    expect(host.querySelector('a[href="#/library/task-card"]')).toBeNull();
+  });
+  it.each(["#/library", "#/library/task-card"])(
+    "keeps tab focus through consecutive keyboard category routes from %s",
+    async (start) => {
+      await route(start);
+      const host = await mount(
+        <Routed items={[entry("task-card"), entry("a-screen", "screen")]} />,
+      );
+      await act(async () => {
+        one(host, '[role="tab"][id$="trigger-component"]').focus();
+      });
+      for (const [key, hash, label] of [
+        ["ArrowLeft", "#/library/a-screen", "Screens"],
+        ["ArrowRight", "#/library/task-card", "Components"],
+      ]) {
+        // Dispatch to the actual focused element, without refocusing after navigation.
+        await press(document.activeElement ?? document.body, key);
+        await act(async () => {
+          await vi.waitFor(() => expect(location.hash).toBe(hash));
+        });
+        await route(location.hash);
+        const selected = one(
+          host,
+          '[aria-label="Library category"] [aria-selected="true"]',
+        );
+        expect(selected.textContent).toBe(label);
+        expect(document.activeElement).toBe(selected);
+      }
+    },
+  );
   it("keeps failed imports and missing exports local to authored references", async () => {
     const screen = entry("screen", "screen", [
       "missing-export",
@@ -190,7 +250,12 @@ describe("production screen browsing through hash remounts", () => {
     ).not.toBeNull();
     await category(document.body, "component");
     await route(location.hash);
-    await click(one(host, '[aria-label="Toggle entry sidebar"]'));
+    expect(document.body.querySelector('[role="dialog"]')).toBeNull();
+    expect(document.body.getAttribute("data-scroll-locked")).toBeNull();
+    const trigger = one(host, '[aria-label="Toggle entry sidebar"]');
+    await act(async () => trigger.focus());
+    expect(document.activeElement).toBe(trigger);
+    await click(trigger);
     await follow(
       one<HTMLAnchorElement>(
         document.body,
@@ -203,6 +268,9 @@ describe("production screen browsing through hash remounts", () => {
         '[aria-label="Library entries and examples"]',
       ),
     ).toBeNull();
+    await route("#/library/a-screen/Default");
+    expect(document.body.querySelector('[role="dialog"]')).toBeNull();
+    expect(document.body.getAttribute("data-scroll-locked")).toBeNull();
   });
   it("preserves screen args and shared panel/sidebar preferences across category routes", async () => {
     const screen = entry("a-screen", "screen");

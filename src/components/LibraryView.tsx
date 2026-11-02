@@ -25,15 +25,9 @@ import { useThemeData } from "@/lib/theme-data";
 
 export { StatusBadge };
 
-/** `#/library`: the Library page on its first entry. */
-export function LibraryView({
-  entries,
-  rounds,
-}: {
-  entries: LibraryEntry[];
-  rounds?: LoadedRound[];
-}) {
-  return <LibraryLive entries={entries} rounds={rounds} />;
+/** Library routes share one sidebar instance; only the example remounts. */
+export function LibraryView(props: Omit<LibraryPageProps, "light">) {
+  return <LibraryLive {...props} />;
 }
 
 /** `#/library/<name>[/<example>]`: the Library page on one entry. */
@@ -92,8 +86,10 @@ export function LibraryPage({
     name,
     example,
   });
+  const [tab, setTab] = useState("canvas");
   const [prev, setPrev] = useState({ name, example });
   if (prev.name !== name || prev.example !== example) {
+    if (prev.name !== name) setTab("canvas");
     setPrev({ name, example });
     setPicked({ name, example });
   }
@@ -102,13 +98,15 @@ export function LibraryPage({
     return initial?.ok ? (initial.meta.kind ?? "component") : "component";
   });
   const selected = entries.find((e) => e.name === picked.name);
-  const activeCategory = selected?.ok
+  const selectedKind = selected?.ok
     ? (selected.meta.kind ?? "component")
-    : category;
+    : undefined;
+  // Direct routes select their known kind. Broken entries keep that category.
+  if (selectedKind && selectedKind !== category) setCategory(selectedKind);
+  const activeCategory = selectedKind ?? category;
   const matching = entries.filter(
     (e) => !e.ok || (e.meta.kind ?? "component") === activeCategory,
   );
-  const [tab, setTab] = useState("canvas");
   const { sidebar } = useCanvasPrefs();
   const known = useMemo(
     () => (rounds ? new Set(rounds.map((r) => r.id)) : undefined),

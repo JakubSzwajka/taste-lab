@@ -53,6 +53,33 @@ describe.each([
       expect(JSON.stringify(tasks)).toBe(before);
     },
   );
+  it.each(["search", "filter"] as const)(
+    "announces the new result count after a save followed by %s",
+    async (change) => {
+      const before = JSON.stringify(tasks);
+      const host = await mount(<examples.Default />);
+      await click(button(host, `Edit ${tasks[0]?.id}`));
+      await type(one<HTMLInputElement>(host, "form input"), "Saved task title");
+      await click(button(host, "Save locally"));
+      expect(one(host, '[role="status"]').textContent).toContain(
+        `Saved ${tasks[0]?.id} locally`,
+      );
+      if (change === "search")
+        await type(
+          one<HTMLInputElement>(host, '[aria-label="Search tasks"]'),
+          "zz-no-match",
+        );
+      else await click(button(host, "Open"));
+      const count =
+        change === "search"
+          ? 0
+          : tasks.filter((task) => task.status !== "done").length;
+      expect(one(host, '[role="status"]').textContent).toBe(
+        `${count} of ${tasks.length} tasks`,
+      );
+      expect(JSON.stringify(tasks)).toBe(before);
+    },
+  );
   it.each(["Loading", "Empty", "Error"] as const)(
     "%s recovers to the sample without a backend",
     async (preset) => {

@@ -1,6 +1,6 @@
 # Screen Library verification
 
-Implementation reviewed by the lead at `32db63b`. Independent cross-family review is blocked, so this is not a merge recommendation.
+Initial lead verification covers `32db63b`. The operator selected Codex/GPT review after the cross-family models were unavailable. Review found a category-navigation blocker; corrective round 1 is pending. This is not a merge recommendation.
 
 ## Local commands
 
@@ -41,4 +41,14 @@ Live shared-component source editing and a temporary broken-entry fixture were n
 
 Claude's all-model weekly quota is exhausted. Grok is registered but not allowed by the private team policy. Two attempted Grok review lanes were routed to Codex, detected at launch and immediately stopped as rejected. They produced no accepted review.
 
-The feature still needs the required other-family review. No claim of review approval or irreversible-effects review is made. Native viewport sizing remains a separate round-026 decision. The first increment does not ship flows or a full inspector redesign.
+The operator then instructed "use codex and gpt". Read-only reviews by GPT-6.1 Sol and GPT-6 Astra completed with authentic, clean receipts. This is same-family review by request, not a cross-family pass.
+
+Combined feedback for corrective round 1:
+
+- Blocker: opening a broken entry from Screens resets the category to Components across the keyed App route remount.
+- Should fix: switching category unmounts the focused tab. Consecutive arrow-key category switches lose focus.
+- Note: a saved-message status hides changing result counts after filtering. Clear the stale message or show counts separately.
+
+Both reviewers found no standards violations in their assigned areas. Their irreversible-effects assessment identifies reversible source/demo changes and additive metadata, with no migration or external write. Reverting code does not undo discarded local edits or remove ignored prototype data.
+
+Native viewport sizing remains a separate round-026 decision. The first increment does not ship flows or a full inspector redesign.

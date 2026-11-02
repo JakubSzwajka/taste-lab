@@ -1,10 +1,10 @@
 # Screen Library verification
 
-Initial lead verification covers `32db63b`. The operator selected Codex/GPT review after the cross-family models were unavailable. Review found a category-navigation blocker. Corrective round 1 is committed as `1983bbc`, with all four builder checks passing. Targeted re-review and lead checks are next. This is not a merge recommendation.
+Production verification covers the initial `32db63b` implementation and corrective commits `1983bbc` and `a790081`. Both corrective lanes passed all four requested checks with authentic, ownership-clean receipts. Targeted review confirms all four reported regressions are fixed. An incumbent mobile focus defect remains unresolved after the two-round limit, so the PR stays draft. This is not a merge recommendation.
 
 ## Local commands
 
-All commands ran from the task worktree after the builder finished. Each exited 0.
+The initial commands below ran from the task worktree after the first builder finished. Each exited 0. These are initial counts, not post-correction results.
 
 | Command                                                       | Result                                                |
 | ------------------------------------------------------------- | ----------------------------------------------------- |
@@ -14,7 +14,9 @@ All commands ran from the task worktree after the builder finished. Each exited 
 | `node bin/taste-lab.mjs check --dir examples/demo/.taste-lab` | Clean.                                                |
 | `node bin/taste-lab.mjs check --dir .taste-lab`               | Clean.                                                |
 
-Logs and exit summary: `/tmp/taste-lab-app-canvas-verification/`.
+Initial logs and exit summary: `/tmp/taste-lab-app-canvas-verification/`. Corrective round 1 passed 178 focused tests; round 2 passed 180 across ten files. Red regressions failed before their fixes. Their logs are `/tmp/screen-library-round{1,2}-*.log`.
+
+The final full check, test, build and both data checks run after this report edit, without prototype writers. Current exits and decisive output are saved under `/tmp/taste-lab-app-canvas-verification/run-final/`. Consult those receipts rather than treating the initial counts as final.
 
 ## Lead browser acceptance
 
@@ -35,7 +37,20 @@ Evidence folder: `~/.pi/agent/proof/taste-lab/feat-app-canvas/run-01/`.
 
 The browser script needed two harness corrections: eval variables must not be redeclared at the top level, and semantic `find` does not support `focus`. The original transcripts remain next to successful retries. Neither was an app failure.
 
-Live shared-component source editing and a temporary broken-entry fixture were not exercised in the browser. Existing import links and automated DOM tests cover composition references, unavailable entries and real App route remounts. Physical devices, Safari and a quantitative accessibility audit were not run. The known Compare phone answer-row overflow remains outside scope.
+### Corrective follow-up
+
+Run-02 used the task-worktree app with a private demo copy on port 5327. Temporary fixtures and component edits never changed tracked source. Evidence and retained harness failures are in `~/.pi/agent/proof/taste-lab/feat-app-canvas/run-02/README.md`.
+
+- Consecutive desktop category arrows keep the selected tab focused without refocusing between switches. This passed again after round 2.
+- Opening a broken entry retains Screens. A category containing only that broken entry also stays selected and shows its error pane. Missing/broken authored references remain local while all nine tasks render.
+- Save followed by search or Open filtering shows the new counts on both screens, not a stale Saved message.
+- The Library breadcrumb opens the global first screen and Default, even after inspecting TaskCard. The temporary alphabetically first screen fixture was loaded in a fresh QA process; live new-entry discovery was not verified.
+- A temporary TaskCard source attribute hot-updated nine list cards, one detail card and nine standalone cards. Its source was restored byte-for-byte. Exact return to Task detail / Compact passed with a rendered-content wait.
+- Mobile category navigation closes the sheet with no document overflow. It fails automatic focus restoration: focus stays on BODY instead of the toolbar trigger, including after a 25-second wait. The DOM test's explicit `focus()` does not prove restoration.
+
+Empty-string browser fill, a missing `/Default` URL suffix, a mistaken button locator for the Back link and hash-only waits needed harness corrections. Successful retries and original failures remain in the proof folder. The extra QA browser and both owned QA server processes are closed. Port 5301 remained untouched.
+
+Physical devices, Safari and a quantitative full-page accessibility audit were not run. The prototype designer's scoped stable axe checks are not a production audit. The known Compare phone answer-row overflow remains outside scope.
 
 ## Review gate
 
@@ -51,4 +66,6 @@ Combined feedback for corrective round 1:
 
 Both reviewers found no standards violations in their assigned areas. Their irreversible-effects assessment identifies reversible source/demo changes and additive metadata, with no migration or external write. Reverting code does not undo discarded local edits or remove ignored prototype data.
 
-Round-026 A now settles responsive fill at 100%. Native viewport presets were not selected. The first increment does not ship flows or a full inspector redesign.
+Corrective round 1 fixes those three findings. Re-review found a new Library index-route blocker; corrective round 2 fixes it without remounting the sidebar. Final GPT-6 Astra review confirms no new blocker and no standards findings. It identifies an incumbent mobile focus SHOULD FIX and a manual-focus coverage NOTE. The stock Sidebar lacks a registered SheetTrigger and the toolbar trigger sits inside the keyed workbench. Source history predates this feature; no baseline browser comparison was run. No third corrective round was started. These unresolved findings remain in the draft PR.
+
+Round-026 A settles responsive fill at 100%. Round-027 A selects flat authored references; round-028 B keeps brief role hints. The latter picks are scoped prototype decisions, not approval of underlying component styles or expansion of this production increment. Native viewport presets were not selected. The first increment does not ship flows or a full inspector redesign.

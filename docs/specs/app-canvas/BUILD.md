@@ -24,7 +24,7 @@ Round-026 A selects the current responsive fill sizing. No native viewport engin
 
 - `tests/screen-library.test.ts`: optional kind and authored uses schema.
 - `tests/library-cli.test.ts`: additive kind output, malformed values, status filters and exit codes.
-- `tests/screen-library-dom.test.tsx`: production App hash routes, index breadcrumb reset with stable category-tab nodes, browser Back, exact inspection return, broken-entry category retention, consecutive keyboard category switches, nested examples, scoped empty state, full-width screen, unavailable references and mobile sheet closure/focus.
+- `tests/screen-library-dom.test.tsx`: production App hash routes, index breadcrumb reset with stable category-tab nodes, browser Back, exact inspection return, broken-entry category retention, consecutive keyboard category switches, nested examples, scoped empty state, full-width screen, unavailable references, mobile sheet closure and manual trigger focus. Automatic mobile focus restoration fails browser acceptance and remains an incumbent defect.
 - `tests/screen-library-demo.test.tsx`: full fixture, search/filter, edit/cancel/save/reset, result counts after saving then searching/filtering, fixture immutability and state recovery for both screens.
 - Existing `tests/library*`: legacy examples/args, controls, widths, theme and panel/sidebar preferences.
 

@@ -25,9 +25,11 @@ Round-025 A is selected with no reason: named presets nest under each entry. Kee
 
 Round-026 A selects responsive fill at 100%, with an empty reason. Screens use the available width without scaling or a Play gate. Native viewport presets were not selected. Component examples keep their existing widths.
 
+Round-027 A selects flat authored Used components references. Round-028 B selects component names with brief role hints. These picks approve reference presentation only, not TaskItem, TaskDetails or ScreenPreset styling. The first production increment retains its bounded scope; it does not ship the full prototype inspector.
+
 ## Next taste round
 
-Round-027 compares only the inspector's authored Used components presentation: a flat list of imports or a tree grouped by screen region. Both open the same real component examples and return to the exact screen and preset. Keep category tabs, nested examples, responsive sizing, fixtures, theme and interactivity unchanged. This is not automatic dependency discovery.
+Round-029 will compare the primary contextual Back to screen control inside the scrolling component preview versus in its toolbar. Both start in the same actual component example and return to the same screen and named preset. Keep flat references with role hints, category tabs, nested examples, responsive sizing, fixtures, theme and interactivity unchanged. This is not automatic dependency discovery.
 
 Start with a real-size task-list screen assembled from imported library components. Show its used components and let the operator inspect an individual component, then return to the composed screen. Search/filter and edit/save/cancel should work with local data. Provide a second screen composition so Screens is a real category. Screen selection is library browsing, not a flow diagram.
 

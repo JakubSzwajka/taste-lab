@@ -1,23 +1,24 @@
 # Manual testing
 
-## Layout prototype
+## Round-024 prototype
 
-1. Open the taste preview shown in pi and select round-023. Start in full-width view.
-2. Compare each arrangement. Confirm each shows the same task-list, task-detail and edit/save flow content.
-3. Select screen frames and try Play. Check which controls are interactive and read any prototype limitations.
-4. Pick the clearest arrangement. Submit a reason describing changes you want. Verify the owning session receives the answer and prepares the next round or implementation.
+1. Open round-024 in the existing taste preview, in full-width view.
+2. Compare Screens/Components tabs with Screens/Components grouped in one tree. Confirm the selected screen, fixture content, composition inspector and behavior are the same.
+3. Open each screen. Confirm it renders the actual composed components at 100% without first pressing Play. Collapse the inspector or focus the preview if space is limited.
+4. Search/filter the task list. Open Edit, change a local field, cancel and reopen. Save an edit and confirm the mock saved state. The same behavior must work in both variants.
+5. Inspect the screen's used components. Open a component example, then return to the screen. Check the displayed component matches what the screen uses.
+6. Switch screen and component entries using the keyboard. Try light/dark mode and a narrow viewport. Record the known incumbent Compare answer-bar overflow separately.
+7. Submit the preferred Library navigation treatment and requested refinements. Verify the owning session receives the answer.
 
-## Implemented canvas
+## Chosen production implementation
 
-1. Serve the committed demo data dir and open App canvas. Check existing Compare, Library, Theme and History still open.
-2. Pan and zoom the overview with pointer and keyboard controls. Fit all screens, then return to 100%. Screen labels remain readable and frames keep their intended viewport sizes.
-3. Select Task list. Verify selection does not activate its cards. Enter Play and open a task. Confirm its title and details match the selected fixture item.
-4. Open Edit, change a local field, close without saving, reopen and save. Check the documented mock saved state. No backend request is required.
-5. Navigate back to the list and exit Play. Selection and the overview remain usable.
-6. Open a used component's library entry. Make a temporary change in the task worktree and confirm its screens update. Undo only that temporary change.
-7. Try narrow and wide viewports and light and dark mode. Ensure frames scroll where needed and controls have accessible names and visible focus.
-8. In a temporary fixture, reference a missing screen and an invalid navigation target. Confirm a readable error appears and the other screens still work. Remove only the temporary fixture.
+1. Serve the committed demo and open Library. Existing entries without a category still behave as components, including examples, controls and direct links.
+2. Browse Screens and Components using the chosen treatment. Confirm each screen uses actual shared library imports and renders at its intended size.
+3. Exercise search/filter, edit, cancel and local save. No backend request is required.
+4. Open a used component from a screen and return. Confirm a temporary component change in the task worktree updates its screen usages; undo only that temporary change.
+5. Check narrow/wide viewports, light/dark, focus, scrolling and accessible control labels. Verify Compare, Theme and History still work.
+6. In a temporary fixture, reference a missing source or broken entry. Confirm a readable local error and keep other entries usable. Remove only the temporary fixture.
 
 ## Automated checks
 
-Run `pnpm check`, `pnpm test`, `pnpm build`, and `node bin/taste-lab.mjs check --dir examples/demo/.taste-lab`. Record exits and unresolved failures in the PR.
+Run `pnpm check`, `pnpm test`, `pnpm build`, and `node bin/taste-lab.mjs check --dir examples/demo/.taste-lab` before the production PR. Record exits and unresolved failures.

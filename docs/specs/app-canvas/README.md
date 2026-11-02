@@ -1,48 +1,52 @@
-# App canvas
+# Screens and components in the library
 
 ## Goal
 
-Let the operator assemble and judge a clickable app design made from live library components, with mock data and an overview canvas.
+Let the operator browse reusable components and real-size interactive screens composed from those components as distinct kinds of library entry.
 
-## Operator brief
+## Operator direction
 
-The operator wants to borrow ideas from https://github.com/kgoedecke/doop and implement them one at a time, watching previews and answering taste rounds. They want library components connected into a full app design. Real backend data flows are not required. They are interested in an infinite canvas.
+The original request was to borrow ideas from https://github.com/kgoedecke/doop and implement them one at a time while watching taste previews. Round-023 compared three connected app-canvas arrangements. The operator answered mix, describing it as also none.
 
-## First increment
+Round-023 changes the order of work:
 
-Prototype the workspace arrangement first, then implement the chosen arrangement as a new app-canvas view without replacing the existing Library workbench.
+- Screens are compositions of actual components, including their interactivity. They are not layout-only mockups.
+- The Library should distinguish Screens and Components. A screen is still a component in the composition sense.
+- Opening a screen must show it at real size, not as a scaled canvas thumbnail.
+- Flows visualize connections across screens and are a separate concept. Postpone them.
 
-The overview shows screen frames, their names and navigation connections. A Play view shows one screen at a usable size and permits navigation. Screen source imports real library components rather than copying their rendered markup. Use one fixture-backed task flow: task list, task detail, edit sheet and a mocked saved state.
+These definitions are captured in the root `CONTEXT.md`. No canvas arrangement from round-023 is approved.
 
-The workspace follows the existing taste.lab theme, icon sizes and layers/inspector direction recorded in `.taste-lab/DESIGN.md`, especially rounds 020 d and 022 c. Compare meaningful arrangements of the same content, not different palettes. Do not copy Doop's AGPL source.
+## Next taste round
+
+Round-024 compares two navigation treatments for the same Library content: separate Screens/Components tabs versus grouped Screens/Components in one tree. Keep the selected screen, its rendered components, fixture data, interaction behavior and inspector identical. Preserve the incumbent lab theme and layers/inspector direction from rounds 020 d and 022 c.
+
+Start with a real-size task-list screen assembled from imported library components. Show its used components and let the operator inspect an individual component, then return to the composed screen. Search/filter and edit/save/cancel should work with local data. Provide a second screen composition so Screens is a real category. Screen selection is library browsing, not a flow diagram.
 
 ## Acceptance criteria
 
-1. A checked taste round compares 2 to 3 full-width workspace arrangements with the same screen data.
-2. The operator can choose a layout and request refinements through the existing answer mechanism.
-3. The implemented app canvas is opt-in and does not break Compare, Library, Theme or History.
-4. Frames render actual TSX compositions importing library components. Changes to a shared component reach its screen usages through Vite updates.
-5. Overview mode selects screens without accidentally triggering their app actions. Play mode permits list-to-detail navigation, edit-sheet open/close, mocked Save and return navigation.
-6. The canvas supports pan/zoom and fit-to-content, with usable labels and keyboard controls. Screen dimensions are independent of zoom.
-7. Missing screen source and invalid navigation targets produce local, readable errors instead of blanking the lab.
-8. Data stays in the served data dir and remains file-authored. The lab does not call an LLM. Tests, checks and a demo build pass.
+1. A checked round-024 compares two full-width Library navigation arrangements using the same data and screen/component source.
+2. Screens and Components are distinct, working browsing categories. Selecting a screen renders a complete interactive composition of shared component imports.
+3. Screen content starts at 100%, with no transform, CSS zoom, 640px mini viewport, or extra Play gate. Use available space responsively; scroll rather than silently shrink a fixed intended viewport. Keep optional focus/inspector collapse useful for viewing the screen at size.
+4. The operator can discover a screen's component composition and open an actual used component's example, then return to the screen. Do not claim arbitrary runtime dependency discovery.
+5. The same fixture-backed interactions work in each variant: screen selection, component browsing, search/filter, edit/cancel and mock save. There is no backend requirement.
+6. The prototype follows the shadcn/import/token rules and passes data-dir check plus pnpm check. Browser checks cover the rendered result and local interactions.
+7. New entries remain draft until the operator chooses. Existing answers, old rounds and the production source remain unchanged during this prototype.
 
-## Prototype gate
+## Production gate
 
-The first taste round settles workspace arrangement only. Clearly distinguish working prototype interactions from deferred production features. Do not mark draft screen components agreed without an operator pick. A subsequent implementation brief will fix the data contract and exact production paths after that pick.
+After the round-024 pick, define the smallest backward-compatible Library entry distinction and implement the chosen browsing treatment. Keep old component metadata and controls working. Do not implement a new app-canvas route or app manifest from the superseded round-023 plan.
 
 ## Deferred
 
-Vector drawing, arbitrary DOM styling, multiplayer, in-app AI, live-site import, approval invalidation, automatic dependency discovery and comments-to-agent transport. Do not claim these work in a preview.
+Flow diagrams, infinite canvas, pan/zoom, connectors, vector drawing, arbitrary DOM styling, multiplayer, in-app AI, live-site import, approval invalidation, automatic dependency discovery and comments-to-agent transport. No Doop source is copied.
 
-## Preview
+## Preview and history
 
-Task branch: `feat/app-canvas`.
+Branch: `feat/app-canvas`.
 
-Task worktree: `/home/kuba/.herdr/worktrees/taste-lab/feat-app-canvas`.
+Worktree: `/home/kuba/.herdr/worktrees/taste-lab/feat-app-canvas`.
 
-The worktree has an isolated copy of the existing local `.taste-lab` data. Its next free round is 023. Existing local design decisions and answers remain untouched in the primary checkout. Root `.taste-lab` is gitignored; save the chosen direction in this spec before implementing a committed demo.
+The lead owns the existing taste preview for the isolated worktree `.taste-lab`. Root `.taste-lab` is gitignored. Preserve local prototype files in this worktree and record decisions here before implementing a committed demo. `PROTOTYPE.md` records the earlier round-023 preview and its limitations. It is historical, not an approved design.
 
-## Human acceptance flow
-
-See `MANUAL_TESTING.md` in this folder.
+See `MANUAL_TESTING.md` for the current acceptance flow.

@@ -9,6 +9,7 @@ import {
 
 export const STATUSES = ["draft", "agreed"] as const;
 export type LibraryStatus = (typeof STATUSES)[number];
+export type LibraryKind = "component" | "screen";
 export const WIDTHS = ["column", "full"] as const;
 export type ExampleWidth = (typeof WIDTHS)[number];
 
@@ -25,6 +26,10 @@ export type LibraryMeta = {
   title: string;
   description: string;
   status: LibraryStatus;
+  /** Missing kind preserves legacy component entries. */
+  kind?: LibraryKind;
+  /** Authored composition references, not runtime dependency discovery. */
+  uses?: string[];
   examples: LibraryExample[];
   provenance: Provenance[];
   rules: string[];
@@ -125,6 +130,30 @@ export function validateMeta(
     !(STATUSES as readonly string[]).includes(data.status)
   ) {
     errors.push(`status must be one of ${STATUSES.join(", ")}`);
+  }
+
+  if (
+    Object.hasOwn(data, "kind") &&
+    data.kind !== "component" &&
+    data.kind !== "screen"
+  ) {
+    errors.push("kind must be component or screen");
+  }
+  if (Object.hasOwn(data, "uses")) {
+    if (!Array.isArray(data.uses)) {
+      errors.push("uses must be an array of library names");
+    } else {
+      const seen = new Set<string>();
+      data.uses.forEach((name, i) => {
+        if (typeof name !== "string" || !NAME_RE.test(name)) {
+          errors.push(`uses[${i}] must be a non-empty safe library name`);
+        } else if (name === ctx.dir) {
+          errors.push(`uses[${i}] must not reference itself`);
+        } else if (seen.has(name)) {
+          errors.push(`uses[${i}] "${name}" is duplicated`);
+        } else seen.add(name);
+      });
+    }
   }
 
   const controls = validateControls(data.controls);

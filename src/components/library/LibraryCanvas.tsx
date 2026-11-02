@@ -75,6 +75,7 @@ export function LibraryCanvas({
   light: TokenMap;
   values: ControlValues;
 }) {
+  const screen = entry.meta.kind === "screen";
   const [width, setWidth] = useState<ExampleWidth>(example.width);
   const prefs = useCanvasPrefs();
   const labMode = useLabMode();
@@ -91,6 +92,7 @@ export function LibraryCanvas({
   return (
     <div className="flex h-full min-h-0 flex-col">
       <Toolbar
+        screen={screen}
         width={width}
         setWidth={setWidth}
         mode={mode}
@@ -108,12 +110,16 @@ export function LibraryCanvas({
       >
         <div
           className={cn(
-            "flex min-h-full flex-col items-center gap-3 p-8 text-foreground",
+            "flex min-h-full flex-col items-center gap-3 text-foreground",
+            screen ? "p-0" : "p-8",
             prefs.surface === "plain" ? "bg-background" : "bg-muted",
           )}
         >
           <div
-            className={cn(width === "column" ? "w-105 max-w-full" : "w-full")}
+            data-testid={screen ? "screen-content" : "component-content"}
+            className={cn(
+              !screen && width === "column" ? "w-105 max-w-full" : "w-full",
+            )}
           >
             <Live
               entry={entry}
@@ -177,11 +183,13 @@ function Live({
 }
 
 function Toolbar({
+  screen,
   width,
   setWidth,
   mode,
   surface,
 }: {
+  screen: boolean;
   width: ExampleWidth;
   setWidth: (w: ExampleWidth) => void;
   mode: CanvasMode;
@@ -189,18 +197,22 @@ function Toolbar({
 }) {
   return (
     <div className="flex min-h-12 shrink-0 flex-wrap items-center gap-4 border-b px-8 py-3">
-      <ToggleGroup
-        type="single"
-        size="sm"
-        variant="outline"
-        spacing={0}
-        aria-label="Canvas width"
-        value={width}
-        onValueChange={(v) => v && setWidth(v as ExampleWidth)}
-      >
-        <ToggleGroupItem value="column">Column 420</ToggleGroupItem>
-        <ToggleGroupItem value="full">Full width</ToggleGroupItem>
-      </ToggleGroup>
+      {screen ? (
+        <span className="text-sm text-muted-foreground">Responsive · 100%</span>
+      ) : (
+        <ToggleGroup
+          type="single"
+          size="sm"
+          variant="outline"
+          spacing={0}
+          aria-label="Canvas width"
+          value={width}
+          onValueChange={(v) => v && setWidth(v as ExampleWidth)}
+        >
+          <ToggleGroupItem value="column">Column 420</ToggleGroupItem>
+          <ToggleGroupItem value="full">Full width</ToggleGroupItem>
+        </ToggleGroup>
+      )}
       <ToggleGroup
         type="single"
         size="sm"

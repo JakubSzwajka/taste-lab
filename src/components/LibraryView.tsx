@@ -6,6 +6,8 @@ import {
 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { IdlePage, IdlePath } from "@/components/IdlePage";
+import { returnToScreen } from "@/components/library/inspection";
+import { LibraryComposition } from "@/components/library/LibraryComposition";
 import { StatusBadge } from "@/components/library/LibraryDocs";
 import { LibraryTree } from "@/components/library/LibraryTree";
 import {
@@ -15,7 +17,7 @@ import {
 import { setCanvasPrefs, useCanvasPrefs } from "@/components/library/prefs";
 import { Button } from "@/components/ui/button";
 import { SidebarProvider } from "@/components/ui/sidebar";
-import type { LibraryEntry } from "@/lib/library";
+import type { LibraryEntry, LibraryKind } from "@/lib/library";
 import type { LoadedRound } from "@/lib/rounds";
 import { hrefFor } from "@/lib/route";
 import { lightTokens, type TokenMap } from "@/lib/taste-theme";
@@ -95,6 +97,17 @@ export function LibraryPage({
     setPrev({ name, example });
     setPicked({ name, example });
   }
+  const [category, setCategory] = useState<LibraryKind>(() => {
+    const initial = entries.find((e) => e.name === name) ?? entries[0];
+    return initial?.ok ? (initial.meta.kind ?? "component") : "component";
+  });
+  const selected = entries.find((e) => e.name === picked.name);
+  const activeCategory = selected?.ok
+    ? (selected.meta.kind ?? "component")
+    : category;
+  const matching = entries.filter(
+    (e) => !e.ok || (e.meta.kind ?? "component") === activeCategory,
+  );
   const [tab, setTab] = useState("canvas");
   const { sidebar } = useCanvasPrefs();
   const known = useMemo(
@@ -136,13 +149,14 @@ export function LibraryPage({
     );
   }
 
-  const entryName = picked.name ?? entries[0]?.name;
+  const entryName = picked.name ?? matching[0]?.name;
   const entry = entries.find((e) => e.name === entryName);
   const shown =
     entry?.ok &&
     (entry.meta.examples.find((x) => x.export === picked.example) ??
       entry.meta.examples[0]);
 
+  const origin = entry && returnToScreen(entry.name);
   const open = (x: string) => {
     if (!entry) return;
     setPicked({ name: entry.name, example: x });
@@ -162,7 +176,19 @@ export function LibraryPage({
       className="relative min-h-0 flex-1 overflow-hidden"
     >
       <LibraryTree
-        entries={entries}
+        entries={matching}
+        category={activeCategory}
+        onCategory={(kind) => {
+          setCategory(kind);
+          const next =
+            entries.find(
+              (e) => e.ok && (e.meta.kind ?? "component") === kind,
+            ) ?? entries.find((e) => !e.ok);
+          setPicked({ name: next?.name });
+          setTab("canvas");
+          if (next)
+            location.hash = hrefFor({ page: "library-entry", name: next.name });
+        }}
         entryName={entry?.name}
         exampleName={shown ? shown.export : undefined}
         onExample={(n, x) => {
@@ -171,11 +197,35 @@ export function LibraryPage({
         }}
       />
       <div className="flex min-h-0 min-w-0 flex-1 flex-col bg-background">
+        {origin && (
+          <div className="border-b px-8 py-2">
+            <Button asChild variant="ghost" size="sm">
+              <a
+                href={hrefFor({
+                  page: "library-entry",
+                  name: origin.name,
+                  example: origin.example,
+                })}
+              >
+                Back to screen
+              </a>
+            </Button>
+          </div>
+        )}
+        {entry?.ok && shown && (
+          <LibraryComposition
+            entry={entry}
+            example={shown.export}
+            entries={entries}
+          />
+        )}
         {!entry ? (
           <>
             <PageBar />
             <p className="px-8 py-8 text-muted-foreground">
-              No library entry called {entryName}.
+              {entryName
+                ? `No library entry called ${entryName}.`
+                : `No ${activeCategory === "screen" ? "screens" : "components"} yet.`}
             </p>
           </>
         ) : !entry.ok ? (

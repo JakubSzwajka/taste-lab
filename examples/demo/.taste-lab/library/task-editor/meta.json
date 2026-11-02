@@ -1,0 +1,15 @@
+{
+  "name": "task-editor",
+  "title": "Task editor",
+  "description": "Inline title and description form with local save and cancel callbacks.",
+  "status": "draft",
+  "examples": [
+    {
+      "export": "Default",
+      "title": "Editable task",
+      "width": "column"
+    }
+  ],
+  "provenance": [],
+  "rules": ["Cancel discards the draft; save returns a new task."]
+}

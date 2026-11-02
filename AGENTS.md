@@ -38,7 +38,7 @@ node <taste-lab>/bin/taste-lab.mjs serve --dir <repo>/.taste-lab [--port N] [--l
 - `init` writes the skeleton above with one sample fixture (`items`), an empty `library/`, an empty `taste.jsonl`, a `theme.css` with a header comment and empty `:root` and `.dark` blocks, and a `DESIGN.md` stub. It refuses to touch a path that exists.
 - `check` validates `theme.css` (see "Theme"), loads the fixtures (both `fixtures` and `fixtureKeys` must be exported and list the same keys), validates every `round.json` with the app's validator, runs the variant scanner on `rounds/` and validates `library/` (see "Library"). Exit 0 when clean, 1 with one line per problem (filesystem trouble such as a dangling symlink included), 2 on a usage error.
 - A data dir path must not contain a line break or control character, a backslash, `*`, `{`, `}` or both quote kinds. Tailwind reads `@source` raw and as a glob, so `serve`, `init` and `check` reject such paths up front. Spaces, `$`, one kind of quote and `[`, `]`, `(`, `)`, `!` work.
-- `library` lists entries with name, status, title, path, example count, and validation problems. `--status` filters by `draft` or `agreed`. `--json` prints a JSON array. Exit 1 means an entry is invalid. Exit 2 means usage is invalid.
+- `library` lists entries with name, status, title, path, example count, and validation problems. JSON also includes `kind`, defaulting to `"component"` when omitted from valid JSON metadata. An unknown string is preserved; unreadable metadata or a non-string kind is `null`. `--status` filters by `draft` or `agreed`. `--json` prints a JSON array. Exit 1 means an entry is invalid. Exit 2 means usage is invalid.
 - `serve` starts the lab on 127.0.0.1 and prints the URL. Without `--port` it takes the first free port from 5300 and never picks 3000, 3326, 5173 or 5310. Stop it with Ctrl+C.
 - `serve --lan` is opt-in LAN access, see "LAN mode". `--host` without `--lan` is a usage error (exit 2).
 - `serve --events` writes JSON lines on stdout for a parent process, see "Event protocol".
@@ -278,6 +278,8 @@ Library as a shared database: any session can add a draft entry and validate it 
   "title": "Task card",
   "description": "One task in a list: status, priority, up to 2 quiet tags, title, description, owner footer.",
   "status": "agreed",
+  "kind": "component",
+  "uses": [],
   "examples": [
     { "export": "Default", "title": "Typical tasks", "width": "column" },
     {
@@ -310,6 +312,8 @@ Library as a shared database: any session can add a draft entry and validate it 
 
 - `name` equals the folder name. `title`, `description` are non-empty strings.
 - `status` is `draft` or `agreed`.
+- `kind` is optional: `"component"` or `"screen"`. Missing means component. A screen is an interactive composition of library components, not a separate file format.
+- `uses` is an optional array of authored library entry names, not automatic dependency discovery. Names must be non-empty safe kebab-case, distinct and not the entry itself. Missing or broken targets are allowed metadata and show as unavailable in the Library. Existing import/scanner rules still apply.
 - `examples` has at least one entry. `export` is a named export of `examples.tsx`, unique in the list. `width` is `column` (about 420px) or `full`.
 - `provenance` and `rules` are arrays and may be empty. Each provenance `round` must exist in `rounds/`.
 - Files follow the variant rules: 100% shadcn, no raw colors, no `style` prop. Allowed imports are the variant allowlist plus sibling files by relative path without extension (`./TaskCard`). A sibling must be a regular `.ts` or `.tsx` file in the same folder. `check` rejects one that is missing, a folder (including a folder named `Helper.ts`), or that also exists as `.js`, `.jsx`, `.mjs`, `.mts` or `.json`, because the scanner reads only `.ts` and `.tsx`. A round variant may import `@/library/<name>/<Name>` only, where `<name>` is a kebab-case folder and `<Name>` its PascalCase.
@@ -340,14 +344,15 @@ export function Default(args: TaskCardArgs) {
 
 ### Library page
 
-`#/library` opens the first entry. `#/library/<name>` opens an entry on its first example, and `#/library/<name>/<example>` on that example. It works like Storybook (round-008 c):
+`#/library` opens the first entry. `#/library/<name>` opens an entry on its first example, and `#/library/<name>/<example>` on that example. Direct links select the entry's category. Existing component links stay valid. It works like Storybook (round-008 c), with category tabs selected in round-024 A and nested examples in round-025 A:
 
 - The page is full-bleed under the app header, like Compare: the full width and the full height below the header, with no outer card or border.
-- Left: the stock shadcn `sidebar` with the entries and their examples with their width. Agreed is the normal status, so only a draft or broken entry shows a pill; the title line counts entries and drafts. The chevron folds an entry. Collapse all and Expand all sit next to the count. The trigger left of the tabs (or Ctrl/Cmd+B) collapses the sidebar. Under 768px it is the primitive's off-canvas sheet, which closes on a pick.
-- Canvas tab: the live example under a toolbar. Width is Column 420 or Full width; it starts at the example's `width`. Theme is light or dark for the canvas only. Background is plain (`bg-background`) or muted (`bg-muted`). Theme and background stay set across entries and reloads. Until you pick a canvas theme it follows the lab.
+- Left: Screens / Components tabs filter the stock shadcn `sidebar`. Named examples stay nested under each entry, with component widths or a screen label. Switching category opens a matching entry or a scoped empty state. Broken entries remain reachable in both tabs, since their category may be unknown. Agreed is the normal status, so only a draft or broken entry shows a pill; the title line counts entries and drafts. The chevron folds an entry. Collapse all and Expand all sit next to the count. The trigger left of the tabs (or Ctrl/Cmd+B) collapses the sidebar. Under 768px it is the primitive's off-canvas sheet, which closes on a pick.
+- Canvas tab: the live example under a toolbar. Components retain Column 420 or Full width, starting at the example's `width`. Screens use full available responsive width at 100% in normal CSS pixels, ignoring the component column clamp. There is no zoom, Play gate or native viewport sizing engine. Round-026 sizing remains separate. Theme is light or dark for the canvas only. Background is plain (`bg-background`) or muted (`bg-muted`). Theme and background stay set across entries and reloads. Until you pick a canvas theme it follows the lab.
 - The canvas has an explicit light or dark prototype scope. It resets every token to shadcn stock plus the data dir theme for that mode. A dark canvas also has `.dark`. A light canvas keeps the light values inline. Both canvas modes work in either lab theme. The toolbar and panels stay outside this scope and keep the chrome theme.
 - Controls panel under the tabs, when the entry has `controls`: one row per prop, with a checkbox, toggles (a menu for more than 4 options), a text field or a number field, and the current value or "unset". It is the bottom of a vertical `resizable` split. Its header bar has Reset, collapse or expand, and expand to full or restore. Drag the handle, or focus it and use the arrow keys, to resize. Dragged below its minimum it collapses to the header bar. Full hides the canvas until you restore. It opens at a height that fits every control; it scrolls only when dragged smaller. An entry without controls has no panel.
 - The sidebar state, the panel state (open, collapsed or full) and the dragged height stay set across entries and reloads, with the canvas theme and background (`localStorage` key `taste-lab-canvas`).
+- Authored `uses` appear in a small Used components area outside the prototype scope. Each available reference opens its first actual example. Missing entries, failed imports and missing exports show a local unavailable state. Inspecting from a screen offers Back to screen, restoring the exact screen and named example across route remounts. This return address lasts for the current browser session module, not a reload; local edits and control values restart when their example remounts.
 - Docs tab: title, status, description, examples (each opens its canvas), the controls table, rules, and provenance with links to `#/round/<id>`. A round that no longer exists is marked "round not found".
 - A broken entry (bad `meta.json`, missing file, missing export) shows its errors in place and does not break the page. An example that throws shows its error in the canvas. The next control change tries again.
 

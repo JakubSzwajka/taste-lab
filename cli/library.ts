@@ -7,6 +7,7 @@ import { kindOf, readText } from "./fs-util.ts";
 export type LibraryListing = {
   name: string;
   status: string | null;
+  kind: string | null;
   title: string | null;
   path: string;
   exampleCount: number;
@@ -63,6 +64,7 @@ export function listLibrary(
         `library/${name}/meta.json`,
       );
       let meta: Record<string, unknown> = {};
+      let parsedMeta = false;
       if (!("error" in metaFile)) {
         try {
           const parsed: unknown = JSON.parse(metaFile.text);
@@ -72,6 +74,7 @@ export function listLibrary(
             !Array.isArray(parsed)
           ) {
             meta = parsed as Record<string, unknown>;
+            parsedMeta = true;
           }
         } catch {
           // The shared validator supplies the useful parse error.
@@ -80,6 +83,13 @@ export function listLibrary(
       return {
         name,
         status: typeof meta.status === "string" ? meta.status : null,
+        kind: !parsedMeta
+          ? null
+          : !Object.hasOwn(meta, "kind")
+            ? "component"
+            : typeof meta.kind === "string"
+              ? meta.kind
+              : null,
         title: typeof meta.title === "string" ? meta.title : null,
         path: join(root, name),
         exampleCount: Array.isArray(meta.examples) ? meta.examples.length : 0,

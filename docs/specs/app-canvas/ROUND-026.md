@@ -61,4 +61,4 @@ This is not iframe isolation. ScreenPreset uses container-responsive classes for
 
 Real touch, Safari, physical devices and quantitative contrast testing were not run. Existing Compare answer-row overflow and overlay occlusion are outside this sizing round. No full test suite or build was run. No server was started, stopped or reconfigured, and no LAN logs were inspected. The dedicated browser session is closed after verification; the lead's preview remains untouched.
 
-The draft sizing entry and new round take effect immediately from disk. They need an operator sizing pick, not another category/preset approval. TaskItem, TaskDetails and ScreenPreset remain draft.
+The operator selected A, responsive fill, in dark flip view with no reason. This settles sizing at 100% of the available width, not native viewport presets. Approval covers sizing only; TaskItem, TaskDetails and ScreenPreset visual styles remain draft. Historical B remains available.

@@ -9,7 +9,7 @@ Implement the selected Screens/Components category tabs and nested named example
 - Round-024 A selects category tabs. Round-025 A selects examples nested under each entry.
 - Screens are actual interactive compositions, rendered at 100%. Examples cover layouts and states using existing named exports, controls and args.
 - Keep current hash routes and all component controls, panel state, canvas theme and background behavior.
-- Round-026 viewport sizing is a separate refinement. Until chosen, screens use full available width without scaling. Do not implement a canvas or new app manifest.
+- Round-026 A selects responsive fill at 100%, with an empty reason. Screens use full available width without scaling. Native viewport presets were not selected. Do not implement a canvas or new app manifest.
 - The first increment adds a small authored composition area and return action. It does not move the existing resizable Controls panel, implement agent notes or claim the complete earlier Figma-inspector redesign has shipped.
 
 ## Metadata interface

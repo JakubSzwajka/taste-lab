@@ -1,6 +1,6 @@
 # Screen Library verification
 
-Initial lead verification covers `32db63b`. The operator selected Codex/GPT review after the cross-family models were unavailable. Review found a category-navigation blocker; corrective round 1 is pending. This is not a merge recommendation.
+Initial lead verification covers `32db63b`. The operator selected Codex/GPT review after the cross-family models were unavailable. Review found a category-navigation blocker. Corrective round 1 is committed as `1983bbc`, with all four builder checks passing. Targeted re-review and lead checks are next. This is not a merge recommendation.
 
 ## Local commands
 
@@ -51,4 +51,4 @@ Combined feedback for corrective round 1:
 
 Both reviewers found no standards violations in their assigned areas. Their irreversible-effects assessment identifies reversible source/demo changes and additive metadata, with no migration or external write. Reverting code does not undo discarded local edits or remove ignored prototype data.
 
-Native viewport sizing remains a separate round-026 decision. The first increment does not ship flows or a full inspector redesign.
+Round-026 A now settles responsive fill at 100%. Native viewport presets were not selected. The first increment does not ship flows or a full inspector redesign.

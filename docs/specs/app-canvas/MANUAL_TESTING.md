@@ -10,6 +10,16 @@
 6. Switch screen and component entries using the keyboard. Try light/dark mode and a narrow viewport. Record the known incumbent Compare answer-bar overflow separately.
 7. Submit the preferred Library navigation treatment and requested refinements. Verify the owning session receives the answer.
 
+## Round-025 presets
+
+1. Open round-025. Confirm both choices retain Screens/Components category tabs.
+2. Compare nested presets in the tree with a preset selector above the preview. Start with the same task-list Default example in each.
+3. Switch Default, Compact, Loading, Empty and Error. Confirm Compact changes composition density, state examples show their named state and recovery controls work where shown.
+4. Switch to the second screen and to Components. Confirm both kinds of entry expose named examples, not only a label with no effect.
+5. From a non-default screen preset, open a Used component example and return. Confirm the screen and preset are restored.
+6. Try local filter, edit/cancel/save, reset, inspector collapse and Focus in both variants. Check preset changes do not silently overwrite the original fixture.
+7. Confirm the preview remains at 100% in desktop light/dark and at narrow width. Submit the preferred preset placement.
+
 ## Chosen production implementation
 
 1. Serve the committed demo and open Library. Existing entries without a category still behave as components, including examples, controls and direct links.

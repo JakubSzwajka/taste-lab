@@ -17,15 +17,19 @@ Round-023 changes the order of work:
 
 These definitions are captured in the root `CONTEXT.md`. No canvas arrangement from round-023 is approved.
 
+## Confirmed direction
+
+Round-024 A is selected: separate Screens/Components category tabs. Do not reopen that choice. The operator asks for predefined variants for pages as well as components. Use the existing named-example concept for screen layout and state presets; these are distinct from the A/B choices of a taste round.
+
 ## Next taste round
 
-Round-024 compares two navigation treatments for the same Library content: separate Screens/Components tabs versus grouped Screens/Components in one tree. Keep the selected screen, its rendered components, fixture data, interaction behavior and inspector identical. Preserve the incumbent lab theme and layers/inspector direction from rounds 020 d and 022 c.
+Round-025 compares where named presets are selected: nested beneath the library entry in the tree, or in a selector above the preview. Both keep the selected category tabs, real-size screen composition, data, inspector and interactions identical. Offer Default, Compact, Loading, Empty and Error screen presets, with working component examples as well. Presets are live composed examples, not screenshots. Preserve the incumbent theme and layers/inspector direction.
 
 Start with a real-size task-list screen assembled from imported library components. Show its used components and let the operator inspect an individual component, then return to the composed screen. Search/filter and edit/save/cancel should work with local data. Provide a second screen composition so Screens is a real category. Screen selection is library browsing, not a flow diagram.
 
 ## Acceptance criteria
 
-1. A checked round-024 compares two full-width Library navigation arrangements using the same data and screen/component source.
+1. A checked round-025 compares two preset-selection placements while preserving round-024 A category tabs. Both Screens and Components have named selectable examples. Screen presets include a real layout variant and explicit state examples using shared screen/component source.
 2. Screens and Components are distinct, working browsing categories. Selecting a screen renders a complete interactive composition of shared component imports.
 3. Screen content starts at 100%, with no transform, CSS zoom, 640px mini viewport, or extra Play gate. Use available space responsively; scroll rather than silently shrink a fixed intended viewport. Keep optional focus/inspector collapse useful for viewing the screen at size.
 4. The operator can discover a screen's component composition and open an actual used component's example, then return to the screen. Do not claim arbitrary runtime dependency discovery.
@@ -35,7 +39,7 @@ Start with a real-size task-list screen assembled from imported library componen
 
 ## Production gate
 
-After the round-024 pick, define the smallest backward-compatible Library entry distinction and implement the chosen browsing treatment. Keep old component metadata and controls working. Do not implement a new app-canvas route or app manifest from the superseded round-023 plan.
+After the round-025 pick, define the smallest backward-compatible Library entry distinction and implement the chosen category and preset browsing treatments. Preserve the existing examples/args contract for both screens and components. Keep old component metadata and controls working. Do not implement a new app-canvas route or app manifest from the superseded round-023 plan.
 
 ## Deferred
 

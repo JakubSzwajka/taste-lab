@@ -91,7 +91,8 @@ export function LibraryPage({
   if (prev.name !== name || prev.example !== example) {
     if (prev.name !== name) setTab("canvas");
     setPrev({ name, example });
-    setPicked({ name, example });
+    // Returning to the index resets selection, not the mounted sidebar.
+    setPicked({ name: name ?? entries[0]?.name, example });
   }
   const [category, setCategory] = useState<LibraryKind>(() => {
     const initial = entries.find((e) => e.name === name) ?? entries[0];

@@ -89,6 +89,31 @@ afterEach(async () => {
 });
 
 describe("production screen browsing through App hash routes", () => {
+  it.each(["#/library/task-card", "#/library/a-screen/Compact"])(
+    "opens the global first entry and default example through the Library breadcrumb from %s",
+    async (start) => {
+      await route(start);
+      const host = await mount(<Routed items={entries()} />);
+      const categories = one(host, '[aria-label="Library category"]');
+      const screens = one(categories, '[role="tab"][id$="trigger-screen"]');
+      await follow(one<HTMLAnchorElement>(host, 'header a[href="#/library"]'));
+      expect(location.hash).toBe("#/library");
+      expect(host.textContent).toContain("a-screen / Default");
+      expect(
+        one(host, '[aria-label="Library category"] [aria-selected="true"]')
+          .textContent,
+      ).toBe("Screens");
+      expect(one(host, '[aria-label="Library category"]')).toBe(categories);
+      expect(one(categories, '[role="tab"][id$="trigger-screen"]')).toBe(
+        screens,
+      );
+      expect(
+        one(host, 'a[href="#/library/a-screen/Default"]').getAttribute(
+          "aria-current",
+        ),
+      ).toBe("true");
+    },
+  );
   it.each(["#/library", "#/library/a-screen/Compact"])(
     "inspects and returns to the exact named example from %s",
     async (start) => {

@@ -4,12 +4,12 @@ Round-034 A won with the reason "even slightly more compacted?". Round-036 compa
 
 The live round is under `/home/kuba/.herdr/worktrees/taste-lab/feat-app-canvas/.taste-lab/rounds/round-036/`. Its two wrappers reuse the existing specimen. They change no shared library source, fixture, historical round or font asset. `basedOn` is round-034 A; the default view is flip.
 
-| Desktop measurement | A: compact control | B: slightly tighter |
-| --- | --- | --- |
-| Tree rows, including the broken-entry line | 32px | 28px |
-| Panel padding | 16px | 12px |
-| Canvas padding | 24px | 20px |
-| Group gaps | 8px | 6px |
+| Desktop measurement                        | A: compact control | B: slightly tighter |
+| ------------------------------------------ | ------------------ | ------------------- |
+| Tree rows, including the broken-entry line | 32px               | 28px                |
+| Panel padding                              | 16px               | 12px                |
+| Canvas padding                             | 24px               | 20px                |
+| Group gaps                                 | 8px                | 6px                 |
 
 The tighter rules apply only at the desktop container breakpoint. At viewport widths of 768px and 390px, both choices retain 44px rows and 16px panel padding. Header heights, font sizes and other sample pages stay fixed. The inner task preview keeps Geist and its independent theme.
 
